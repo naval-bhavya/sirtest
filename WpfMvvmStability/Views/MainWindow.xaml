@@ -1,0 +1,251 @@
+﻿<Window x:Class="WpfMvvmStability.Views.MainWindow"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase"
+		xmlns:viewModels="clr-namespace:WpfMvvmStability.ViewModels"
+        xmlns:helix="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+        xmlns:modelViewer="clr-namespace:WpfMvvmStability.ViewModels"
+        xmlns:modelView="clr-namespace:WpfMvvmStability.Views" 
+   
+    Title="P15B" WindowStartupLocation="CenterScreen" Name="MainWin" ResizeMode="CanMinimize" WindowStyle="SingleBorderWindow" Topmost="False" xmlns:my="clr-namespace:WpfMvvmStability" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Top="Auto" Left="Auto" BorderThickness="0" SnapsToDevicePixels="False" FontFamily="Calibri"  WindowState="Normal" Loaded="Main_Loaded" Height="870" Width="1099.89" Icon="/Stability;component/Lnt2.ico">
+    <Window.Resources>
+        
+        <ControlTemplate TargetType="Frame" x:Key="templateRealMode">
+            <DockPanel>
+               <ToolBar DockPanel.Dock="Top" >
+                    <DockPanel Margin="1">
+                        <StackPanel
+                    Margin="1"
+                    Orientation="Horizontal"
+                    DockPanel.Dock="Top">
+                            <Button
+                    Content="Back"
+                    Click="OnBackward"
+                                FontSize="14"
+                    Width="50" Height="30"
+                    IsEnabled="{TemplateBinding CanGoBack}" />
+                   
+                            <Button Content="Stability"  FontSize="14" VerticalContentAlignment="Center"  Margin="40,0,10,0" BorderThickness="1" Click="OnGoPageRealStabilitySummary" Width="80" Height="30"  />
+                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14"  HorizontalContentAlignment="Center" Name="lblRealStabilityType" />
+                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" HorizontalContentAlignment="Center" x:Name="lblRealStabilityStatus"/>
+                           
+                           
+
+                            <Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Corrective Action" FontFamily="Calibri" FontSize="14" Name="btnRealModeCorrectiveAction" Visibility="Hidden"  SnapsToDevicePixels="False" Click="OnGoPageRealCorrectiveAction"  />
+                            <Button Click="OnGoPageRealReport" Margin="10,0,10,0" BorderThickness="1" Width="80" Height="30"  FontSize="14" Content="Reports" />
+                            <Label   BorderThickness="0" Content="                                      " Name="lblConnectionstatus"  />
+                            <Label BorderBrush="#FF727272"  Margin="1,0,10,0" Background="Red"  BorderThickness="1" Content="COMMUNICATION" FontSize="14" HorizontalContentAlignment="Center" Name="lblStatus"  />
+                            <Button BorderBrush="#FF727272" Margin="100,0,10,0" Click="btnExit_Click" Content="Switch To IPMS" FontFamily="Calibri" FontSize="14" Name="btnExit" Grid.Row="1" Grid.RowSpan="1" Grid.Column="13" />
+                           
+                            
+                        </StackPanel>
+                    </DockPanel>
+                </ToolBar>
+                <Border
+                        BorderBrush="Blue"
+                        Margin="1"
+                        BorderThickness="4"
+                        Padding="1"
+                        CornerRadius="4">
+                    <ContentPresenter DockPanel.Dock="Bottom" />
+                </Border>
+                
+            </DockPanel>
+        </ControlTemplate>
+        <ControlTemplate TargetType="Frame" x:Key="templateSimulationMode">
+            <DockPanel>
+                <ToolBar DockPanel.Dock="Top" >
+                    <DockPanel Margin="1">
+                        <StackPanel
+                    Margin="1"
+                    Orientation="Horizontal"
+                    DockPanel.Dock="Top">
+                            <Button
+                    Content="Back"
+                    Click="OnBackward"
+                                FontSize="14"
+                    Width="80" Height="30"
+                    IsEnabled="{TemplateBinding CanGoBack}" />
+                  
+                            <Button Content="Stability" IsEnabled="False" Name="btnSimulationModeStability" FontSize="14" Margin="40,0,10,0" BorderThickness="1" Click="OnGoPageSimulationStabilitySummary" Width="80" Height="30"  />
+                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" FontWeight="Bold" HorizontalContentAlignment="Center" Name="lblSimulationStabilityType" />
+                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" HorizontalContentAlignment="Center" Name="lblSimulationStabilityStatus" />
+                            <Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Corrective Action" FontFamily="Calibri" FontSize="14" Name="btnSimulationModeCorrectiveAction" SnapsToDevicePixels="False" Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False"  />
+                            <!--<Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Calculate" FontFamily="Calibri" FontSize="11" Height="25"  Name="btnSimulationCalculate" SnapsToDevicePixels="False" Click="btnSimulationCalculate_Click" />-->
+                            <Button BorderBrush="#FF727272" Margin="40,0,10,0" Content="Reports" FontFamily="Calibri" FontSize="14" Height="30"   Width="90"  Name="btnSimulationGenerateReport" SnapsToDevicePixels="False" Click="btnSimulationGenerateReport_Click" IsEnabled="False"  />
+                            <Label BorderBrush="#FF727272"  Margin="10,0,10,0" BorderThickness="1" Content="OFFLINE MODE"  Background="White" Foreground="Red" FontSize="14" HorizontalContentAlignment="Center" Name="lblconnectionstatus"  />
+                            <!--<Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Save" FontFamily="Calibri" FontSize="11" Height="25"  Name="btnSaveLoadingCondition" SnapsToDevicePixels="False" Click="btnSaveLoadingCondition_Click" />-->
+                            <Button BorderBrush="#FF727272" Margin="100,0,10,0" Click="btnExitSimulation_Click" Content="Switch To IPMS" FontFamily="Calibri" FontSize="14" Height="30" Name="btnExitSimulation"  HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </DockPanel>
+                </ToolBar>
+                <Border Name="SimulationBorder"
+                        BorderBrush="Red"
+                        Margin="1"
+                        BorderThickness="4"
+                        Padding="1"
+                        CornerRadius="7">
+                    <ContentPresenter DockPanel.Dock="Bottom" />
+                </Border>
+
+            </DockPanel>
+        </ControlTemplate>
+
+    </Window.Resources>
+
+    <Grid>
+            <Grid.RowDefinitions>
+            <RowDefinition Height="27" />
+            <RowDefinition Height="835*" />
+        </Grid.RowDefinitions>
+        
+        <Menu Name="MainMenu" BorderBrush="Black" DockPanel.Dock="Top" Background="#FFBEBEBE">
+            <Menu.Items>
+                <MenuItem Header="_File" Background="#FFBEBEBE" FontFamily="Calibri">
+                    <!--<MenuItem Header="_Real Mode" Name="RM" Click="RM_Click" Background="#FFBEBEBE"></MenuItem>
+                    <MenuItem Header="_Simulation Mode" Name="SM" Click="SM_Click" Background="#FFBEBEBE"></MenuItem>-->
+                    <MenuItem Header="_Main Particulars" Name="Doc1"  Click="Doc1_click" Background="#FFBEBEBE"></MenuItem>
+                    <MenuItem Header="_General Arrangement" Name="Doc2"  Click="Doc2_click" Background="#FFBEBEBE"></MenuItem>
+                    <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Background="#FFBEBEBE"></MenuItem>
+                    <MenuItem Header="_Print Report" Name="Printreport"  Click="Printreport_click" Background="#FFBEBEBE"></MenuItem>
+                    <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Background="#FFBEBEBE"></MenuItem>
+                </MenuItem>
+                <MenuItem Header="_View" Background="#FFBEBEBE" FontFamily="Calibri">
+                    <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Background="#FFBEBEBE" Click="SavedLoadingCondition_Click"></MenuItem>
+                    <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition"  Background="#FFBEBEBE" Click="StandardLoadingCondition_Click"></MenuItem>
+                </MenuItem>
+                <MenuItem Header="_Tools" Background="#FFBEBEBE" FontFamily="Calibri">
+                    <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Background="#FFBEBEBE"/>
+                    <!--<MenuItem Header="_Set IPMS Path" Name="setipmspath" Click="setipmspath_Click" Background="#FFBEBEBE"/>-->
+                </MenuItem>
+                <MenuItem Header="_Master Input"   FontFamily="Calibri" Background="#FFBEBEBE" Click="MenuItem_Click" VerticalAlignment="Top" VerticalContentAlignment="Center">
+                    <MenuItem Header="_LightShip Data" Name="LightShip"   Background="#FFBEBEBE" Click="LightShip_Click" />
+                    <MenuItem Header="_Stability Settings" Name="settings"   Background="#FFBEBEBE" Click="settings_Click" />
+                    <MenuItem Header="_Wind Speed" Name="windspeed"   Background="#FFBEBEBE" Click="windspeed_Click" />
+                   
+
+                </MenuItem>
+                <MenuItem Header="_Damage Cases" Name="MDamage" FontFamily="Calibri" Background="#FFBEBEBE"  VerticalAlignment="Top" FontSize="14">
+                    <ComboBox Name="cMBDamage" Width="145" SelectionChanged="cMBDamage_SelectionChanged" >
+                        <ComboBoxItem Content="Select Damage Case"  IsSelected="True"/>
+                        <ComboBoxItem Content=" GHIJ(ii) "/>
+                        <ComboBoxItem Content=" KLMN(ii) " />
+                        <ComboBoxItem Content=" LMNOP(ii) " />
+                        <ComboBoxItem Content=" EFGH " />
+                        <ComboBoxItem Content=" ABCD "/>
+                        <ComboBoxItem Content=" BCDE " />
+                        <ComboBoxItem Content=" CDE " />
+                        <ComboBoxItem Content=" IJKL(I) " />
+                        <ComboBoxItem Content=" JKL(II) " />
+                        <ComboBoxItem Content=" AB " />
+                        <ComboBoxItem Content=" CD " />
+                        <ComboBoxItem Content=" FG " />
+                        <ComboBoxItem Content=" LM " />
+                        <ComboBoxItem Content=" MN " />
+                        <ComboBoxItem Content=" A "/>
+                        <ComboBoxItem Content=" B " />
+                        <ComboBoxItem Content=" C " />
+                        <ComboBoxItem Content=" D "/>
+                        <ComboBoxItem Content=" E " />
+                        <ComboBoxItem Content=" F " />
+                        <ComboBoxItem Content=" G " />
+                        <ComboBoxItem Content=" H " />
+                        <ComboBoxItem Content=" I " />
+                        <ComboBoxItem Content=" J " />
+                        <ComboBoxItem Content=" K " />
+                        <ComboBoxItem Content=" L " />
+                        <ComboBoxItem Content=" M " />
+                        <ComboBoxItem Content=" N " />
+                        <ComboBoxItem Content=" O " />
+                        <ComboBoxItem Content=" P " />
+                        <ComboBoxItem Content=" Q " /> 
+                        <ComboBoxItem Content=" LM(III)" />
+                        <ComboBoxItem Content=" JK(I) " />
+                        <ComboBoxItem Content=" NO(I) " />
+                        <ComboBoxItem Content=" NO(III) " />
+                        <ComboBoxItem Content=" KL(II) " />
+                    </ComboBox>
+                    <MenuItem Header="Switch To Intact" Name="menuIntactDamage"  Background="#FFBEBEBE" VerticalAlignment="Top" Click="menuIntactDamage_Click" />
+                </MenuItem>
+                <MenuItem Header="_Help" FontFamily="Calibri" Background="#FFBEBEBE" Click="MenuItem_Click"  VerticalAlignment="Top">
+                    <MenuItem Header="_User Manual" Name="UserManual"  Click="OpenUserManual_Click" Background="#FFBEBEBE"/>
+                    <MenuItem Header="_About" Name="About" Click="About_Click" Background="#FFBEBEBE" VerticalAlignment="Top" />
+                </MenuItem>
+
+
+            </Menu.Items>
+        </Menu>
+        <DockPanel LastChildFill="True" Grid.Row="1" Background="#FFBEBEBE">
+            <TabControl BorderBrush="#FF727272" BorderThickness="1" FontFamily="Calibri" FontSize="14" Name="tabControl1" OverridesDefaultStyle="False" Padding="0" SnapsToDevicePixels="True" TabStripPlacement="Bottom" UseLayoutRounding="False" Background="#FFBEBEBE" SelectionChanged="tabControl1_SelectionChanged">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Control.Foreground" Value="Black" />
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border BorderBrush="#FF727272" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Height="30" Margin="0,0" Name="Border">
+                                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" Margin="10,2" Name="ContentSite" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="TabItem.IsSelected" Value="True">
+                                            <Setter Property="Border.Background" TargetName="Border" Value="#CC1BA1E2" />
+                                        </Trigger>
+                                        <Trigger Property="TabItem.IsSelected" Value="False">
+                                            <Setter Property="Border.Background" TargetName="Border" Value="#AA9E9E9E" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+                <TabItem BorderBrush="#FF727272"  FontFamily="Calibri" FontSize="14" Header="Real Mode"  Name="tabItemReal" Width="200" Background="#FFBEBEBE" DataContext="{Binding}" GotFocus="tabItemReal_GotFocus">
+                    <Grid IsItemsHost="False" ShowGridLines="False">
+               
+                        <StackPanel Grid.RowSpan="2">
+                            <Frame  Template="{StaticResource templateRealMode}" Name="frameRealMode" ></Frame>
+                        </StackPanel>
+                        <DockPanel LastChildFill="True" Grid.Row="1">
+
+                            <Label Content="Loading..." Name="tbProgress" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="#80796969" />
+                            
+                        </DockPanel>
+                       
+                    </Grid>
+                </TabItem>
+                <TabItem BorderBrush="#CC1BA1E2"  FontFamily="Calibri" FontSize="14" Header="Simulation Mode" Name="tabItemSimulation" Width="200" GotFocus="tabItemSimulation_GotFocus">
+                    <Grid IsItemsHost="False" ShowGridLines="False">
+                        <StackPanel Grid.RowSpan="2">
+                            <Frame Template="{StaticResource templateSimulationMode}" Name="frameSimulationMode" Navigated="frameSimulationMode_Navigated"></Frame>
+                        </StackPanel> 
+                    </Grid>
+                </TabItem>
+                <!--<TabItem Header="PDF Viewer" Visibility="Collapsed" Name="ViewPDF" Loaded="ViewPDF_Loaded">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="26*" />
+                            <RowDefinition Height="716*" />
+                            <RowDefinition Height="28*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="27.919" />
+                            <ColumnDefinition Width="187.459" />
+                            <ColumnDefinition Width="29" />
+                            <ColumnDefinition Width="794.619" />
+                            <ColumnDefinition Width="36.893" />
+                        </Grid.ColumnDefinitions>
+                        <ListBox Grid.Column="1" Grid.Row="1" Name="listBoxPDF" SelectionChanged="listBoxPDF_SelectionChanged" />
+                        <WebBrowser Grid.Column="3" Name="webBrowserPDF" Width="794.619" OpacityMask="#FFCBC8C8" Grid.ColumnSpan="2" Margin="2.622,-6,33.89,32" Grid.RowSpan="2" />
+                        <Label Content="Please Generate Report" Grid.Column="1" Grid.Row="1" Height="28" HorizontalAlignment="Left" Margin="12.526,259.866,0,0" Name="lblListBoxError" VerticalAlignment="Top" Width="150.13" Foreground="Red" />
+                        <Label Content="Please Select File from the List" Height="28" HorizontalAlignment="Left" Margin="327.622,259.867,0,0" Name="lblBrowserError" VerticalAlignment="Top" Width="182.13" Grid.Column="3" Grid.Row="1" Foreground="#FFD45A5A" />
+                    </Grid>
+                </TabItem>-->
+            </TabControl>
+            
+        </DockPanel>
+    </Grid>
+ 
+</Window>

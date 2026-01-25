@@ -1,0 +1,3743 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using HelixToolkit.Wpf;
+using System.Windows.Media.Media3D;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using System.Data;
+using System.Reflection;
+using WpfMvvmStability.Models.BO;
+
+
+#region CADLIB
+using WW.Cad.Base;
+using WW.Cad.Drawing;
+using WW.Cad.Drawing.GDI;
+using WW.Cad.IO;
+using WW.Cad.Model;
+using WW.Math;
+using WW.Cad.Drawing.Wpf;
+using WW.Cad.Model.Objects;
+using WW.Math.Geometry;
+//using _3DTools;
+using System.Windows.Controls.Primitives;
+using System.ComponentModel;
+using System.Data.Common;
+using System.Collections;
+using WpfMvvmStability.Models.DAL;
+using System.Data.SqlClient;
+#endregion
+namespace WpfMvvmStability.Views
+{
+    /// <summary>
+    /// Interaction logic for RealModeMain.xaml
+    /// </summary>
+    public partial class RealModeMain : Page
+    {
+        double x1 = 0, y1 = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0, x4 = 0, y4 = 0, x5 = 0, x6 = 0, y5 = 0, y6 = 0, x7 = 0, x8 = 0, y7 = 0, y8 = 0;
+        private const string folderPath = "3D\\";
+
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        BackgroundWorker bw;
+
+        TextBox tb = new TextBox();
+        private string TankNameForPercentage;
+        private Bounds3D bounds;
+        private WpfWireframeGraphics3DUsingDrawingVisual wpfGraphics;
+        private WireframeGraphics2Cache graphicsCache;
+        private GraphicsConfig graphicsConfig;
+        private WW.Math.Vector3D translation;
+        private double scaling = 1d;
+
+        int indexvar;
+
+        private decimal PercentageFill;
+        private Bounds3D boundsNew;
+        private WpfWireframeGraphics3DUsingDrawingVisual wpfGraphicsNew;
+        private WireframeGraphics2Cache graphicsCacheNew;
+        private GraphicsConfig graphicsConfigNew;
+
+        string header;
+        public static Dictionary<int, decimal> maxVolume;
+
+        System.Windows.Threading.DispatcherTimer TimerGraphicsRefresh = new System.Windows.Threading.DispatcherTimer();
+
+        /// <summary>
+        /// Constructor for RealModeMain.xaml
+        /// </summary>
+        public RealModeMain()
+        {
+            try
+            {
+                InitializeComponent();
+                MainWindow._statusTabRealSimulation = 0;
+                Models.TableModel.Write_Log("Enter in Real MOde main");
+                maxVolume = new Dictionary<int, decimal>();
+                DataTable dtmaxVolume = new DataTable();
+                DataView DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
+                DV.RowFilter = "[GROUP] not like 'Variable Data'";
+                DV.RowFilter = "[GROUP] NOT LIKE 'Lightship'";
+                dtmaxVolume = DV.ToTable();
+
+                for (int i = 0; i < dtmaxVolume.Rows.Count - 1; i++)
+                {
+                    maxVolume.Add(Convert.ToInt32(dtmaxVolume.Rows[i]["Tank_ID"]), Convert.ToDecimal(dtmaxVolume.Rows[i]["Max_Volume"]));
+
+                }
+
+                //BackGroundWorker for Updating labels and Datagrid on DispatcherTimer Tick
+                bw = new BackgroundWorker();
+                bw.DoWork += new DoWorkEventHandler(bw_DoWork);
+                bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler
+                        (bw_RunWorkerCompleted);
+
+                //Dispatcher Timer for Executing Backgroundworker and refereshing RealModeMain page controls every 10 seconds
+
+                //........@SP 12012016..............
+                System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
+                dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+                dispatcherTimer.Start();
+                dispatcherTimer.Interval = new TimeSpan(0, 0, 10);
+                //..................................
+
+                //Logic for reading .stl file from given folder and adding 3d model to HelixViewPort3D i.e. viewPort3d 
+            
+                //Logic for showing 2D autocad images on Canvas 
+                canvas2DProfile.Children.Clear();
+                Model(Models.BO.clsGlobVar.Profile, canvas2DProfile);
+                canvas2DPlanA.Children.Clear();
+                Model(Models.BO.clsGlobVar.PlanA, canvas2DPlanA);
+                canvas2DPlanB.Children.Clear();
+                Model(Models.BO.clsGlobVar.PlanB, canvas2DPlanB);
+                canvas2DPlanC.Children.Clear();
+                Model(Models.BO.clsGlobVar.PlanC, canvas2DPlanC);
+                canvas2DPlanALL.Children.Clear();
+                ModelNew(Models.BO.clsGlobVar.PlanALL, canvas2DPlanALL);
+
+                dgVariableItems.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
+                }));
+            }
+            catch //(Exception ex)
+            {
+            }
+        }
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            //Checking whether background worker IsBusy
+            if (!bw.IsBusy)
+                bw.RunWorkerAsync();
+        }
+        private void bw_DoWork(object sender, DoWorkEventArgs e)
+         {
+            //Below Code Updates Controls(Labels and DataGrids) of RealModeMain Page from background Worker(Different Thread)
+            try
+             {
+                Models.TableModel.Write_Log("Enter in Real MOde main Do_work");
+                lblDisplacement.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    lblDisplacement.Content = Convert.ToString(Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Displacement"])));
+                    //decimal varDisp = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Displacement"]);
+                    //lblDisplacement.Content =varDisp.ToString("N");
+                }));
+                lblGMT.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblGMT.Content = Convert.ToString(Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["GMT"]), 2));
+
+                   decimal varGMT =Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["GMT"]);
+                   lblGMT.Content = varGMT.ToString("N3");
+
+                }));
+                lblDraftAP.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblDraftAP.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_AP"])), 2));
+                    decimal varap = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_AP"]);
+                    lblDraftAP.Content = varap.ToString("N3");
+
+                }));
+                lblDraftFP.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                   // lblDraftFP.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_FP"])), 2));
+
+                    decimal varfp = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_FP"]);
+                    lblDraftFP.Content = varfp.ToString("N3");
+                }));
+                lblDraftAftMark.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblDraftAftMark.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Aft_Mark"])), 2));
+                    decimal varaftmark = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Aft_Mark"]);
+                    lblDraftAftMark.Content = varaftmark.ToString("N3");
+                }));
+                lblDraftFwdMark.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblDraftFwdMark.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Fore_Mark"])), 2));
+
+                    decimal varfwmark = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Fore_Mark"]);
+                    lblDraftFwdMark.Content = varfwmark.ToString("N3");
+                }));
+                lblDraftMean.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                   // lblDraftMean.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Mean"])), 2));
+
+                    decimal var = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Draft_Mean"]);
+                    lblDraftMean.Content = var.ToString("N3");
+                }));
+
+                lblSONARDOME.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                    {
+                       // lblSONARDOME.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealDrafts.Rows[0]["Draft_Sonar_Dome"])), 2));
+                        decimal val = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealDrafts.Rows[0]["Draft_Sonar_Dome"]);
+                        lblSONARDOME.Content = val.ToString("N3");
+                    }));
+
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblPROPELLER.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealDrafts.Rows[0]["Draft_Propeller"])), 2));
+                    decimal varPropeller = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealDrafts.Rows[0]["Draft_Propeller"]);
+                    lblPROPELLER.Content = varPropeller.ToString("N3");
+                }));
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblKG.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["KG(Solid)"])), 2));
+
+                    decimal varKGS = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["KG(Solid)"]);
+                    lblKG.Content = varKGS.ToString("N3");
+                }));
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblKGF.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["KG(Fluid)"])), 2));
+                    decimal varKGF = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["KG(Fluid)"]);
+                    lblKGF.Content = varKGF.ToString("N3");
+                }));
+
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    //lblLCG.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["LCG"])), 2));
+                    decimal varLCG = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["LCG"]);
+                    lblLCG.Content = varLCG.ToString("N3");
+                }));
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    lblFSC.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["FSC"])), 2));
+                    decimal val = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["FSC"]);
+                    lblFSC.Content = val.ToString("N3");
+                         
+                }));
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    lblTPC.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TPC"])), 3));
+                }));
+
+                lblPROPELLER.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    lblMTC.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["MCT"])), 2));
+                }));
+
+                lblHeel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+
+                    if (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]) > 0)
+                    {
+                        label6.Content = "PORT";
+
+                       // lblHeel.Content = Convert.ToString(Math.Round((Convert.ToDouble( Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"])),2));
+
+                        decimal varHeelPort = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]);
+                        lblHeel.Content = varHeelPort.ToString("N3");
+                    }
+                    else if (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]) < 0)
+                    {
+                        label8.Content = "STBD";
+                        Double abs = (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]));
+                        //lblHeel.Content = Convert.ToString((-1) * abs);
+
+                       // lblHeel.Content =   Convert.ToString(Math.Round( Convert.ToDouble(Convert.ToString((-1) * abs)),2));
+                       decimal varheelSTBD =Convert.ToDecimal(Convert.ToString(Math.Round(Convert.ToDouble(Convert.ToString((-1) * abs)), 2)));
+                       lblHeel.Content = varheelSTBD.ToString("N3");
+                    }
+                    else
+                    {
+                        label8.Content = " ";
+                        //lblHeel.Content = Convert.ToString(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]);
+                        decimal varHeel = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]);
+                        lblHeel.Content = varHeel.ToString("N3");
+
+                    }
+
+                }));
+                lblTrim.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    if (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Trim"]) > 0)
+                    {
+                        label5.Content = "FWD";
+
+                        //  lblTrim.Content = Convert.ToString(Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TRIM"])), 2));
+                        decimal VartrimAft = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TRIM"]);
+                        lblTrim.Content = VartrimAft.ToString("N3");
+                    }
+                    else if (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Trim"]) < 0)
+                    {
+                        label5.Content = "AFT";
+                        Double abs = Math.Round((Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TRIM"])),2);
+                        //lblTrim.Content = Convert.ToString((-1) * abs); 
+
+                        decimal vartrimfwd = Convert.ToDecimal(Convert.ToString((1) * abs));
+                        lblTrim.Content = vartrimfwd.ToString("N3");
+                    }
+                    else
+                    {
+                        label5.Content = " ";
+                        //lblTrim.Content = Convert.ToString((Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TRIM"]));
+
+                        decimal VartrimAft = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["TRIM"]);
+                        lblTrim.Content = VartrimAft.ToString("N3");
+                    }
+
+
+                }));
+
+                dgBallastTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtRealBallastTanks.DefaultView;
+                }));
+                dgFuelOilTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtRealFuelOilTanks.DefaultView;
+                }));
+                dgFreshWaterTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtRealFreshWaterTanks.DefaultView;
+                }));
+                dgMiscTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtRealMiscTanks.DefaultView;
+                }));
+
+                dgCompartments.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtRealCompartments.DefaultView;
+                }));
+
+                dgWaterTightRegion.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                    {
+                        dgWaterTightRegion.ItemsSource = Models.BO.clsGlobVar.dtRealWaterTightRegion.DefaultView;
+
+                    }));
+            }
+            catch //(Exception ex)
+            {
+                //System.Windows.MessageBox.Show(ex.ToString());
+            }
+
+        }
+
+        public void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            try
+            {
+               
+                Models.TableModel.Write_Log("Enter in Real MOde DO_RunWorkerCompleted");
+                string Err = "";
+                string query = "";
+                for (int TankId = 1; TankId < Models.BO.clsGlobVar.dtRealModeAllTanks.Rows.Count; TankId++)
+                {
+                    if (Convert.ToBoolean(Models.BO.clsGlobVar.dtRealModeAllTanks.Rows[TankId - 1]["IsSensorFaulty"]) == false)
+                    {
+                        query += " update tblLoading_Condition set IsManualEntry='" + Convert.ToBoolean(Models.BO.clsGlobVar.dtRealModeAllTanks.Rows[TankId - 1]["IsSensorFaulty"]) + "' where Tank_ID=" + TankId;
+                    }
+                }
+
+                DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                command.CommandText = query;
+                command.CommandType = CommandType.Text;
+                Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+
+                AddHatchProfile();
+                AddHatchDeckPlanA();
+                AddHatchDeckPlanB();
+                AddHatchDeckPlanC();
+                ////SimulationModeMain sww = new SimulationModeMain();
+                ////sww.Refresh3dNew();
+
+                //Thread.Sleep(5000);
+                Refresh3dNew();
+                //Thread.Sleep(5000);
+            }
+            
+            catch//(Exception ex)
+                 {
+               // System.Windows.MessageBox.Show(ex.ToString());
+            }
+           Models.TableModel.Write_Log("End in Real MOde DO_RunWorkerCompleted");
+
+        }
+
+
+        /// <summary>
+        /// Validation Code for Datagrid to enter only decimal numbers with only single decimal point
+        /// </summary>
+        private void dgVariableItems_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+        {
+            tb = e.Column.GetCellContent(e.Row) as TextBox;
+        }
+
+        private void dgVariableItems_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (header != "Item Name")
+            {
+                if (!char.IsDigit(e.Text, e.Text.Length - 1)
+                     && !e.Text.Contains('.'))
+                {
+                    e.Handled = true;
+                }
+                // only allow one decimal point
+                if (e.Text.Contains('.')
+                    && tb.Text.IndexOf('.') > -1)
+                {
+                    e.Handled = true;
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Initialize AutoCAD 2D model on canvas
+        /// </summary>
+        /// <param name="model">DxfModel or AUTOCAD 2D</param> 
+        ///<param name="canvas2D">Canvas.</param> 
+        ///<returns> Initialize AutoCAD 2D model on canvas.</returns> 
+        public void Model(DxfModel model, Canvas canvas2D)
+        {
+            if (model != null)
+            {
+
+                DxfLayout paperSpaceLayout = model.ActiveLayout;
+                if (model.Header.ShowModelSpace)
+                {
+                    paperSpaceLayout = null;
+                }
+
+                #region calculate the model's bounds to determine a proper dots per inch
+
+                // The dots per inch value is important because it determines the eventual pen thickness.
+                graphicsConfig = (GraphicsConfig)GraphicsConfig.WhiteBackgroundCorrectForBackColor.Clone();
+                //GraphicsConfig.
+                BoundsCalculator boundsCalculator = new BoundsCalculator();
+                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
+                {
+                    boundsCalculator.GetBounds(model);
+                }
+                else
+                {
+                    boundsCalculator.GetBounds(model, model.ActiveLayout);
+                }
+                bounds = boundsCalculator.Bounds;
+                WW.Math.Vector3D delta = bounds.Delta;
+                System.Windows.Size estimatedCanvasSize = new System.Windows.Size(200d, 200d);
+                double estimatedScale = Math.Min(estimatedCanvasSize.Width / delta.X, estimatedCanvasSize.Height / delta.Y);
+                graphicsConfig.DotsPerInch = 20d / estimatedScale;
+                BoundsCalculator boundsCalculator1 = new BoundsCalculator();
+                boundsCalculator1.GetBounds(model, model.Entities[20]);
+                #endregion
+
+                graphicsCache = new WireframeGraphics2Cache(false, false);
+                graphicsCache.Config = graphicsConfig;
+                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
+                {
+                    graphicsCache.CreateDrawables(model, Matrix4D.Identity);
+
+                }
+                else
+                {
+                    graphicsCache.CreateDrawables(model, model.ActiveLayout);
+                }
+
+                wpfGraphics = new WpfWireframeGraphics3DUsingDrawingVisual();
+                wpfGraphics.Config = graphicsConfig;
+
+                canvas2D.Children.Add(wpfGraphics.Canvas);
+
+                UpdateWpfGraphics();
+                canvas2D.SizeChanged += canvas_SizeChanged;
+
+            }
+        }
+
+        private void UpdateWpfGraphics()
+        {
+            wpfGraphics.DrawingVisuals.Clear();
+            IWireframeGraphicsFactory2 graphicsFactory = wpfGraphics.CreateGraphicsFactory();
+            foreach (IWireframeDrawable2 drawable in graphicsCache.Drawables)
+            {
+                drawable.Draw(graphicsFactory);
+            }
+        }
+
+        /// <summary>
+        /// Update the canvas RenderTransform.
+        /// </summary>
+        private void canvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (sender == canvas2DProfile)
+            {
+                UpdateRenderTransform(canvas2DProfile);
+            }
+
+            else if (sender == canvas2DPlanA)
+            {
+                UpdateRenderTransform(canvas2DPlanA);
+            }
+            else if (sender == canvas2DPlanB)
+            {
+                UpdateRenderTransform(canvas2DPlanB);
+            }
+            else if (sender == canvas2DPlanC)
+            {
+                UpdateRenderTransform(canvas2DPlanC);
+            }
+            else if (sender == canvas2DPlanALL)
+            {
+                UpdateRenderTransform(canvas2DPlanALL);
+            }
+
+        }
+
+        private void UpdateRenderTransform(Canvas canvas2D)
+        {
+
+            //@MT Code added for Ship Profile Image Rotate :START
+            double AP, FP;
+            AP = Convert.ToDouble(lblDraftAP.Content);
+            FP = Convert.ToDouble(lblDraftFP.Content);
+            double angle = ((FP - AP) / 151.5) * (180 / Math.PI);
+            //@MT Code added for Ship Profile Image Rotate :END
+
+            double canvasWidth = canvas2D.ActualWidth;
+            double canvasHeight = canvas2D.ActualHeight;
+            MatrixTransform baseTransform = DxfUtil.GetScaleWMMatrixTransform(
+                (Point2D)bounds.Corner1,
+                (Point2D)bounds.Corner2,
+
+
+                (Point2D)bounds.Center,
+                new Point2D(1d, canvasHeight),
+                new Point2D(canvasWidth, 1d),
+
+
+                new Point2D(0.5d * (canvasWidth + 1d), 0.5d * (canvasHeight + 1d))
+                );
+
+            TransformGroup transformGroup = new TransformGroup();
+            transformGroup.Children.Add(baseTransform);
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = -canvasWidth / 2d,
+                Y = -canvasHeight / 2d
+            });
+            transformGroup.Children.Add(new ScaleTransform()
+            {
+                ScaleX = scaling,
+                ScaleY = scaling
+            });
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = canvasWidth / 2d,
+                Y = canvasHeight / 2d
+            });
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = translation.X * canvasWidth / 2d,
+                Y = -translation.Y * canvasHeight / 2d
+            });
+
+            //@MT Code added for Ship Profile Image Rotate :START
+            if (canvas2D == canvas2DProfile)
+            {
+                transformGroup.Children.Add(new RotateTransform()
+                {
+                    Angle = angle
+                });
+            }
+            //@MT Code added for Ship Profile Image Rotate :END
+
+            canvas2D.RenderTransform = transformGroup;
+
+        }
+
+        //--------------------------------------------------------------------------------
+        public void ModelNew(DxfModel model, Canvas canvas2D)
+        {
+            if (model != null)
+            {
+
+                DxfLayout paperSpaceLayout = model.ActiveLayout;
+                if (model.Header.ShowModelSpace)
+                {
+                    paperSpaceLayout = null;
+
+                }
+
+                #region calculate the model's bounds to determine a proper dots per inch
+
+                // The dots per inch value is important because it determines the eventual pen thickness.
+                graphicsConfigNew = (GraphicsConfig)GraphicsConfig.WhiteBackgroundCorrectForBackColor.Clone();
+                BoundsCalculator boundsCalculator = new BoundsCalculator();
+                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
+                {
+                    boundsCalculator.GetBounds(model);
+                }
+                else
+                {
+                    boundsCalculator.GetBounds(model, model.ActiveLayout);
+                }
+                boundsNew = boundsCalculator.Bounds;
+                WW.Math.Vector3D delta = boundsNew.Delta;
+                System.Windows.Size estimatedCanvasSize = new System.Windows.Size(200d, 200d);
+                double estimatedScale = Math.Min(estimatedCanvasSize.Width / delta.X, estimatedCanvasSize.Height / delta.Y);
+                graphicsConfigNew.DotsPerInch = 20d / estimatedScale;
+                BoundsCalculator boundsCalculator1 = new BoundsCalculator();
+                boundsCalculator1.GetBounds(model, model.Entities[20]);
+                #endregion
+
+                graphicsCacheNew = new WireframeGraphics2Cache(false, false);
+                graphicsCacheNew.Config = graphicsConfigNew;
+                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
+                {
+                    graphicsCacheNew.CreateDrawables(model, Matrix4D.Identity);
+
+                }
+                else
+                {
+                    graphicsCacheNew.CreateDrawables(model, model.ActiveLayout);
+                }
+
+                wpfGraphicsNew = new WpfWireframeGraphics3DUsingDrawingVisual();
+                wpfGraphicsNew.Config = graphicsConfigNew;
+
+                canvas2D.Children.Add(wpfGraphicsNew.Canvas);
+
+                UpdateWpfGraphicsNew();
+
+                canvas2D.SizeChanged += canvas_SizeChangedNew;
+
+            }
+        }
+        private void UpdateWpfGraphicsNew()
+        {
+
+            wpfGraphicsNew.DrawingVisuals.Clear();
+            IWireframeGraphicsFactory2 graphicsFactory = wpfGraphicsNew.CreateGraphicsFactory();
+            foreach (IWireframeDrawable2 drawable in graphicsCacheNew.Drawables)
+            {
+                drawable.Draw(graphicsFactory);
+
+            }
+
+        }
+        /// <summary>
+        /// Update the canvas RenderTransform.
+        /// </summary>
+        private void canvas_SizeChangedNew(object sender, SizeChangedEventArgs e)
+        {
+            UpdateRenderTransformNew(canvas2DPlanALL);
+        }
+
+        private void UpdateRenderTransformNew(Canvas canvas2D)
+        {
+
+            double canvasWidth = canvas2D.ActualWidth;
+            double canvasHeight = canvas2D.ActualHeight;
+            MatrixTransform baseTransform = DxfUtil.GetScaleWMMatrixTransform(
+                (Point2D)boundsNew.Corner1,
+                (Point2D)boundsNew.Corner2,
+                (Point2D)boundsNew.Center,
+                new Point2D(1d, canvasHeight),
+                new Point2D(canvasWidth, 1d),
+                new Point2D(0.5d * (canvasWidth + 1d), 0.5d * (canvasHeight + 1d))
+                );
+
+            TransformGroup transformGroup = new TransformGroup();
+            transformGroup.Children.Add(baseTransform);
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = -canvasWidth / 2d,
+                Y = -canvasHeight / 2d
+            });
+            transformGroup.Children.Add(new ScaleTransform()
+            {
+                ScaleX = scaling,
+                ScaleY = scaling
+            });
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = canvasWidth / 2d,
+                Y = canvasHeight / 2d
+            });
+            transformGroup.Children.Add(new TranslateTransform()
+            {
+                X = translation.X * canvasWidth / 2d,
+                Y = -translation.Y * canvasHeight / 2d
+            });
+
+            canvas2D.RenderTransform = transformGroup;
+
+        }
+
+        //---------------------------------------------------------------------
+
+        /// <summary>
+        /// Add Hatch Filling of Tanks/Compartments to Profile Canvas as per TankID 
+        /// </summary>
+        public void AddHatchProfile()
+        {
+            try
+            {
+                canvas2DProfile.Children.RemoveRange(1, canvas2DProfile.Children.Count - 1);
+                DrawHatchProfile(canvas2DProfile, 1, clsGlobVar.Tank1_PercentFill, clsGlobVar.ProfileCoordinate.Tank1x, clsGlobVar.ProfileCoordinate.Tank1y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchProfile(canvas2DProfile, 2, clsGlobVar.Tank2_PercentFill, clsGlobVar.ProfileCoordinate.Tank2x, clsGlobVar.ProfileCoordinate.Tank2y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchProfile(canvas2DProfile, 9, clsGlobVar.Tank9_PercentFill, clsGlobVar.ProfileCoordinate.Tank9x, clsGlobVar.ProfileCoordinate.Tank9y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchProfile(canvas2DProfile, 10, clsGlobVar.Tank10_PercentFill, clsGlobVar.ProfileCoordinate.Tank10x, clsGlobVar.ProfileCoordinate.Tank10y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchProfile(canvas2DProfile, 17, clsGlobVar.Tank17_PercentFill, clsGlobVar.ProfileCoordinate.Tank17x, clsGlobVar.ProfileCoordinate.Tank17y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 18, clsGlobVar.Tank18_PercentFill, clsGlobVar.ProfileCoordinate.Tank18x, clsGlobVar.ProfileCoordinate.Tank18y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 20, clsGlobVar.Tank20_PercentFill, clsGlobVar.ProfileCoordinate.Tank20x, clsGlobVar.ProfileCoordinate.Tank20y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 21, clsGlobVar.Tank21_PercentFill, clsGlobVar.ProfileCoordinate.Tank21x, clsGlobVar.ProfileCoordinate.Tank21y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 22, clsGlobVar.Tank22_PercentFill, clsGlobVar.ProfileCoordinate.Tank22x, clsGlobVar.ProfileCoordinate.Tank22y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 26, clsGlobVar.Tank26_PercentFill, clsGlobVar.ProfileCoordinate.Tank26x, clsGlobVar.ProfileCoordinate.Tank26y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 28, clsGlobVar.Tank28_PercentFill, clsGlobVar.ProfileCoordinate.Tank28x, clsGlobVar.ProfileCoordinate.Tank28y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 33, clsGlobVar.Tank33_PercentFill, clsGlobVar.ProfileCoordinate.Tank33x, clsGlobVar.ProfileCoordinate.Tank33y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 39, clsGlobVar.Tank39_PercentFill, clsGlobVar.ProfileCoordinate.Tank39x, clsGlobVar.ProfileCoordinate.Tank39y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 40, clsGlobVar.Tank40_PercentFill, clsGlobVar.ProfileCoordinate.Tank40x, clsGlobVar.ProfileCoordinate.Tank40y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 42, clsGlobVar.Tank42_PercentFill, clsGlobVar.ProfileCoordinate.Tank42x, clsGlobVar.ProfileCoordinate.Tank42y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 44, clsGlobVar.Tank44_PercentFill, clsGlobVar.ProfileCoordinate.Tank44x, clsGlobVar.ProfileCoordinate.Tank44y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchProfile(canvas2DProfile, 46, clsGlobVar.Tank46_PercentFill, clsGlobVar.ProfileCoordinate.Tank46x, clsGlobVar.ProfileCoordinate.Tank46y, System.Windows.Media.Color.FromArgb(180, 203, 150, 69));
+                DrawHatchProfile(canvas2DProfile, 49, clsGlobVar.Tank49_PercentFill, clsGlobVar.ProfileCoordinate.Tank49x, clsGlobVar.ProfileCoordinate.Tank49y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchProfile(canvas2DProfile, 50, clsGlobVar.Tank50_PercentFill, clsGlobVar.ProfileCoordinate.Tank50x, clsGlobVar.ProfileCoordinate.Tank50y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchProfile(canvas2DProfile, 53, clsGlobVar.Tank53_PercentFill, clsGlobVar.ProfileCoordinate.Tank53x, clsGlobVar.ProfileCoordinate.Tank53y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchProfile(canvas2DProfile, 54, clsGlobVar.Tank54_PercentFill, clsGlobVar.ProfileCoordinate.Tank54x, clsGlobVar.ProfileCoordinate.Tank54y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchProfile(canvas2DProfile, 56, clsGlobVar.Tank56_PercentFill, clsGlobVar.ProfileCoordinate.Tank56x, clsGlobVar.ProfileCoordinate.Tank56y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 57, clsGlobVar.Tank57_PercentFill, clsGlobVar.ProfileCoordinate.Tank57x, clsGlobVar.ProfileCoordinate.Tank57y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 66, clsGlobVar.Tank66_PercentFill, clsGlobVar.ProfileCoordinate.Tank66x, clsGlobVar.ProfileCoordinate.Tank66y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 67, clsGlobVar.Tank67_PercentFill, clsGlobVar.ProfileCoordinate.Tank67x, clsGlobVar.ProfileCoordinate.Tank67y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 68, clsGlobVar.Tank68_PercentFill, clsGlobVar.ProfileCoordinate.Tank68x, clsGlobVar.ProfileCoordinate.Tank68y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 69, clsGlobVar.Tank69_PercentFill, clsGlobVar.ProfileCoordinate.Tank69x, clsGlobVar.ProfileCoordinate.Tank69y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 70, clsGlobVar.Tank70_PercentFill, clsGlobVar.ProfileCoordinate.Tank70x, clsGlobVar.ProfileCoordinate.Tank70y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 76, clsGlobVar.Tank76_PercentFill, clsGlobVar.ProfileCoordinate.Tank76x, clsGlobVar.ProfileCoordinate.Tank76y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 79, clsGlobVar.Tank79_PercentFill, clsGlobVar.ProfileCoordinate.Tank79x, clsGlobVar.ProfileCoordinate.Tank79y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 80, clsGlobVar.Tank80_PercentFill, clsGlobVar.ProfileCoordinate.Tank80x, clsGlobVar.ProfileCoordinate.Tank80y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 82, clsGlobVar.Tank82_PercentFill, clsGlobVar.ProfileCoordinate.Tank82x, clsGlobVar.ProfileCoordinate.Tank82y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 84, clsGlobVar.Tank84_PercentFill, clsGlobVar.ProfileCoordinate.Tank84x, clsGlobVar.ProfileCoordinate.Tank84y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 90, clsGlobVar.Tank90_PercentFill, clsGlobVar.ProfileCoordinate.Tank90x, clsGlobVar.ProfileCoordinate.Tank90y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 92, clsGlobVar.Tank92_PercentFill, clsGlobVar.ProfileCoordinate.Tank92x, clsGlobVar.ProfileCoordinate.Tank92y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 96, clsGlobVar.Tank96_PercentFill, clsGlobVar.ProfileCoordinate.Tank96x, clsGlobVar.ProfileCoordinate.Tank96y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 101, clsGlobVar.Tank101_PercentFill, clsGlobVar.ProfileCoordinate.Tank101x, clsGlobVar.ProfileCoordinate.Tank101y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 147, clsGlobVar.Tank147_PercentFill, clsGlobVar.ProfileCoordinate.Tank147x, clsGlobVar.ProfileCoordinate.Tank147y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 150, clsGlobVar.Tank150_PercentFill, clsGlobVar.ProfileCoordinate.Tank150x, clsGlobVar.ProfileCoordinate.Tank150y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 151, clsGlobVar.Tank151_PercentFill, clsGlobVar.ProfileCoordinate.Tank151x, clsGlobVar.ProfileCoordinate.Tank151y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 177, clsGlobVar.Tank177_PercentFill, clsGlobVar.ProfileCoordinate.Tank177x, clsGlobVar.ProfileCoordinate.Tank177y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 184, clsGlobVar.Tank184_PercentFill, clsGlobVar.ProfileCoordinate.Tank184x, clsGlobVar.ProfileCoordinate.Tank184y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 185, clsGlobVar.Tank185_PercentFill, clsGlobVar.ProfileCoordinate.Tank185x, clsGlobVar.ProfileCoordinate.Tank185y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 187, clsGlobVar.Tank187_PercentFill, clsGlobVar.ProfileCoordinate.Tank187x, clsGlobVar.ProfileCoordinate.Tank187y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 192, clsGlobVar.Tank192_PercentFill, clsGlobVar.ProfileCoordinate.Tank192x, clsGlobVar.ProfileCoordinate.Tank192y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 195, clsGlobVar.Tank195_PercentFill, clsGlobVar.ProfileCoordinate.Tank195x, clsGlobVar.ProfileCoordinate.Tank195y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 227, clsGlobVar.Tank227_PercentFill, clsGlobVar.ProfileCoordinate.Tank227x, clsGlobVar.ProfileCoordinate.Tank227y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 234, clsGlobVar.Tank234_PercentFill, clsGlobVar.ProfileCoordinate.Tank234x, clsGlobVar.ProfileCoordinate.Tank234y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 236, clsGlobVar.Tank236_PercentFill, clsGlobVar.ProfileCoordinate.Tank236x, clsGlobVar.ProfileCoordinate.Tank236y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 244, clsGlobVar.Tank244_PercentFill, clsGlobVar.ProfileCoordinate.Tank244x, clsGlobVar.ProfileCoordinate.Tank244y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 250, clsGlobVar.Tank250_PercentFill, clsGlobVar.ProfileCoordinate.Tank250x, clsGlobVar.ProfileCoordinate.Tank250y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 253, clsGlobVar.Tank253_PercentFill, clsGlobVar.ProfileCoordinate.Tank253x, clsGlobVar.ProfileCoordinate.Tank253y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 254, clsGlobVar.Tank254_PercentFill, clsGlobVar.ProfileCoordinate.Tank254x, clsGlobVar.ProfileCoordinate.Tank254y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 260, clsGlobVar.Tank260_PercentFill, clsGlobVar.ProfileCoordinate.Tank260x, clsGlobVar.ProfileCoordinate.Tank260y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 261, clsGlobVar.Tank261_PercentFill, clsGlobVar.ProfileCoordinate.Tank261x, clsGlobVar.ProfileCoordinate.Tank261y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 263, clsGlobVar.Tank263_PercentFill, clsGlobVar.ProfileCoordinate.Tank263x, clsGlobVar.ProfileCoordinate.Tank263y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 264, clsGlobVar.Tank264_PercentFill, clsGlobVar.ProfileCoordinate.Tank264x, clsGlobVar.ProfileCoordinate.Tank264y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 267, clsGlobVar.Tank267_PercentFill, clsGlobVar.ProfileCoordinate.Tank267x, clsGlobVar.ProfileCoordinate.Tank267y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 273, clsGlobVar.Tank273_PercentFill, clsGlobVar.ProfileCoordinate.Tank273x, clsGlobVar.ProfileCoordinate.Tank273y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 275, clsGlobVar.Tank275_PercentFill, clsGlobVar.ProfileCoordinate.Tank275x, clsGlobVar.ProfileCoordinate.Tank275y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 276, clsGlobVar.Tank276_PercentFill, clsGlobVar.ProfileCoordinate.Tank276x, clsGlobVar.ProfileCoordinate.Tank276y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 280, clsGlobVar.Tank280_PercentFill, clsGlobVar.ProfileCoordinate.Tank280x, clsGlobVar.ProfileCoordinate.Tank280y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 281, clsGlobVar.Tank281_PercentFill, clsGlobVar.ProfileCoordinate.Tank281x, clsGlobVar.ProfileCoordinate.Tank281y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 284, clsGlobVar.Tank284_PercentFill, clsGlobVar.ProfileCoordinate.Tank284x, clsGlobVar.ProfileCoordinate.Tank284y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 285, clsGlobVar.Tank285_PercentFill, clsGlobVar.ProfileCoordinate.Tank285x, clsGlobVar.ProfileCoordinate.Tank285y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 292, clsGlobVar.Tank292_PercentFill, clsGlobVar.ProfileCoordinate.Tank292x, clsGlobVar.ProfileCoordinate.Tank292y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 293, clsGlobVar.Tank293_PercentFill, clsGlobVar.ProfileCoordinate.Tank293x, clsGlobVar.ProfileCoordinate.Tank293y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 297, clsGlobVar.Tank297_PercentFill, clsGlobVar.ProfileCoordinate.Tank297x, clsGlobVar.ProfileCoordinate.Tank297y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 298, clsGlobVar.Tank298_PercentFill, clsGlobVar.ProfileCoordinate.Tank298x, clsGlobVar.ProfileCoordinate.Tank298y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 299, clsGlobVar.Tank299_PercentFill, clsGlobVar.ProfileCoordinate.Tank299x, clsGlobVar.ProfileCoordinate.Tank299y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 301, clsGlobVar.Tank301_PercentFill, clsGlobVar.ProfileCoordinate.Tank301x, clsGlobVar.ProfileCoordinate.Tank301y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 303, clsGlobVar.Tank303_PercentFill, clsGlobVar.ProfileCoordinate.Tank303x, clsGlobVar.ProfileCoordinate.Tank303y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 304, clsGlobVar.Tank304_PercentFill, clsGlobVar.ProfileCoordinate.Tank304x, clsGlobVar.ProfileCoordinate.Tank304y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 311, clsGlobVar.Tank311_PercentFill, clsGlobVar.ProfileCoordinate.Tank311x, clsGlobVar.ProfileCoordinate.Tank311y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 312, clsGlobVar.Tank312_PercentFill, clsGlobVar.ProfileCoordinate.Tank312x, clsGlobVar.ProfileCoordinate.Tank312y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 325, clsGlobVar.Tank325_PercentFill, clsGlobVar.ProfileCoordinate.Tank325x, clsGlobVar.ProfileCoordinate.Tank325y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 326, clsGlobVar.Tank326_PercentFill, clsGlobVar.ProfileCoordinate.Tank326x, clsGlobVar.ProfileCoordinate.Tank326y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 336, clsGlobVar.Tank336_PercentFill, clsGlobVar.ProfileCoordinate.Tank336x, clsGlobVar.ProfileCoordinate.Tank336y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 356, clsGlobVar.Tank356_PercentFill, clsGlobVar.ProfileCoordinate.Tank356x, clsGlobVar.ProfileCoordinate.Tank356y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 360, clsGlobVar.Tank360_PercentFill, clsGlobVar.ProfileCoordinate.Tank360x, clsGlobVar.ProfileCoordinate.Tank360y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 380, clsGlobVar.Tank380_PercentFill, clsGlobVar.ProfileCoordinate.Tank380x, clsGlobVar.ProfileCoordinate.Tank380y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 392, clsGlobVar.Tank392_PercentFill, clsGlobVar.ProfileCoordinate.Tank392x, clsGlobVar.ProfileCoordinate.Tank392y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 411, clsGlobVar.Tank411_PercentFill, clsGlobVar.ProfileCoordinate.Tank411x, clsGlobVar.ProfileCoordinate.Tank411y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 424, clsGlobVar.Tank424_PercentFill, clsGlobVar.ProfileCoordinate.Tank424x, clsGlobVar.ProfileCoordinate.Tank424y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 427, clsGlobVar.Tank427_PercentFill, clsGlobVar.ProfileCoordinate.Tank427x, clsGlobVar.ProfileCoordinate.Tank427y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 428, clsGlobVar.Tank428_PercentFill, clsGlobVar.ProfileCoordinate.Tank428x, clsGlobVar.ProfileCoordinate.Tank428y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 430, clsGlobVar.Tank430_PercentFill, clsGlobVar.ProfileCoordinate.Tank430x, clsGlobVar.ProfileCoordinate.Tank430y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 432, clsGlobVar.Tank432_PercentFill, clsGlobVar.ProfileCoordinate.Tank432x, clsGlobVar.ProfileCoordinate.Tank432y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 433, clsGlobVar.Tank433_PercentFill, clsGlobVar.ProfileCoordinate.Tank433x, clsGlobVar.ProfileCoordinate.Tank433y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 434, clsGlobVar.Tank434_PercentFill, clsGlobVar.ProfileCoordinate.Tank434x, clsGlobVar.ProfileCoordinate.Tank434y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+
+
+
+                UpdateRenderTransform(canvas2DProfile);
+
+                DrawTrimLine();
+            }
+            catch
+            {
+
+            }
+        }
+
+        /// <summary>
+        /// Add Hatch Filling of Tanks/Compartments to DeckPlans Canvas as per TankID 
+        /// </summary>
+        public void AddHatchDeckPlanB()
+        {
+            try
+            {
+
+                #region
+                {
+                    //    canvas2DPlanB.Children.RemoveRange(1, canvas2DPlanB.Children.Count - 1);
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 16, clsGlobVar.Tank16_PercentFill, clsGlobVar.CoordinatePlanB.Tank16x, clsGlobVar.CoordinatePlanB.Tank16y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 17, clsGlobVar.Tank17_PercentFill, clsGlobVar.CoordinatePlanB.Tank17x, clsGlobVar.CoordinatePlanB.Tank17y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 18, clsGlobVar.Tank18_PercentFill, clsGlobVar.CoordinatePlanB.Tank18x, clsGlobVar.CoordinatePlanB.Tank18y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 19, clsGlobVar.Tank19_PercentFill, clsGlobVar.CoordinatePlanB.Tank19x, clsGlobVar.CoordinatePlanB.Tank19y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 21, clsGlobVar.Tank21_PercentFill, clsGlobVar.CoordinatePlanB.Tank21x, clsGlobVar.CoordinatePlanB.Tank21y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 22, clsGlobVar.Tank22_PercentFill, clsGlobVar.CoordinatePlanB.Tank22x, clsGlobVar.CoordinatePlanB.Tank22y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 26, clsGlobVar.Tank26_PercentFill, clsGlobVar.CoordinatePlanB.Tank26x, clsGlobVar.CoordinatePlanB.Tank26y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 27, clsGlobVar.Tank27_PercentFill, clsGlobVar.CoordinatePlanB.Tank27x, clsGlobVar.CoordinatePlanB.Tank27y, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 38, clsGlobVar.Tank38_PercentFill, clsGlobVar.CoordinatePlanB.Tank38x, clsGlobVar.CoordinatePlanB.Tank38y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 54, clsGlobVar.Tank54_PercentFill, clsGlobVar.CoordinatePlanB.Tank54x, clsGlobVar.CoordinatePlanB.Tank54y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 55, clsGlobVar.Tank55_PercentFill, clsGlobVar.CoordinatePlanB.Tank55x, clsGlobVar.CoordinatePlanB.Tank55y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 56, clsGlobVar.Tank56_PercentFill, clsGlobVar.CoordinatePlanB.Tank56x, clsGlobVar.CoordinatePlanB.Tank56y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 57, clsGlobVar.Tank57_PercentFill, clsGlobVar.CoordinatePlanB.Tank57x, clsGlobVar.CoordinatePlanB.Tank57y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 58, clsGlobVar.Tank58_PercentFill, clsGlobVar.CoordinatePlanB.Tank58x, clsGlobVar.CoordinatePlanB.Tank58y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 59, clsGlobVar.Tank59_PercentFill, clsGlobVar.CoordinatePlanB.Tank59x, clsGlobVar.CoordinatePlanB.Tank59y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 60, clsGlobVar.Tank60_PercentFill, clsGlobVar.CoordinatePlanB.Tank60x, clsGlobVar.CoordinatePlanB.Tank60y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 61, clsGlobVar.Tank61_PercentFill, clsGlobVar.CoordinatePlanB.Tank61x, clsGlobVar.CoordinatePlanB.Tank61y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 62, clsGlobVar.Tank62_PercentFill, clsGlobVar.CoordinatePlanB.Tank62x, clsGlobVar.CoordinatePlanB.Tank62y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 63, clsGlobVar.Tank63_PercentFill, clsGlobVar.CoordinatePlanB.Tank63x, clsGlobVar.CoordinatePlanB.Tank63y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 64, clsGlobVar.Tank64_PercentFill, clsGlobVar.CoordinatePlanB.Tank64x, clsGlobVar.CoordinatePlanB.Tank64y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 65, clsGlobVar.Tank65_PercentFill, clsGlobVar.CoordinatePlanB.Tank65x, clsGlobVar.CoordinatePlanB.Tank65y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 66, clsGlobVar.Tank66_PercentFill, clsGlobVar.CoordinatePlanB.Tank66x, clsGlobVar.CoordinatePlanB.Tank66y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 67, clsGlobVar.Tank67_PercentFill, clsGlobVar.CoordinatePlanB.Tank67x, clsGlobVar.CoordinatePlanB.Tank67y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 68, clsGlobVar.Tank68_PercentFill, clsGlobVar.CoordinatePlanB.Tank68x, clsGlobVar.CoordinatePlanB.Tank68y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 69, clsGlobVar.Tank69_PercentFill, clsGlobVar.CoordinatePlanB.Tank69x, clsGlobVar.CoordinatePlanB.Tank69y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 70, clsGlobVar.Tank70_PercentFill, clsGlobVar.CoordinatePlanB.Tank70x, clsGlobVar.CoordinatePlanB.Tank70y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 71, clsGlobVar.Tank71_PercentFill, clsGlobVar.CoordinatePlanB.Tank71x, clsGlobVar.CoordinatePlanB.Tank71y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 72, clsGlobVar.Tank72_PercentFill, clsGlobVar.CoordinatePlanB.Tank72x, clsGlobVar.CoordinatePlanB.Tank72y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 73, clsGlobVar.Tank73_PercentFill, clsGlobVar.CoordinatePlanB.Tank73x, clsGlobVar.CoordinatePlanB.Tank73y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 74, clsGlobVar.Tank74_PercentFill, clsGlobVar.CoordinatePlanB.Tank74x, clsGlobVar.CoordinatePlanB.Tank74y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 75, clsGlobVar.Tank75_PercentFill, clsGlobVar.CoordinatePlanB.Tank75x, clsGlobVar.CoordinatePlanB.Tank75y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 77, clsGlobVar.Tank77_PercentFill, clsGlobVar.CoordinatePlanB.Tank77x, clsGlobVar.CoordinatePlanB.Tank77y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 78, clsGlobVar.Tank78_PercentFill, clsGlobVar.CoordinatePlanB.Tank78x, clsGlobVar.CoordinatePlanB.Tank78y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 79, clsGlobVar.Tank79_PercentFill, clsGlobVar.CoordinatePlanB.Tank79x, clsGlobVar.CoordinatePlanB.Tank79y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 80, clsGlobVar.Tank80_PercentFill, clsGlobVar.CoordinatePlanB.Tank80x, clsGlobVar.CoordinatePlanB.Tank80y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 81, clsGlobVar.Tank81_PercentFill, clsGlobVar.CoordinatePlanB.Tank81x, clsGlobVar.CoordinatePlanB.Tank81y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 82, clsGlobVar.Tank82_PercentFill, clsGlobVar.CoordinatePlanB.Tank82x, clsGlobVar.CoordinatePlanB.Tank82y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 83, clsGlobVar.Tank83_PercentFill, clsGlobVar.CoordinatePlanB.Tank83x, clsGlobVar.CoordinatePlanB.Tank83y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 84, clsGlobVar.Tank84_PercentFill, clsGlobVar.CoordinatePlanB.Tank84x, clsGlobVar.CoordinatePlanB.Tank84y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 85, clsGlobVar.Tank85_PercentFill, clsGlobVar.CoordinatePlanB.Tank85x, clsGlobVar.CoordinatePlanB.Tank85y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 86, clsGlobVar.Tank86_PercentFill, clsGlobVar.CoordinatePlanB.Tank86x, clsGlobVar.CoordinatePlanB.Tank86y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 87, clsGlobVar.Tank87_PercentFill, clsGlobVar.CoordinatePlanB.Tank87x, clsGlobVar.CoordinatePlanB.Tank87y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 88, clsGlobVar.Tank88_PercentFill, clsGlobVar.CoordinatePlanB.Tank88x, clsGlobVar.CoordinatePlanB.Tank88y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 89, clsGlobVar.Tank89_PercentFill, clsGlobVar.CoordinatePlanB.Tank89x, clsGlobVar.CoordinatePlanB.Tank89y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 90, clsGlobVar.Tank90_PercentFill, clsGlobVar.CoordinatePlanB.Tank90x, clsGlobVar.CoordinatePlanB.Tank90y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 91, clsGlobVar.Tank91_PercentFill, clsGlobVar.CoordinatePlanB.Tank91x, clsGlobVar.CoordinatePlanB.Tank91y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 92, clsGlobVar.Tank92_PercentFill, clsGlobVar.CoordinatePlanB.Tank92x, clsGlobVar.CoordinatePlanB.Tank92y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 93, clsGlobVar.Tank93_PercentFill, clsGlobVar.CoordinatePlanB.Tank93x, clsGlobVar.CoordinatePlanB.Tank93y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 94, clsGlobVar.Tank94_PercentFill, clsGlobVar.CoordinatePlanB.Tank94x, clsGlobVar.CoordinatePlanB.Tank94y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 95, clsGlobVar.Tank95_PercentFill, clsGlobVar.CoordinatePlanB.Tank95x, clsGlobVar.CoordinatePlanB.Tank95y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 96, clsGlobVar.Tank96_PercentFill, clsGlobVar.CoordinatePlanB.Tank96x, clsGlobVar.CoordinatePlanB.Tank96y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 97, clsGlobVar.Tank97_PercentFill, clsGlobVar.CoordinatePlanB.Tank97x, clsGlobVar.CoordinatePlanB.Tank97y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 98, clsGlobVar.Tank98_PercentFill, clsGlobVar.CoordinatePlanB.Tank98x, clsGlobVar.CoordinatePlanB.Tank98y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 99, clsGlobVar.Tank99_PercentFill, clsGlobVar.CoordinatePlanB.Tank99x, clsGlobVar.CoordinatePlanB.Tank99y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 100, clsGlobVar.Tank100_PercentFill, clsGlobVar.CoordinatePlanB.Tank100x, clsGlobVar.CoordinatePlanB.Tank100y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 101, clsGlobVar.Tank101_PercentFill, clsGlobVar.CoordinatePlanB.Tank101x, clsGlobVar.CoordinatePlanB.Tank101y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 102, clsGlobVar.Tank102_PercentFill, clsGlobVar.CoordinatePlanB.Tank102x, clsGlobVar.CoordinatePlanB.Tank102y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 103, clsGlobVar.Tank103_PercentFill, clsGlobVar.CoordinatePlanB.Tank103x, clsGlobVar.CoordinatePlanB.Tank103y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 104, clsGlobVar.Tank104_PercentFill, clsGlobVar.CoordinatePlanB.Tank104x, clsGlobVar.CoordinatePlanB.Tank104y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 105, clsGlobVar.Tank105_PercentFill, clsGlobVar.CoordinatePlanB.Tank105x, clsGlobVar.CoordinatePlanB.Tank105y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 106, clsGlobVar.Tank106_PercentFill, clsGlobVar.CoordinatePlanB.Tank106x, clsGlobVar.CoordinatePlanB.Tank106y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 107, clsGlobVar.Tank107_PercentFill, clsGlobVar.CoordinatePlanB.Tank107x, clsGlobVar.CoordinatePlanB.Tank107y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 108, clsGlobVar.Tank108_PercentFill, clsGlobVar.CoordinatePlanB.Tank108x, clsGlobVar.CoordinatePlanB.Tank108y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 109, clsGlobVar.Tank109_PercentFill, clsGlobVar.CoordinatePlanB.Tank109x, clsGlobVar.CoordinatePlanB.Tank109y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                    //    DrawHatchDeckPlan(canvas2DPlanB, 110, clsGlobVar.Tank110_PercentFill, clsGlobVar.CoordinatePlanB.Tank110x, clsGlobVar.CoordinatePlanB.Tank110y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                }
+                #endregion
+
+                canvas2DPlanB.Children.RemoveRange(1, canvas2DPlanB.Children.Count - 1);
+                DrawHatchDeckPlan(canvas2DPlanB, 80, clsGlobVar.Tank80_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank80ax, clsGlobVar.CoordinatePlanB.Tank80ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanB, 80, clsGlobVar.Tank80_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank80bx, clsGlobVar.CoordinatePlanB.Tank80by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanB, 81, clsGlobVar.Tank81_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank81x, clsGlobVar.CoordinatePlanB.Tank81y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanB, 82, clsGlobVar.Tank82_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank82x, clsGlobVar.CoordinatePlanB.Tank82y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanB, 85, clsGlobVar.Tank85_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank85ax, clsGlobVar.CoordinatePlanB.Tank85ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanB, 85, clsGlobVar.Tank85_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank85bx, clsGlobVar.CoordinatePlanB.Tank85by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 91, clsGlobVar.Tank91_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank91x, clsGlobVar.CoordinatePlanB.Tank91y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 92, clsGlobVar.Tank92_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank92x, clsGlobVar.CoordinatePlanB.Tank92y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 93, clsGlobVar.Tank93_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank93x, clsGlobVar.CoordinatePlanB.Tank93y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 94, clsGlobVar.Tank94_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank94x, clsGlobVar.CoordinatePlanB.Tank94y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 95, clsGlobVar.Tank95_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank95x, clsGlobVar.CoordinatePlanB.Tank95y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 96, clsGlobVar.Tank96_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank96x, clsGlobVar.CoordinatePlanB.Tank96y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 97, clsGlobVar.Tank97_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank97x, clsGlobVar.CoordinatePlanB.Tank97y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 98, clsGlobVar.Tank98_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank98x, clsGlobVar.CoordinatePlanB.Tank98y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 99, clsGlobVar.Tank99_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank99x, clsGlobVar.CoordinatePlanB.Tank99y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 100, clsGlobVar.Tank100_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank100x, clsGlobVar.CoordinatePlanB.Tank100y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 101, clsGlobVar.Tank101_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank101ax, clsGlobVar.CoordinatePlanB.Tank101ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 101, clsGlobVar.Tank101_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank101bx, clsGlobVar.CoordinatePlanB.Tank101by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 102, clsGlobVar.Tank102_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank102x, clsGlobVar.CoordinatePlanB.Tank102y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 103, clsGlobVar.Tank103_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank103x, clsGlobVar.CoordinatePlanB.Tank103y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 104, clsGlobVar.Tank104_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank104x, clsGlobVar.CoordinatePlanB.Tank104y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 105, clsGlobVar.Tank105_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank105x, clsGlobVar.CoordinatePlanB.Tank105y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 106, clsGlobVar.Tank106_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank106x, clsGlobVar.CoordinatePlanB.Tank106y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 107, clsGlobVar.Tank107_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank107x, clsGlobVar.CoordinatePlanB.Tank107y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 108, clsGlobVar.Tank108_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank108x, clsGlobVar.CoordinatePlanB.Tank108y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 109, clsGlobVar.Tank109_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank109x, clsGlobVar.CoordinatePlanB.Tank109y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 110, clsGlobVar.Tank110_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank110x, clsGlobVar.CoordinatePlanB.Tank110y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 112, clsGlobVar.Tank112_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank112x, clsGlobVar.CoordinatePlanB.Tank112y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 113, clsGlobVar.Tank113_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank113x, clsGlobVar.CoordinatePlanB.Tank113y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 114, clsGlobVar.Tank114_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank114x, clsGlobVar.CoordinatePlanB.Tank114y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 115, clsGlobVar.Tank115_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank115x, clsGlobVar.CoordinatePlanB.Tank115y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 116, clsGlobVar.Tank116_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank116x, clsGlobVar.CoordinatePlanB.Tank116y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 117, clsGlobVar.Tank117_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank117ax, clsGlobVar.CoordinatePlanB.Tank117ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 117, clsGlobVar.Tank117_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank117bx, clsGlobVar.CoordinatePlanB.Tank117by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 118, clsGlobVar.Tank118_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank118x, clsGlobVar.CoordinatePlanB.Tank118y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 119, clsGlobVar.Tank119_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank119x, clsGlobVar.CoordinatePlanB.Tank119y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 120, clsGlobVar.Tank120_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank120x, clsGlobVar.CoordinatePlanB.Tank120y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 121, clsGlobVar.Tank121_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank121x, clsGlobVar.CoordinatePlanB.Tank121y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 122, clsGlobVar.Tank122_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank122x, clsGlobVar.CoordinatePlanB.Tank122y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 123, clsGlobVar.Tank123_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank123x, clsGlobVar.CoordinatePlanB.Tank123y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 124, clsGlobVar.Tank124_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank124x, clsGlobVar.CoordinatePlanB.Tank124y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 125, clsGlobVar.Tank125_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank125x, clsGlobVar.CoordinatePlanB.Tank125y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 126, clsGlobVar.Tank126_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank126x, clsGlobVar.CoordinatePlanB.Tank126y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 127, clsGlobVar.Tank127_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank127x, clsGlobVar.CoordinatePlanB.Tank127y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 128, clsGlobVar.Tank128_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank128x, clsGlobVar.CoordinatePlanB.Tank128y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 129, clsGlobVar.Tank129_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank129x, clsGlobVar.CoordinatePlanB.Tank129y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 130, clsGlobVar.Tank130_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank130x, clsGlobVar.CoordinatePlanB.Tank130y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 131, clsGlobVar.Tank131_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank131x, clsGlobVar.CoordinatePlanB.Tank131y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 132, clsGlobVar.Tank132_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank132x, clsGlobVar.CoordinatePlanB.Tank132y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 133, clsGlobVar.Tank133_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank133x, clsGlobVar.CoordinatePlanB.Tank133y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 134, clsGlobVar.Tank134_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank134x, clsGlobVar.CoordinatePlanB.Tank134y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 135, clsGlobVar.Tank135_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank135x, clsGlobVar.CoordinatePlanB.Tank135y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 136, clsGlobVar.Tank136_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank136x, clsGlobVar.CoordinatePlanB.Tank136y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 137, clsGlobVar.Tank137_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank137x, clsGlobVar.CoordinatePlanB.Tank137y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 138, clsGlobVar.Tank138_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank138x, clsGlobVar.CoordinatePlanB.Tank138y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 139, clsGlobVar.Tank139_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank139x, clsGlobVar.CoordinatePlanB.Tank139y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 140, clsGlobVar.Tank140_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank140x, clsGlobVar.CoordinatePlanB.Tank140y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 141, clsGlobVar.Tank141_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank141x, clsGlobVar.CoordinatePlanB.Tank141y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 150, clsGlobVar.Tank150_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank150x, clsGlobVar.CoordinatePlanB.Tank150y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 152, clsGlobVar.Tank152_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank152x, clsGlobVar.CoordinatePlanB.Tank152y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 153, clsGlobVar.Tank153_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank153x, clsGlobVar.CoordinatePlanB.Tank153y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 158, clsGlobVar.Tank158_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank158x, clsGlobVar.CoordinatePlanB.Tank158y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 159, clsGlobVar.Tank159_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank159x, clsGlobVar.CoordinatePlanB.Tank159y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 160, clsGlobVar.Tank160_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank160x, clsGlobVar.CoordinatePlanB.Tank160y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 161, clsGlobVar.Tank161_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank161x, clsGlobVar.CoordinatePlanB.Tank161y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 162, clsGlobVar.Tank162_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank162x, clsGlobVar.CoordinatePlanB.Tank162y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 163, clsGlobVar.Tank163_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank163x, clsGlobVar.CoordinatePlanB.Tank163y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 165, clsGlobVar.Tank165_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank165x, clsGlobVar.CoordinatePlanB.Tank165y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 166, clsGlobVar.Tank166_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank166ax, clsGlobVar.CoordinatePlanB.Tank166ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 166, clsGlobVar.Tank166_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank166bx, clsGlobVar.CoordinatePlanB.Tank166by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 167, clsGlobVar.Tank167_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank167x, clsGlobVar.CoordinatePlanB.Tank167y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 168, clsGlobVar.Tank168_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank168x, clsGlobVar.CoordinatePlanB.Tank168y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 169, clsGlobVar.Tank169_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank169x, clsGlobVar.CoordinatePlanB.Tank169y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 170, clsGlobVar.Tank170_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank170x, clsGlobVar.CoordinatePlanB.Tank170y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 171, clsGlobVar.Tank171_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank171x, clsGlobVar.CoordinatePlanB.Tank171y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 172, clsGlobVar.Tank172_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank172x, clsGlobVar.CoordinatePlanB.Tank172y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 173, clsGlobVar.Tank173_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank173x, clsGlobVar.CoordinatePlanB.Tank173y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 174, clsGlobVar.Tank174_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank174x, clsGlobVar.CoordinatePlanB.Tank174y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 175, clsGlobVar.Tank175_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank175x, clsGlobVar.CoordinatePlanB.Tank175y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 176, clsGlobVar.Tank176_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank176x, clsGlobVar.CoordinatePlanB.Tank176y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 177, clsGlobVar.Tank177_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank177ax, clsGlobVar.CoordinatePlanB.Tank177ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 177, clsGlobVar.Tank177_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank177bx, clsGlobVar.CoordinatePlanB.Tank177by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 178, clsGlobVar.Tank178_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank178x, clsGlobVar.CoordinatePlanB.Tank178y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 179, clsGlobVar.Tank179_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank179x, clsGlobVar.CoordinatePlanB.Tank179y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 181, clsGlobVar.Tank181_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank181ax, clsGlobVar.CoordinatePlanB.Tank181ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 181, clsGlobVar.Tank181_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank181bx, clsGlobVar.CoordinatePlanB.Tank181by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 182, clsGlobVar.Tank182_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank182x, clsGlobVar.CoordinatePlanB.Tank182y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 183, clsGlobVar.Tank183_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank183x, clsGlobVar.CoordinatePlanB.Tank183y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 184, clsGlobVar.Tank184_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank184x, clsGlobVar.CoordinatePlanB.Tank184y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 185, clsGlobVar.Tank185_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank185x, clsGlobVar.CoordinatePlanB.Tank185y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 187, clsGlobVar.Tank187_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank187ax, clsGlobVar.CoordinatePlanB.Tank187ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 187, clsGlobVar.Tank187_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank187bx, clsGlobVar.CoordinatePlanB.Tank187by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 188, clsGlobVar.Tank188_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank188x, clsGlobVar.CoordinatePlanB.Tank188y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 189, clsGlobVar.Tank189_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank189x, clsGlobVar.CoordinatePlanB.Tank189y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 190, clsGlobVar.Tank190_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank190x, clsGlobVar.CoordinatePlanB.Tank190y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 191, clsGlobVar.Tank191_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank191x, clsGlobVar.CoordinatePlanB.Tank191y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 192, clsGlobVar.Tank192_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank192x, clsGlobVar.CoordinatePlanB.Tank192y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 193, clsGlobVar.Tank193_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank193x, clsGlobVar.CoordinatePlanB.Tank193y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 194, clsGlobVar.Tank194_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank194x, clsGlobVar.CoordinatePlanB.Tank194y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 195, clsGlobVar.Tank195_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank195x, clsGlobVar.CoordinatePlanB.Tank195y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 196, clsGlobVar.Tank196_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank196x, clsGlobVar.CoordinatePlanB.Tank196y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 197, clsGlobVar.Tank197_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank197x, clsGlobVar.CoordinatePlanB.Tank197y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 198, clsGlobVar.Tank198_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank198ax, clsGlobVar.CoordinatePlanB.Tank198ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 198, clsGlobVar.Tank198_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank198bx, clsGlobVar.CoordinatePlanB.Tank198by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 199, clsGlobVar.Tank199_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank199x, clsGlobVar.CoordinatePlanB.Tank199y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 200, clsGlobVar.Tank200_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank200x, clsGlobVar.CoordinatePlanB.Tank200y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 201, clsGlobVar.Tank201_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank201x, clsGlobVar.CoordinatePlanB.Tank201y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 202, clsGlobVar.Tank202_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank202x, clsGlobVar.CoordinatePlanB.Tank202y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 203, clsGlobVar.Tank203_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank203x, clsGlobVar.CoordinatePlanB.Tank203y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 204, clsGlobVar.Tank204_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank204x, clsGlobVar.CoordinatePlanB.Tank204y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 205, clsGlobVar.Tank205_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank205x, clsGlobVar.CoordinatePlanB.Tank205y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 206, clsGlobVar.Tank206_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank206x, clsGlobVar.CoordinatePlanB.Tank206y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 207, clsGlobVar.Tank207_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank207ax, clsGlobVar.CoordinatePlanB.Tank207ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 207, clsGlobVar.Tank207_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank207bx, clsGlobVar.CoordinatePlanB.Tank207by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 208, clsGlobVar.Tank208_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank208x, clsGlobVar.CoordinatePlanB.Tank208y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 209, clsGlobVar.Tank209_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank209x, clsGlobVar.CoordinatePlanB.Tank209y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 210, clsGlobVar.Tank210_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank210x, clsGlobVar.CoordinatePlanB.Tank210y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 211, clsGlobVar.Tank211_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank211x, clsGlobVar.CoordinatePlanB.Tank211y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 212, clsGlobVar.Tank212_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank212x, clsGlobVar.CoordinatePlanB.Tank212y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 213, clsGlobVar.Tank213_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank213x, clsGlobVar.CoordinatePlanB.Tank213y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 214, clsGlobVar.Tank214_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank214x, clsGlobVar.CoordinatePlanB.Tank214y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 215, clsGlobVar.Tank215_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank215x, clsGlobVar.CoordinatePlanB.Tank215y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 216, clsGlobVar.Tank216_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank216x, clsGlobVar.CoordinatePlanB.Tank216y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 217, clsGlobVar.Tank217_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank217x, clsGlobVar.CoordinatePlanB.Tank217y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 218, clsGlobVar.Tank218_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank218x, clsGlobVar.CoordinatePlanB.Tank218y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 219, clsGlobVar.Tank219_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank219x, clsGlobVar.CoordinatePlanB.Tank219y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 220, clsGlobVar.Tank220_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank220x, clsGlobVar.CoordinatePlanB.Tank220y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 221, clsGlobVar.Tank221_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank221x, clsGlobVar.CoordinatePlanB.Tank221y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 222, clsGlobVar.Tank222_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank222x, clsGlobVar.CoordinatePlanB.Tank222y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 223, clsGlobVar.Tank223_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank223x, clsGlobVar.CoordinatePlanB.Tank223y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 224, clsGlobVar.Tank224_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank224x, clsGlobVar.CoordinatePlanB.Tank224y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 225, clsGlobVar.Tank225_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank225x, clsGlobVar.CoordinatePlanB.Tank225y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 226, clsGlobVar.Tank226_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank226x, clsGlobVar.CoordinatePlanB.Tank226y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 227, clsGlobVar.Tank227_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank227x, clsGlobVar.CoordinatePlanB.Tank227y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 228, clsGlobVar.Tank228_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank228x, clsGlobVar.CoordinatePlanB.Tank228y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 229, clsGlobVar.Tank229_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank229x, clsGlobVar.CoordinatePlanB.Tank229y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 230, clsGlobVar.Tank230_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank230x, clsGlobVar.CoordinatePlanB.Tank230y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 231, clsGlobVar.Tank231_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank231x, clsGlobVar.CoordinatePlanB.Tank231y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 232, clsGlobVar.Tank232_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank232x, clsGlobVar.CoordinatePlanB.Tank232y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 233, clsGlobVar.Tank233_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank233x, clsGlobVar.CoordinatePlanB.Tank233y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 234, clsGlobVar.Tank234_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank234x, clsGlobVar.CoordinatePlanB.Tank234y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 235, clsGlobVar.Tank235_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank235x, clsGlobVar.CoordinatePlanB.Tank235y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 236, clsGlobVar.Tank236_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank236x, clsGlobVar.CoordinatePlanB.Tank236y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 237, clsGlobVar.Tank237_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank237x, clsGlobVar.CoordinatePlanB.Tank237y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 238, clsGlobVar.Tank238_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank238x, clsGlobVar.CoordinatePlanB.Tank238y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 239, clsGlobVar.Tank239_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank239x, clsGlobVar.CoordinatePlanB.Tank239y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 240, clsGlobVar.Tank240_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank240x, clsGlobVar.CoordinatePlanB.Tank240y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 241, clsGlobVar.Tank241_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank241x, clsGlobVar.CoordinatePlanB.Tank241y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 242, clsGlobVar.Tank242_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank242x, clsGlobVar.CoordinatePlanB.Tank242y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 243, clsGlobVar.Tank243_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank243x, clsGlobVar.CoordinatePlanB.Tank243y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 244, clsGlobVar.Tank244_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank244x, clsGlobVar.CoordinatePlanB.Tank244y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 245, clsGlobVar.Tank245_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank245x, clsGlobVar.CoordinatePlanB.Tank245y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 246, clsGlobVar.Tank246_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank246x, clsGlobVar.CoordinatePlanB.Tank246y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 247, clsGlobVar.Tank247_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank247x, clsGlobVar.CoordinatePlanB.Tank247y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 248, clsGlobVar.Tank248_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank248x, clsGlobVar.CoordinatePlanB.Tank248y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 249, clsGlobVar.Tank249_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank249x, clsGlobVar.CoordinatePlanB.Tank249y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 250, clsGlobVar.Tank250_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank250x, clsGlobVar.CoordinatePlanB.Tank250y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 251, clsGlobVar.Tank251_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank251x, clsGlobVar.CoordinatePlanB.Tank251y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 252, clsGlobVar.Tank252_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank252x, clsGlobVar.CoordinatePlanB.Tank252y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 253, clsGlobVar.Tank253_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank253x, clsGlobVar.CoordinatePlanB.Tank253y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 254, clsGlobVar.Tank254_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank254x, clsGlobVar.CoordinatePlanB.Tank254y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 255, clsGlobVar.Tank255_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank255x, clsGlobVar.CoordinatePlanB.Tank255y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 256, clsGlobVar.Tank256_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank256x, clsGlobVar.CoordinatePlanB.Tank256y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 257, clsGlobVar.Tank257_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank257x, clsGlobVar.CoordinatePlanB.Tank257y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 258, clsGlobVar.Tank258_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank258x, clsGlobVar.CoordinatePlanB.Tank258y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 259, clsGlobVar.Tank259_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank259x, clsGlobVar.CoordinatePlanB.Tank259y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 260, clsGlobVar.Tank260_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank260x, clsGlobVar.CoordinatePlanB.Tank260y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 262, clsGlobVar.Tank262_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank262x, clsGlobVar.CoordinatePlanB.Tank262y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 263, clsGlobVar.Tank263_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank263x, clsGlobVar.CoordinatePlanB.Tank263y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 264, clsGlobVar.Tank264_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank264x, clsGlobVar.CoordinatePlanB.Tank264y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 265, clsGlobVar.Tank265_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank265x, clsGlobVar.CoordinatePlanB.Tank265y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 266, clsGlobVar.Tank266_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank266x, clsGlobVar.CoordinatePlanB.Tank266y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 267, clsGlobVar.Tank267_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank267x, clsGlobVar.CoordinatePlanB.Tank267y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 268, clsGlobVar.Tank268_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank268x, clsGlobVar.CoordinatePlanB.Tank268y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 269, clsGlobVar.Tank269_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank269x, clsGlobVar.CoordinatePlanB.Tank269y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 270, clsGlobVar.Tank270_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank270x, clsGlobVar.CoordinatePlanB.Tank270y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 271, clsGlobVar.Tank271_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank271x, clsGlobVar.CoordinatePlanB.Tank271y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 272, clsGlobVar.Tank272_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank272x, clsGlobVar.CoordinatePlanB.Tank272y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 273, clsGlobVar.Tank273_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank273x, clsGlobVar.CoordinatePlanB.Tank273y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 274, clsGlobVar.Tank274_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank274x, clsGlobVar.CoordinatePlanB.Tank274y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 275, clsGlobVar.Tank275_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank275x, clsGlobVar.CoordinatePlanB.Tank275y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 276, clsGlobVar.Tank276_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank276x, clsGlobVar.CoordinatePlanB.Tank276y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 277, clsGlobVar.Tank277_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank277x, clsGlobVar.CoordinatePlanB.Tank277y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 278, clsGlobVar.Tank278_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank278x, clsGlobVar.CoordinatePlanB.Tank278y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 279, clsGlobVar.Tank279_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank279x, clsGlobVar.CoordinatePlanB.Tank279y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 280, clsGlobVar.Tank280_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank280x, clsGlobVar.CoordinatePlanB.Tank280y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 281, clsGlobVar.Tank281_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank281x, clsGlobVar.CoordinatePlanB.Tank281y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 282, clsGlobVar.Tank282_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank282x, clsGlobVar.CoordinatePlanB.Tank282y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 283, clsGlobVar.Tank283_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank283x, clsGlobVar.CoordinatePlanB.Tank283y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 284, clsGlobVar.Tank284_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank284x, clsGlobVar.CoordinatePlanB.Tank284y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 285, clsGlobVar.Tank285_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank285x, clsGlobVar.CoordinatePlanB.Tank285y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 286, clsGlobVar.Tank286_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank286x, clsGlobVar.CoordinatePlanB.Tank286y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 287, clsGlobVar.Tank287_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank287x, clsGlobVar.CoordinatePlanB.Tank287y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 288, clsGlobVar.Tank288_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank288x, clsGlobVar.CoordinatePlanB.Tank288y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 289, clsGlobVar.Tank289_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank289x, clsGlobVar.CoordinatePlanB.Tank289y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 290, clsGlobVar.Tank290_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank290x, clsGlobVar.CoordinatePlanB.Tank290y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 291, clsGlobVar.Tank291_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank291x, clsGlobVar.CoordinatePlanB.Tank291y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 292, clsGlobVar.Tank292_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank292x, clsGlobVar.CoordinatePlanB.Tank292y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 293, clsGlobVar.Tank293_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank293x, clsGlobVar.CoordinatePlanB.Tank293y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 294, clsGlobVar.Tank294_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank294x, clsGlobVar.CoordinatePlanB.Tank294y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 295, clsGlobVar.Tank295_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank295x, clsGlobVar.CoordinatePlanB.Tank295y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 296, clsGlobVar.Tank296_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank296x, clsGlobVar.CoordinatePlanB.Tank296y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 297, clsGlobVar.Tank297_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank297x, clsGlobVar.CoordinatePlanB.Tank297y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 298, clsGlobVar.Tank298_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank298x, clsGlobVar.CoordinatePlanB.Tank298y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 299, clsGlobVar.Tank299_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank299x, clsGlobVar.CoordinatePlanB.Tank299y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 300, clsGlobVar.Tank300_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank300x, clsGlobVar.CoordinatePlanB.Tank300y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 301, clsGlobVar.Tank301_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank301x, clsGlobVar.CoordinatePlanB.Tank301y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 436, clsGlobVar.Tank436_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank436x, clsGlobVar.CoordinatePlanB.Tank436y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 437, clsGlobVar.Tank437_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank437x, clsGlobVar.CoordinatePlanB.Tank437y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 440, clsGlobVar.Tank440_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank440x, clsGlobVar.CoordinatePlanB.Tank440y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 441, clsGlobVar.Tank441_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank441x, clsGlobVar.CoordinatePlanB.Tank441y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 445, clsGlobVar.Tank445_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank445x, clsGlobVar.CoordinatePlanB.Tank445y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 446, clsGlobVar.Tank446_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank446x, clsGlobVar.CoordinatePlanB.Tank446y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 447, clsGlobVar.Tank447_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank447ax, clsGlobVar.CoordinatePlanB.Tank447ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 447, clsGlobVar.Tank447_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank447bx, clsGlobVar.CoordinatePlanB.Tank447by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 448, clsGlobVar.Tank448_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank448ax, clsGlobVar.CoordinatePlanB.Tank448ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 448, clsGlobVar.Tank448_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank448bx, clsGlobVar.CoordinatePlanB.Tank448by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 450, clsGlobVar.Tank450_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank450x, clsGlobVar.CoordinatePlanB.Tank450y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 454, clsGlobVar.Tank454_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank454x, clsGlobVar.CoordinatePlanB.Tank454y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 455, clsGlobVar.Tank455_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank455ax, clsGlobVar.CoordinatePlanB.Tank455ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 455, clsGlobVar.Tank455_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank455bx, clsGlobVar.CoordinatePlanB.Tank455by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 458, clsGlobVar.Tank458_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank458x, clsGlobVar.CoordinatePlanB.Tank458y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 459, clsGlobVar.Tank459_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank459ax, clsGlobVar.CoordinatePlanB.Tank459ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 459, clsGlobVar.Tank459_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank459bx, clsGlobVar.CoordinatePlanB.Tank459by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 462, clsGlobVar.Tank462_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank462x, clsGlobVar.CoordinatePlanB.Tank462y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 463, clsGlobVar.Tank463_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank463x, clsGlobVar.CoordinatePlanB.Tank463y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 464, clsGlobVar.Tank464_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank464x, clsGlobVar.CoordinatePlanB.Tank464y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 465, clsGlobVar.Tank465_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank465x, clsGlobVar.CoordinatePlanB.Tank465y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 466, clsGlobVar.Tank466_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank466ax, clsGlobVar.CoordinatePlanB.Tank466ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 466, clsGlobVar.Tank466_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank466bx, clsGlobVar.CoordinatePlanB.Tank466by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 468, clsGlobVar.Tank468_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank468x, clsGlobVar.CoordinatePlanB.Tank468y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 469, clsGlobVar.Tank469_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank469x, clsGlobVar.CoordinatePlanB.Tank469y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 471, clsGlobVar.Tank471_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank471x, clsGlobVar.CoordinatePlanB.Tank471y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 472, clsGlobVar.Tank472_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank472x, clsGlobVar.CoordinatePlanB.Tank472y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 474, clsGlobVar.Tank474_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank474x, clsGlobVar.CoordinatePlanB.Tank474y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank475ax, clsGlobVar.CoordinatePlanB.Tank475ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank475bx, clsGlobVar.CoordinatePlanB.Tank475by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 480, clsGlobVar.Tank480_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank480x, clsGlobVar.CoordinatePlanB.Tank480y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 481, clsGlobVar.Tank481_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank481x, clsGlobVar.CoordinatePlanB.Tank481y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 486, clsGlobVar.Tank486_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank486x, clsGlobVar.CoordinatePlanB.Tank486y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 490, clsGlobVar.Tank490_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank490x, clsGlobVar.CoordinatePlanB.Tank490y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 491, clsGlobVar.Tank491_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank491x, clsGlobVar.CoordinatePlanB.Tank491y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 492, clsGlobVar.Tank492_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank492ax, clsGlobVar.CoordinatePlanB.Tank492ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 492, clsGlobVar.Tank492_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank492bx, clsGlobVar.CoordinatePlanB.Tank492by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 493, clsGlobVar.Tank493_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank493x, clsGlobVar.CoordinatePlanB.Tank493y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 495, clsGlobVar.Tank495_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank495ax, clsGlobVar.CoordinatePlanB.Tank495ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 495, clsGlobVar.Tank495_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank495bx, clsGlobVar.CoordinatePlanB.Tank495by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 496, clsGlobVar.Tank496_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank496x, clsGlobVar.CoordinatePlanB.Tank496y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 497, clsGlobVar.Tank497_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank497x, clsGlobVar.CoordinatePlanB.Tank497y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanB, 498, clsGlobVar.Tank498_SimulationPercentFill, clsGlobVar.CoordinatePlanB.Tank498x, clsGlobVar.CoordinatePlanB.Tank498y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+
+            }
+            catch //(Exception ex)
+            {
+               // System.Windows.MessageBox.Show(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// Add Hatch Filling of Tanks/Compartments to DeckPlans Canvas as per TankID 
+        /// </summary>
+        public void AddHatchDeckPlanA()
+        {
+            try
+            {
+                canvas2DPlanA.Children.RemoveRange(1, canvas2DPlanA.Children.Count - 1);
+
+
+                DrawHatchDeckPlan(canvas2DPlanA, 2, clsGlobVar.Tank2_PercentFill, clsGlobVar.CoordinatePlanA.Tank2x, clsGlobVar.CoordinatePlanA.Tank2y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanA, 3, clsGlobVar.Tank3_PercentFill, clsGlobVar.CoordinatePlanA.Tank3x, clsGlobVar.CoordinatePlanA.Tank3y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanA, 4, clsGlobVar.Tank4_PercentFill, clsGlobVar.CoordinatePlanA.Tank4ax, clsGlobVar.CoordinatePlanA.Tank4ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanA, 4, clsGlobVar.Tank4_PercentFill, clsGlobVar.CoordinatePlanA.Tank4bx, clsGlobVar.CoordinatePlanA.Tank4by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                DrawHatchDeckPlan(canvas2DPlanA, 5, clsGlobVar.Tank5_PercentFill, clsGlobVar.CoordinatePlanA.Tank5ax, clsGlobVar.CoordinatePlanA.Tank5ay, System.Windows.Media.Color.FromArgb(180, 141, 180, 227));
+                DrawHatchDeckPlan(canvas2DPlanA, 5, clsGlobVar.Tank5_PercentFill, clsGlobVar.CoordinatePlanA.Tank5bx, clsGlobVar.CoordinatePlanA.Tank5by, System.Windows.Media.Color.FromArgb(180, 141, 180, 227));
+                DrawHatchDeckPlan(canvas2DPlanA, 6, clsGlobVar.Tank6_PercentFill, clsGlobVar.CoordinatePlanA.Tank6ax, clsGlobVar.CoordinatePlanA.Tank6ay, System.Windows.Media.Color.FromArgb(180, 141, 180, 227));
+                DrawHatchDeckPlan(canvas2DPlanA, 6, clsGlobVar.Tank6_PercentFill, clsGlobVar.CoordinatePlanA.Tank6bx, clsGlobVar.CoordinatePlanA.Tank6by, System.Windows.Media.Color.FromArgb(180, 141, 180, 227));
+                DrawHatchDeckPlan(canvas2DPlanA, 7, clsGlobVar.Tank7_PercentFill, clsGlobVar.CoordinatePlanA.Tank7x, clsGlobVar.CoordinatePlanA.Tank7y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 8, clsGlobVar.Tank8_PercentFill, clsGlobVar.CoordinatePlanA.Tank8ax, clsGlobVar.CoordinatePlanA.Tank8ay, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 8, clsGlobVar.Tank8_PercentFill, clsGlobVar.CoordinatePlanA.Tank8bx, clsGlobVar.CoordinatePlanA.Tank8by, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 9, clsGlobVar.Tank9_PercentFill, clsGlobVar.CoordinatePlanA.Tank9x, clsGlobVar.CoordinatePlanA.Tank9y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 10, clsGlobVar.Tank10_PercentFill, clsGlobVar.CoordinatePlanA.Tank10x, clsGlobVar.CoordinatePlanA.Tank10y, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 11, clsGlobVar.Tank11_PercentFill, clsGlobVar.CoordinatePlanA.Tank11ax, clsGlobVar.CoordinatePlanA.Tank11ay, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 11, clsGlobVar.Tank11_PercentFill, clsGlobVar.CoordinatePlanA.Tank11bx, clsGlobVar.CoordinatePlanA.Tank11by, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 12, clsGlobVar.Tank12_PercentFill, clsGlobVar.CoordinatePlanA.Tank12ax, clsGlobVar.CoordinatePlanA.Tank12ay, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 12, clsGlobVar.Tank12_PercentFill, clsGlobVar.CoordinatePlanA.Tank12bx, clsGlobVar.CoordinatePlanA.Tank12by, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 13, clsGlobVar.Tank13_PercentFill, clsGlobVar.CoordinatePlanA.Tank13ax, clsGlobVar.CoordinatePlanA.Tank13ay, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 13, clsGlobVar.Tank13_PercentFill, clsGlobVar.CoordinatePlanA.Tank13bx, clsGlobVar.CoordinatePlanA.Tank13by, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 14, clsGlobVar.Tank14_PercentFill, clsGlobVar.CoordinatePlanA.Tank14ax, clsGlobVar.CoordinatePlanA.Tank14ay, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 14, clsGlobVar.Tank14_PercentFill, clsGlobVar.CoordinatePlanA.Tank14bx, clsGlobVar.CoordinatePlanA.Tank14by, System.Windows.Media.Color.FromArgb(180, 151, 72, 7));
+                DrawHatchDeckPlan(canvas2DPlanA, 15, clsGlobVar.Tank15_PercentFill, clsGlobVar.CoordinatePlanA.Tank15ax, clsGlobVar.CoordinatePlanA.Tank15ay, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchDeckPlan(canvas2DPlanA, 15, clsGlobVar.Tank15_PercentFill, clsGlobVar.CoordinatePlanA.Tank15bx, clsGlobVar.CoordinatePlanA.Tank15by, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchDeckPlan(canvas2DPlanA, 16, clsGlobVar.Tank16_PercentFill, clsGlobVar.CoordinatePlanA.Tank16ax, clsGlobVar.CoordinatePlanA.Tank16ay, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchDeckPlan(canvas2DPlanA, 16, clsGlobVar.Tank16_PercentFill, clsGlobVar.CoordinatePlanA.Tank16bx, clsGlobVar.CoordinatePlanA.Tank16by, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchDeckPlan(canvas2DPlanA, 17, clsGlobVar.Tank17_PercentFill, clsGlobVar.CoordinatePlanA.Tank17ax, clsGlobVar.CoordinatePlanA.Tank17ay, System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                DrawHatchDeckPlan(canvas2DPlanA, 17, clsGlobVar.Tank17_PercentFill, clsGlobVar.CoordinatePlanA.Tank17bx, clsGlobVar.CoordinatePlanA.Tank17by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 18, clsGlobVar.Tank18_PercentFill, clsGlobVar.CoordinatePlanA.Tank18x, clsGlobVar.CoordinatePlanA.Tank18y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 19, clsGlobVar.Tank19_PercentFill, clsGlobVar.CoordinatePlanA.Tank19x, clsGlobVar.CoordinatePlanA.Tank19y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 20, clsGlobVar.Tank20_PercentFill, clsGlobVar.CoordinatePlanA.Tank20x, clsGlobVar.CoordinatePlanA.Tank20y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 21, clsGlobVar.Tank21_PercentFill, clsGlobVar.CoordinatePlanA.Tank21x, clsGlobVar.CoordinatePlanA.Tank21y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 22, clsGlobVar.Tank22_PercentFill, clsGlobVar.CoordinatePlanA.Tank22x, clsGlobVar.CoordinatePlanA.Tank22y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 23, clsGlobVar.Tank23_PercentFill, clsGlobVar.CoordinatePlanA.Tank23x, clsGlobVar.CoordinatePlanA.Tank23y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 24, clsGlobVar.Tank24_PercentFill, clsGlobVar.CoordinatePlanA.Tank24x, clsGlobVar.CoordinatePlanA.Tank24y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 25, clsGlobVar.Tank25_PercentFill, clsGlobVar.CoordinatePlanA.Tank25x, clsGlobVar.CoordinatePlanA.Tank25y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 26, clsGlobVar.Tank26_PercentFill, clsGlobVar.CoordinatePlanA.Tank26x, clsGlobVar.CoordinatePlanA.Tank26y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 27, clsGlobVar.Tank27_PercentFill, clsGlobVar.CoordinatePlanA.Tank27x, clsGlobVar.CoordinatePlanA.Tank27y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 28, clsGlobVar.Tank28_PercentFill, clsGlobVar.CoordinatePlanA.Tank28x, clsGlobVar.CoordinatePlanA.Tank28y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 29, clsGlobVar.Tank29_PercentFill, clsGlobVar.CoordinatePlanA.Tank29ax, clsGlobVar.CoordinatePlanA.Tank29ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 29, clsGlobVar.Tank29_PercentFill, clsGlobVar.CoordinatePlanA.Tank29bx, clsGlobVar.CoordinatePlanA.Tank29by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 30, clsGlobVar.Tank30_PercentFill, clsGlobVar.CoordinatePlanA.Tank30x, clsGlobVar.CoordinatePlanA.Tank30y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 31, clsGlobVar.Tank31_PercentFill, clsGlobVar.CoordinatePlanA.Tank31ax, clsGlobVar.CoordinatePlanA.Tank31ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 31, clsGlobVar.Tank31_PercentFill, clsGlobVar.CoordinatePlanA.Tank31bx, clsGlobVar.CoordinatePlanA.Tank31by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 32, clsGlobVar.Tank32_PercentFill, clsGlobVar.CoordinatePlanA.Tank32ax, clsGlobVar.CoordinatePlanA.Tank32ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 32, clsGlobVar.Tank32_PercentFill, clsGlobVar.CoordinatePlanA.Tank32bx, clsGlobVar.CoordinatePlanA.Tank32by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 33, clsGlobVar.Tank33_PercentFill, clsGlobVar.CoordinatePlanA.Tank33x, clsGlobVar.CoordinatePlanA.Tank33y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 34, clsGlobVar.Tank34_PercentFill, clsGlobVar.CoordinatePlanA.Tank34x, clsGlobVar.CoordinatePlanA.Tank34y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 35, clsGlobVar.Tank35_PercentFill, clsGlobVar.CoordinatePlanA.Tank35ax, clsGlobVar.CoordinatePlanA.Tank35ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 35, clsGlobVar.Tank35_PercentFill, clsGlobVar.CoordinatePlanA.Tank35bx, clsGlobVar.CoordinatePlanA.Tank35by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 36, clsGlobVar.Tank36_PercentFill, clsGlobVar.CoordinatePlanA.Tank36ax, clsGlobVar.CoordinatePlanA.Tank36ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 36, clsGlobVar.Tank36_PercentFill, clsGlobVar.CoordinatePlanA.Tank36bx, clsGlobVar.CoordinatePlanA.Tank36by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 37, clsGlobVar.Tank37_PercentFill, clsGlobVar.CoordinatePlanA.Tank37ax, clsGlobVar.CoordinatePlanA.Tank37ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 37, clsGlobVar.Tank37_PercentFill, clsGlobVar.CoordinatePlanA.Tank37bx, clsGlobVar.CoordinatePlanA.Tank37by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 38, clsGlobVar.Tank38_PercentFill, clsGlobVar.CoordinatePlanA.Tank38ax, clsGlobVar.CoordinatePlanA.Tank38ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 38, clsGlobVar.Tank38_PercentFill, clsGlobVar.CoordinatePlanA.Tank38bx, clsGlobVar.CoordinatePlanA.Tank38by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 39, clsGlobVar.Tank39_PercentFill, clsGlobVar.CoordinatePlanA.Tank39ax, clsGlobVar.CoordinatePlanA.Tank39ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 39, clsGlobVar.Tank39_PercentFill, clsGlobVar.CoordinatePlanA.Tank39bx, clsGlobVar.CoordinatePlanA.Tank39by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 40, clsGlobVar.Tank40_PercentFill, clsGlobVar.CoordinatePlanA.Tank40x, clsGlobVar.CoordinatePlanA.Tank40y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 41, clsGlobVar.Tank41_PercentFill, clsGlobVar.CoordinatePlanA.Tank41x, clsGlobVar.CoordinatePlanA.Tank41y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 42, clsGlobVar.Tank42_PercentFill, clsGlobVar.CoordinatePlanA.Tank42x, clsGlobVar.CoordinatePlanA.Tank42y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 44, clsGlobVar.Tank44_PercentFill, clsGlobVar.CoordinatePlanA.Tank44x, clsGlobVar.CoordinatePlanA.Tank44y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 45, clsGlobVar.Tank45_PercentFill, clsGlobVar.CoordinatePlanA.Tank45ax, clsGlobVar.CoordinatePlanA.Tank45ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 45, clsGlobVar.Tank45_PercentFill, clsGlobVar.CoordinatePlanA.Tank45bx, clsGlobVar.CoordinatePlanA.Tank45by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 46, clsGlobVar.Tank46_PercentFill, clsGlobVar.CoordinatePlanA.Tank46ax, clsGlobVar.CoordinatePlanA.Tank46ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 46, clsGlobVar.Tank46_PercentFill, clsGlobVar.CoordinatePlanA.Tank46bx, clsGlobVar.CoordinatePlanA.Tank46by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 47, clsGlobVar.Tank47_PercentFill, clsGlobVar.CoordinatePlanA.Tank47x, clsGlobVar.CoordinatePlanA.Tank47y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 48, clsGlobVar.Tank48_PercentFill, clsGlobVar.CoordinatePlanA.Tank48x, clsGlobVar.CoordinatePlanA.Tank48y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 50, clsGlobVar.Tank50_PercentFill, clsGlobVar.CoordinatePlanA.Tank50x, clsGlobVar.CoordinatePlanA.Tank50y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 52, clsGlobVar.Tank52_PercentFill, clsGlobVar.CoordinatePlanA.Tank52x, clsGlobVar.CoordinatePlanA.Tank52y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 53, clsGlobVar.Tank53_PercentFill, clsGlobVar.CoordinatePlanA.Tank53x, clsGlobVar.CoordinatePlanA.Tank53y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 54, clsGlobVar.Tank54_PercentFill, clsGlobVar.CoordinatePlanA.Tank54x, clsGlobVar.CoordinatePlanA.Tank54y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 55, clsGlobVar.Tank55_PercentFill, clsGlobVar.CoordinatePlanA.Tank55x, clsGlobVar.CoordinatePlanA.Tank55y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 56, clsGlobVar.Tank56_PercentFill, clsGlobVar.CoordinatePlanA.Tank56x, clsGlobVar.CoordinatePlanA.Tank56y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 57, clsGlobVar.Tank57_PercentFill, clsGlobVar.CoordinatePlanA.Tank57ax, clsGlobVar.CoordinatePlanA.Tank57ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 57, clsGlobVar.Tank57_PercentFill, clsGlobVar.CoordinatePlanA.Tank57bx, clsGlobVar.CoordinatePlanA.Tank57by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 58, clsGlobVar.Tank58_PercentFill, clsGlobVar.CoordinatePlanA.Tank58ax, clsGlobVar.CoordinatePlanA.Tank58ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 58, clsGlobVar.Tank58_PercentFill, clsGlobVar.CoordinatePlanA.Tank58bx, clsGlobVar.CoordinatePlanA.Tank58by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 59, clsGlobVar.Tank59_PercentFill, clsGlobVar.CoordinatePlanA.Tank59ax, clsGlobVar.CoordinatePlanA.Tank59ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 59, clsGlobVar.Tank59_PercentFill, clsGlobVar.CoordinatePlanA.Tank59bx, clsGlobVar.CoordinatePlanA.Tank59by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 60, clsGlobVar.Tank60_PercentFill, clsGlobVar.CoordinatePlanA.Tank60ax, clsGlobVar.CoordinatePlanA.Tank60ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 60, clsGlobVar.Tank60_PercentFill, clsGlobVar.CoordinatePlanA.Tank60bx, clsGlobVar.CoordinatePlanA.Tank60by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 61, clsGlobVar.Tank61_PercentFill, clsGlobVar.CoordinatePlanA.Tank61ax, clsGlobVar.CoordinatePlanA.Tank61ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 61, clsGlobVar.Tank61_PercentFill, clsGlobVar.CoordinatePlanA.Tank61bx, clsGlobVar.CoordinatePlanA.Tank61by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 62, clsGlobVar.Tank62_PercentFill, clsGlobVar.CoordinatePlanA.Tank62ax, clsGlobVar.CoordinatePlanA.Tank62ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 62, clsGlobVar.Tank62_PercentFill, clsGlobVar.CoordinatePlanA.Tank62bx, clsGlobVar.CoordinatePlanA.Tank62by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 63, clsGlobVar.Tank63_PercentFill, clsGlobVar.CoordinatePlanA.Tank63ax, clsGlobVar.CoordinatePlanA.Tank63ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 63, clsGlobVar.Tank63_PercentFill, clsGlobVar.CoordinatePlanA.Tank63bx, clsGlobVar.CoordinatePlanA.Tank63by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 64, clsGlobVar.Tank64_PercentFill, clsGlobVar.CoordinatePlanA.Tank64ax, clsGlobVar.CoordinatePlanA.Tank64ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 64, clsGlobVar.Tank64_PercentFill, clsGlobVar.CoordinatePlanA.Tank64bx, clsGlobVar.CoordinatePlanA.Tank64by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 65, clsGlobVar.Tank65_PercentFill, clsGlobVar.CoordinatePlanA.Tank65ax, clsGlobVar.CoordinatePlanA.Tank65ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 65, clsGlobVar.Tank65_PercentFill, clsGlobVar.CoordinatePlanA.Tank65bx, clsGlobVar.CoordinatePlanA.Tank65by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 66, clsGlobVar.Tank66_PercentFill, clsGlobVar.CoordinatePlanA.Tank66x, clsGlobVar.CoordinatePlanA.Tank66y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 67, clsGlobVar.Tank67_PercentFill, clsGlobVar.CoordinatePlanA.Tank67x, clsGlobVar.CoordinatePlanA.Tank67y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 68, clsGlobVar.Tank68_PercentFill, clsGlobVar.CoordinatePlanA.Tank68x, clsGlobVar.CoordinatePlanA.Tank68y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 69, clsGlobVar.Tank69_PercentFill, clsGlobVar.CoordinatePlanA.Tank69x, clsGlobVar.CoordinatePlanA.Tank69y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 70, clsGlobVar.Tank70_PercentFill, clsGlobVar.CoordinatePlanA.Tank70x, clsGlobVar.CoordinatePlanA.Tank70y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 71, clsGlobVar.Tank71_PercentFill, clsGlobVar.CoordinatePlanA.Tank71x, clsGlobVar.CoordinatePlanA.Tank71y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 72, clsGlobVar.Tank72_PercentFill, clsGlobVar.CoordinatePlanA.Tank72x, clsGlobVar.CoordinatePlanA.Tank72y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 73, clsGlobVar.Tank73_PercentFill, clsGlobVar.CoordinatePlanA.Tank73x, clsGlobVar.CoordinatePlanA.Tank73y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 74, clsGlobVar.Tank74_PercentFill, clsGlobVar.CoordinatePlanA.Tank74x, clsGlobVar.CoordinatePlanA.Tank74y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 75, clsGlobVar.Tank75_PercentFill, clsGlobVar.CoordinatePlanA.Tank75x, clsGlobVar.CoordinatePlanA.Tank75y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 76, clsGlobVar.Tank76_PercentFill, clsGlobVar.CoordinatePlanA.Tank76x, clsGlobVar.CoordinatePlanA.Tank76y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 77, clsGlobVar.Tank77_PercentFill, clsGlobVar.CoordinatePlanA.Tank77x, clsGlobVar.CoordinatePlanA.Tank77y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 78, clsGlobVar.Tank78_PercentFill, clsGlobVar.CoordinatePlanA.Tank78x, clsGlobVar.CoordinatePlanA.Tank78y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 79, clsGlobVar.Tank79_PercentFill, clsGlobVar.CoordinatePlanA.Tank79x, clsGlobVar.CoordinatePlanA.Tank79y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 80, clsGlobVar.Tank80_PercentFill, clsGlobVar.CoordinatePlanA.Tank80x, clsGlobVar.CoordinatePlanA.Tank80y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 81, clsGlobVar.Tank81_PercentFill, clsGlobVar.CoordinatePlanA.Tank81x, clsGlobVar.CoordinatePlanA.Tank81y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 82, clsGlobVar.Tank82_PercentFill, clsGlobVar.CoordinatePlanA.Tank82x, clsGlobVar.CoordinatePlanA.Tank82y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 83, clsGlobVar.Tank83_PercentFill, clsGlobVar.CoordinatePlanA.Tank83x, clsGlobVar.CoordinatePlanA.Tank83y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 84, clsGlobVar.Tank84_PercentFill, clsGlobVar.CoordinatePlanA.Tank84x, clsGlobVar.CoordinatePlanA.Tank84y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 85, clsGlobVar.Tank85_PercentFill, clsGlobVar.CoordinatePlanA.Tank85x, clsGlobVar.CoordinatePlanA.Tank85y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 86, clsGlobVar.Tank86_PercentFill, clsGlobVar.CoordinatePlanA.Tank86x, clsGlobVar.CoordinatePlanA.Tank86y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchDeckPlan(canvas2DPlanA, 87, clsGlobVar.Tank87_PercentFill, clsGlobVar.CoordinatePlanA.Tank87x, clsGlobVar.CoordinatePlanA.Tank87y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 88, clsGlobVar.Tank88_PercentFill, clsGlobVar.CoordinatePlanA.Tank88x, clsGlobVar.CoordinatePlanA.Tank88y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 89, clsGlobVar.Tank89_PercentFill, clsGlobVar.CoordinatePlanA.Tank89x, clsGlobVar.CoordinatePlanA.Tank89y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 90, clsGlobVar.Tank90_PercentFill, clsGlobVar.CoordinatePlanA.Tank90x, clsGlobVar.CoordinatePlanA.Tank90y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 154, clsGlobVar.Tank154_PercentFill, clsGlobVar.CoordinatePlanA.Tank154ax, clsGlobVar.CoordinatePlanA.Tank154ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 154, clsGlobVar.Tank154_PercentFill, clsGlobVar.CoordinatePlanA.Tank154bx, clsGlobVar.CoordinatePlanA.Tank154by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 155, clsGlobVar.Tank155_PercentFill, clsGlobVar.CoordinatePlanA.Tank155ax, clsGlobVar.CoordinatePlanA.Tank155ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 155, clsGlobVar.Tank155_PercentFill, clsGlobVar.CoordinatePlanA.Tank155bx, clsGlobVar.CoordinatePlanA.Tank155by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 156, clsGlobVar.Tank156_PercentFill, clsGlobVar.CoordinatePlanA.Tank156ax, clsGlobVar.CoordinatePlanA.Tank156ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 156, clsGlobVar.Tank156_PercentFill, clsGlobVar.CoordinatePlanA.Tank156bx, clsGlobVar.CoordinatePlanA.Tank156by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 157, clsGlobVar.Tank157_PercentFill, clsGlobVar.CoordinatePlanA.Tank157ax, clsGlobVar.CoordinatePlanA.Tank157ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 157, clsGlobVar.Tank157_PercentFill, clsGlobVar.CoordinatePlanA.Tank157bx, clsGlobVar.CoordinatePlanA.Tank157by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 438, clsGlobVar.Tank438_PercentFill, clsGlobVar.CoordinatePlanA.Tank438x, clsGlobVar.CoordinatePlanA.Tank438y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 442, clsGlobVar.Tank442_PercentFill, clsGlobVar.CoordinatePlanA.Tank442x, clsGlobVar.CoordinatePlanA.Tank442y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 451, clsGlobVar.Tank451_PercentFill, clsGlobVar.CoordinatePlanA.Tank451x, clsGlobVar.CoordinatePlanA.Tank451y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 456, clsGlobVar.Tank456_PercentFill, clsGlobVar.CoordinatePlanA.Tank456x, clsGlobVar.CoordinatePlanA.Tank456y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 460, clsGlobVar.Tank460_PercentFill, clsGlobVar.CoordinatePlanA.Tank460x, clsGlobVar.CoordinatePlanA.Tank460y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 464, clsGlobVar.Tank464_PercentFill, clsGlobVar.CoordinatePlanA.Tank464x, clsGlobVar.CoordinatePlanA.Tank464y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 466, clsGlobVar.Tank466_PercentFill, clsGlobVar.CoordinatePlanA.Tank466x, clsGlobVar.CoordinatePlanA.Tank466y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 469, clsGlobVar.Tank469_PercentFill, clsGlobVar.CoordinatePlanA.Tank469x, clsGlobVar.CoordinatePlanA.Tank469y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 473, clsGlobVar.Tank473_PercentFill, clsGlobVar.CoordinatePlanA.Tank473x, clsGlobVar.CoordinatePlanA.Tank473y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 475, clsGlobVar.Tank475_PercentFill, clsGlobVar.CoordinatePlanA.Tank475x, clsGlobVar.CoordinatePlanA.Tank475y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 477, clsGlobVar.Tank477_PercentFill, clsGlobVar.CoordinatePlanA.Tank477ax, clsGlobVar.CoordinatePlanA.Tank477ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 477, clsGlobVar.Tank477_PercentFill, clsGlobVar.CoordinatePlanA.Tank477bx, clsGlobVar.CoordinatePlanA.Tank477by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 479, clsGlobVar.Tank479_PercentFill, clsGlobVar.CoordinatePlanA.Tank479ax, clsGlobVar.CoordinatePlanA.Tank479ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 479, clsGlobVar.Tank479_PercentFill, clsGlobVar.CoordinatePlanA.Tank479bx, clsGlobVar.CoordinatePlanA.Tank479by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 482, clsGlobVar.Tank482_PercentFill, clsGlobVar.CoordinatePlanA.Tank482x, clsGlobVar.CoordinatePlanA.Tank482y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 483, clsGlobVar.Tank483_PercentFill, clsGlobVar.CoordinatePlanA.Tank483ax, clsGlobVar.CoordinatePlanA.Tank483ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 483, clsGlobVar.Tank483_PercentFill, clsGlobVar.CoordinatePlanA.Tank483bx, clsGlobVar.CoordinatePlanA.Tank483by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 484, clsGlobVar.Tank484_PercentFill, clsGlobVar.CoordinatePlanA.Tank484ax, clsGlobVar.CoordinatePlanA.Tank484ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 484, clsGlobVar.Tank484_PercentFill, clsGlobVar.CoordinatePlanA.Tank484bx, clsGlobVar.CoordinatePlanA.Tank484by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 487, clsGlobVar.Tank487_PercentFill, clsGlobVar.CoordinatePlanA.Tank487x, clsGlobVar.CoordinatePlanA.Tank487y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 488, clsGlobVar.Tank488_PercentFill, clsGlobVar.CoordinatePlanA.Tank488ax, clsGlobVar.CoordinatePlanA.Tank488ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 488, clsGlobVar.Tank488_PercentFill, clsGlobVar.CoordinatePlanA.Tank488bx, clsGlobVar.CoordinatePlanA.Tank488by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 489, clsGlobVar.Tank489_PercentFill, clsGlobVar.CoordinatePlanA.Tank489ax, clsGlobVar.CoordinatePlanA.Tank489ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 489, clsGlobVar.Tank489_PercentFill, clsGlobVar.CoordinatePlanA.Tank489bx, clsGlobVar.CoordinatePlanA.Tank489by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 499, clsGlobVar.Tank499_PercentFill, clsGlobVar.CoordinatePlanA.Tank499ax, clsGlobVar.CoordinatePlanA.Tank499ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 499, clsGlobVar.Tank499_PercentFill, clsGlobVar.CoordinatePlanA.Tank499bx, clsGlobVar.CoordinatePlanA.Tank499by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 500, clsGlobVar.Tank500_PercentFill, clsGlobVar.CoordinatePlanA.Tank500ax, clsGlobVar.CoordinatePlanA.Tank500ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 500, clsGlobVar.Tank500_PercentFill, clsGlobVar.CoordinatePlanA.Tank500bx, clsGlobVar.CoordinatePlanA.Tank500by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 501, clsGlobVar.Tank501_PercentFill, clsGlobVar.CoordinatePlanA.Tank501ax, clsGlobVar.CoordinatePlanA.Tank501ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 501, clsGlobVar.Tank501_PercentFill, clsGlobVar.CoordinatePlanA.Tank501bx, clsGlobVar.CoordinatePlanA.Tank501by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 502, clsGlobVar.Tank502_PercentFill, clsGlobVar.CoordinatePlanA.Tank502ax, clsGlobVar.CoordinatePlanA.Tank502ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchDeckPlan(canvas2DPlanA, 502, clsGlobVar.Tank502_PercentFill, clsGlobVar.CoordinatePlanA.Tank502bx, clsGlobVar.CoordinatePlanA.Tank502by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+
+
+
+            }
+            catch //(Exception ex)
+            {
+               // System.Windows.MessageBox.Show(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Add Hatch Filling of Tanks/Compartments to DeckPlans Canvas as per TankID 
+        /// </summary>
+        public void AddHatchDeckPlanC()
+        {
+            try
+            {
+
+                canvas2DPlanC.Children.RemoveRange(1, canvas2DPlanC.Children.Count - 1);
+                //DrawHatchDeckPlan(canvas2DPlanC, 142, clsGlobVar.Tank142_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank142x, clsGlobVar.CoordinatePlanC.Tank142y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 143, clsGlobVar.Tank143_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank143x, clsGlobVar.CoordinatePlanC.Tank143y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 144, clsGlobVar.Tank144_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank144x, clsGlobVar.CoordinatePlanC.Tank144y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 148, clsGlobVar.Tank148_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank148x, clsGlobVar.CoordinatePlanC.Tank148y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 149, clsGlobVar.Tank149_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank149ax, clsGlobVar.CoordinatePlanC.Tank149ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 149, clsGlobVar.Tank149_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank149bx, clsGlobVar.CoordinatePlanC.Tank149by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 178, clsGlobVar.Tank178_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank178x, clsGlobVar.CoordinatePlanC.Tank178y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 188, clsGlobVar.Tank188_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank188x, clsGlobVar.CoordinatePlanC.Tank188y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 302, clsGlobVar.Tank302_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank302x, clsGlobVar.CoordinatePlanC.Tank302y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 303, clsGlobVar.Tank303_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank303x, clsGlobVar.CoordinatePlanC.Tank303y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 304, clsGlobVar.Tank304_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank304x, clsGlobVar.CoordinatePlanC.Tank304y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 305, clsGlobVar.Tank305_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank305x, clsGlobVar.CoordinatePlanC.Tank305y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 306, clsGlobVar.Tank306_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank306x, clsGlobVar.CoordinatePlanC.Tank306y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 307, clsGlobVar.Tank307_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank307x, clsGlobVar.CoordinatePlanC.Tank307y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 308, clsGlobVar.Tank308_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank308x, clsGlobVar.CoordinatePlanC.Tank308y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 309, clsGlobVar.Tank309_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank309x, clsGlobVar.CoordinatePlanC.Tank309y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 310, clsGlobVar.Tank310_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank310x, clsGlobVar.CoordinatePlanC.Tank310y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 311, clsGlobVar.Tank311_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank311x, clsGlobVar.CoordinatePlanC.Tank311y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 312, clsGlobVar.Tank312_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank312x, clsGlobVar.CoordinatePlanC.Tank312y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 313, clsGlobVar.Tank313_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank313x, clsGlobVar.CoordinatePlanC.Tank313y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 314, clsGlobVar.Tank314_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank314x, clsGlobVar.CoordinatePlanC.Tank314y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 315, clsGlobVar.Tank315_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank315x, clsGlobVar.CoordinatePlanC.Tank315y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 316, clsGlobVar.Tank316_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank316x, clsGlobVar.CoordinatePlanC.Tank316y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 318, clsGlobVar.Tank318_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank318x, clsGlobVar.CoordinatePlanC.Tank318y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 319, clsGlobVar.Tank319_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank319x, clsGlobVar.CoordinatePlanC.Tank319y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 320, clsGlobVar.Tank320_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank320x, clsGlobVar.CoordinatePlanC.Tank320y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 321, clsGlobVar.Tank321_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank321x, clsGlobVar.CoordinatePlanC.Tank321y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 322, clsGlobVar.Tank322_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank322x, clsGlobVar.CoordinatePlanC.Tank322y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 323, clsGlobVar.Tank323_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank323x, clsGlobVar.CoordinatePlanC.Tank323y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 324, clsGlobVar.Tank324_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank324x, clsGlobVar.CoordinatePlanC.Tank324y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 325, clsGlobVar.Tank325_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank325x, clsGlobVar.CoordinatePlanC.Tank325y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 326, clsGlobVar.Tank326_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank326x, clsGlobVar.CoordinatePlanC.Tank326y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 327, clsGlobVar.Tank327_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank327x, clsGlobVar.CoordinatePlanC.Tank327y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 328, clsGlobVar.Tank328_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank328x, clsGlobVar.CoordinatePlanC.Tank328y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 329, clsGlobVar.Tank329_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank329x, clsGlobVar.CoordinatePlanC.Tank329y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 330, clsGlobVar.Tank330_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank330x, clsGlobVar.CoordinatePlanC.Tank330y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 331, clsGlobVar.Tank331_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank331x, clsGlobVar.CoordinatePlanC.Tank331y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 332, clsGlobVar.Tank332_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank332x, clsGlobVar.CoordinatePlanC.Tank332y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 333, clsGlobVar.Tank333_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank333x, clsGlobVar.CoordinatePlanC.Tank333y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 334, clsGlobVar.Tank334_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank334x, clsGlobVar.CoordinatePlanC.Tank334y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 335, clsGlobVar.Tank335_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank335x, clsGlobVar.CoordinatePlanC.Tank335y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 336, clsGlobVar.Tank336_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank336x, clsGlobVar.CoordinatePlanC.Tank336y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 337, clsGlobVar.Tank337_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank337x, clsGlobVar.CoordinatePlanC.Tank337y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 338, clsGlobVar.Tank338_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank338x, clsGlobVar.CoordinatePlanC.Tank338y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 339, clsGlobVar.Tank339_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank339x, clsGlobVar.CoordinatePlanC.Tank339y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 340, clsGlobVar.Tank340_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank340x, clsGlobVar.CoordinatePlanC.Tank340y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 341, clsGlobVar.Tank341_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank341x, clsGlobVar.CoordinatePlanC.Tank341y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 342, clsGlobVar.Tank342_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank342x, clsGlobVar.CoordinatePlanC.Tank342y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 343, clsGlobVar.Tank343_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank343x, clsGlobVar.CoordinatePlanC.Tank343y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 344, clsGlobVar.Tank344_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank344x, clsGlobVar.CoordinatePlanC.Tank344y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 345, clsGlobVar.Tank345_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank345x, clsGlobVar.CoordinatePlanC.Tank345y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 346, clsGlobVar.Tank346_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank346x, clsGlobVar.CoordinatePlanC.Tank346y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 347, clsGlobVar.Tank347_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank347x, clsGlobVar.CoordinatePlanC.Tank347y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 348, clsGlobVar.Tank348_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank348x, clsGlobVar.CoordinatePlanC.Tank348y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 349, clsGlobVar.Tank349_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank349x, clsGlobVar.CoordinatePlanC.Tank349y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 350, clsGlobVar.Tank350_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank350x, clsGlobVar.CoordinatePlanC.Tank350y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 351, clsGlobVar.Tank351_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank351x, clsGlobVar.CoordinatePlanC.Tank351y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 352, clsGlobVar.Tank352_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank352x, clsGlobVar.CoordinatePlanC.Tank352y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 353, clsGlobVar.Tank353_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank353x, clsGlobVar.CoordinatePlanC.Tank353y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 354, clsGlobVar.Tank354_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank354x, clsGlobVar.CoordinatePlanC.Tank354y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 355, clsGlobVar.Tank355_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank355x, clsGlobVar.CoordinatePlanC.Tank355y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 356, clsGlobVar.Tank356_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank356x, clsGlobVar.CoordinatePlanC.Tank356y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 357, clsGlobVar.Tank357_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank357x, clsGlobVar.CoordinatePlanC.Tank357y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 358, clsGlobVar.Tank358_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank358x, clsGlobVar.CoordinatePlanC.Tank358y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 359, clsGlobVar.Tank359_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank359x, clsGlobVar.CoordinatePlanC.Tank359y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 360, clsGlobVar.Tank360_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank360x, clsGlobVar.CoordinatePlanC.Tank360y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 362, clsGlobVar.Tank362_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank362x, clsGlobVar.CoordinatePlanC.Tank362y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 363, clsGlobVar.Tank363_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank363x, clsGlobVar.CoordinatePlanC.Tank363y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 364, clsGlobVar.Tank364_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank364x, clsGlobVar.CoordinatePlanC.Tank364y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 365, clsGlobVar.Tank365_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank365x, clsGlobVar.CoordinatePlanC.Tank365y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 366, clsGlobVar.Tank366_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank366x, clsGlobVar.CoordinatePlanC.Tank366y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 367, clsGlobVar.Tank367_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank367x, clsGlobVar.CoordinatePlanC.Tank367y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 368, clsGlobVar.Tank368_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank368x, clsGlobVar.CoordinatePlanC.Tank368y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 369, clsGlobVar.Tank369_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank369x, clsGlobVar.CoordinatePlanC.Tank369y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 370, clsGlobVar.Tank370_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank370x, clsGlobVar.CoordinatePlanC.Tank370y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 371, clsGlobVar.Tank371_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank371x, clsGlobVar.CoordinatePlanC.Tank371y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 372, clsGlobVar.Tank372_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank372x, clsGlobVar.CoordinatePlanC.Tank372y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 373, clsGlobVar.Tank373_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank373x, clsGlobVar.CoordinatePlanC.Tank373y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 374, clsGlobVar.Tank374_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank374x, clsGlobVar.CoordinatePlanC.Tank374y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 375, clsGlobVar.Tank375_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank375x, clsGlobVar.CoordinatePlanC.Tank375y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 376, clsGlobVar.Tank376_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank376x, clsGlobVar.CoordinatePlanC.Tank376y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 377, clsGlobVar.Tank377_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank377x, clsGlobVar.CoordinatePlanC.Tank377y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 378, clsGlobVar.Tank378_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank378x, clsGlobVar.CoordinatePlanC.Tank378y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 379, clsGlobVar.Tank379_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank379x, clsGlobVar.CoordinatePlanC.Tank379y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 380, clsGlobVar.Tank380_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank380x, clsGlobVar.CoordinatePlanC.Tank380y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 381, clsGlobVar.Tank381_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank381x, clsGlobVar.CoordinatePlanC.Tank381y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 382, clsGlobVar.Tank382_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank382x, clsGlobVar.CoordinatePlanC.Tank382y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 383, clsGlobVar.Tank383_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank383x, clsGlobVar.CoordinatePlanC.Tank383y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 384, clsGlobVar.Tank384_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank384x, clsGlobVar.CoordinatePlanC.Tank384y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 385, clsGlobVar.Tank385_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank385x, clsGlobVar.CoordinatePlanC.Tank385y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 386, clsGlobVar.Tank386_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank386x, clsGlobVar.CoordinatePlanC.Tank386y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 387, clsGlobVar.Tank387_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank387x, clsGlobVar.CoordinatePlanC.Tank387y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 388, clsGlobVar.Tank388_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank388x, clsGlobVar.CoordinatePlanC.Tank388y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 389, clsGlobVar.Tank389_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank389x, clsGlobVar.CoordinatePlanC.Tank389y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 390, clsGlobVar.Tank390_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank390x, clsGlobVar.CoordinatePlanC.Tank390y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 391, clsGlobVar.Tank391_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank391x, clsGlobVar.CoordinatePlanC.Tank391y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 392, clsGlobVar.Tank392_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank392x, clsGlobVar.CoordinatePlanC.Tank392y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 393, clsGlobVar.Tank393_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank393x, clsGlobVar.CoordinatePlanC.Tank393y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 394, clsGlobVar.Tank394_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank394x, clsGlobVar.CoordinatePlanC.Tank394y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 395, clsGlobVar.Tank395_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank395x, clsGlobVar.CoordinatePlanC.Tank395y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 396, clsGlobVar.Tank396_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank396x, clsGlobVar.CoordinatePlanC.Tank396y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 397, clsGlobVar.Tank397_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank397x, clsGlobVar.CoordinatePlanC.Tank397y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 399, clsGlobVar.Tank399_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank399x, clsGlobVar.CoordinatePlanC.Tank399y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 400, clsGlobVar.Tank400_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank400x, clsGlobVar.CoordinatePlanC.Tank400y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 401, clsGlobVar.Tank401_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank401x, clsGlobVar.CoordinatePlanC.Tank401y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 402, clsGlobVar.Tank402_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank402x, clsGlobVar.CoordinatePlanC.Tank402y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 403, clsGlobVar.Tank403_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank403x, clsGlobVar.CoordinatePlanC.Tank403y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 404, clsGlobVar.Tank404_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank404x, clsGlobVar.CoordinatePlanC.Tank404y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 405, clsGlobVar.Tank405_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank405x, clsGlobVar.CoordinatePlanC.Tank405y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 406, clsGlobVar.Tank406_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank406x, clsGlobVar.CoordinatePlanC.Tank406y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 407, clsGlobVar.Tank407_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank407x, clsGlobVar.CoordinatePlanC.Tank407y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 408, clsGlobVar.Tank408_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank408x, clsGlobVar.CoordinatePlanC.Tank408y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 409, clsGlobVar.Tank409_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank409x, clsGlobVar.CoordinatePlanC.Tank409y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 410, clsGlobVar.Tank410_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank410x, clsGlobVar.CoordinatePlanC.Tank410y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 411, clsGlobVar.Tank411_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank411x, clsGlobVar.CoordinatePlanC.Tank411y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 412, clsGlobVar.Tank412_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank412x, clsGlobVar.CoordinatePlanC.Tank412y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 413, clsGlobVar.Tank413_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank413x, clsGlobVar.CoordinatePlanC.Tank413y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 414, clsGlobVar.Tank414_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank414x, clsGlobVar.CoordinatePlanC.Tank414y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 415, clsGlobVar.Tank415_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank415x, clsGlobVar.CoordinatePlanC.Tank415y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 416, clsGlobVar.Tank416_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank416ax, clsGlobVar.CoordinatePlanC.Tank416ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 416, clsGlobVar.Tank416_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank416bx, clsGlobVar.CoordinatePlanC.Tank416by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 417, clsGlobVar.Tank417_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank417x, clsGlobVar.CoordinatePlanC.Tank417y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 418, clsGlobVar.Tank418_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank418x, clsGlobVar.CoordinatePlanC.Tank418y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 419, clsGlobVar.Tank419_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank419x, clsGlobVar.CoordinatePlanC.Tank419y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 420, clsGlobVar.Tank420_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank420x, clsGlobVar.CoordinatePlanC.Tank420y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 421, clsGlobVar.Tank421_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank421x, clsGlobVar.CoordinatePlanC.Tank421y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 423, clsGlobVar.Tank423_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank423x, clsGlobVar.CoordinatePlanC.Tank423y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 424, clsGlobVar.Tank424_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank424x, clsGlobVar.CoordinatePlanC.Tank424y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 425, clsGlobVar.Tank425_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank425x, clsGlobVar.CoordinatePlanC.Tank425y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 426, clsGlobVar.Tank426_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank426x, clsGlobVar.CoordinatePlanC.Tank426y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 427, clsGlobVar.Tank427_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank427x, clsGlobVar.CoordinatePlanC.Tank427y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 428, clsGlobVar.Tank428_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank428x, clsGlobVar.CoordinatePlanC.Tank428y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 429, clsGlobVar.Tank429_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank429x, clsGlobVar.CoordinatePlanC.Tank429y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 430, clsGlobVar.Tank430_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank430x, clsGlobVar.CoordinatePlanC.Tank430y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 431, clsGlobVar.Tank431_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank431x, clsGlobVar.CoordinatePlanC.Tank431y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 432, clsGlobVar.Tank432_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank432x, clsGlobVar.CoordinatePlanC.Tank432y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 433, clsGlobVar.Tank433_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank433x, clsGlobVar.CoordinatePlanC.Tank433y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 434, clsGlobVar.Tank434_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank434x, clsGlobVar.CoordinatePlanC.Tank434y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 435, clsGlobVar.Tank435_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank435x, clsGlobVar.CoordinatePlanC.Tank435y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 439, clsGlobVar.Tank439_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank439x, clsGlobVar.CoordinatePlanC.Tank439y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 443, clsGlobVar.Tank443_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank443x, clsGlobVar.CoordinatePlanC.Tank443y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 448, clsGlobVar.Tank448_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank448x, clsGlobVar.CoordinatePlanC.Tank448y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 449, clsGlobVar.Tank449_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank449x, clsGlobVar.CoordinatePlanC.Tank449y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 452, clsGlobVar.Tank452_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank452x, clsGlobVar.CoordinatePlanC.Tank452y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 453, clsGlobVar.Tank453_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank453x, clsGlobVar.CoordinatePlanC.Tank453y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 457, clsGlobVar.Tank457_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank457x, clsGlobVar.CoordinatePlanC.Tank457y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 461, clsGlobVar.Tank461_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank461x, clsGlobVar.CoordinatePlanC.Tank461y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 466, clsGlobVar.Tank466_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank466x, clsGlobVar.CoordinatePlanC.Tank466y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 467, clsGlobVar.Tank467_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank467x, clsGlobVar.CoordinatePlanC.Tank467y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 470, clsGlobVar.Tank470_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank470x, clsGlobVar.CoordinatePlanC.Tank470y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank475ax, clsGlobVar.CoordinatePlanC.Tank475ay, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank475bx, clsGlobVar.CoordinatePlanC.Tank475by, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 476, clsGlobVar.Tank476_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank476x, clsGlobVar.CoordinatePlanC.Tank476y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 478, clsGlobVar.Tank478_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank478x, clsGlobVar.CoordinatePlanC.Tank478y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                //DrawHatchDeckPlan(canvas2DPlanC, 494, clsGlobVar.Tank494_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank494x, clsGlobVar.CoordinatePlanC.Tank494y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+
+
+
+
+            }
+            catch //(Exception ex)
+            {
+               // System.Windows.MessageBox.Show(ex.Message);
+            }
+        }
+        /// <summary>
+        /// Add Trim Line to Profile View
+        /// </summary>
+        public void DrawTrimLine()
+        {
+            //@MT Code changed for Ship Profile Trim Line Should be Steady :START
+            double xAP, yAP, xFP, yFP, yAvg, angle, DraftAP, DraftFP;
+            DraftAP = Convert.ToDouble(lblDraftAP.Content);
+            DraftFP = Convert.ToDouble(lblDraftFP.Content);
+            angle = (DraftFP - DraftAP) / 2;
+            yAvg = (DraftFP + DraftAP) / 2;
+            xAP = 5000;
+            yAP = 6250 + 1157.40 + ((yAvg - angle) * 1000);
+            xFP = 172045;
+            yFP = 6250 + 1157.40 + ((yAvg + angle) * 1000);
+
+            //@MT Code changed for Ship Profile Trim Line Should be Steady :END
+
+
+            System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+            p.Stroke = System.Windows.Media.Brushes.Black;
+
+            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+            mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(255, 0, 0, 255);
+            p.Fill = mySolidColorBrush;
+
+            System.Windows.Point[] point = new System.Windows.Point[5];
+            PointCollection pointCollection = new PointCollection();
+            pointCollection.Add(new System.Windows.Point(xAP, yAP - 200));
+            pointCollection.Add(new System.Windows.Point(xFP, yFP - 200));
+            pointCollection.Add(new System.Windows.Point(xFP, yFP));
+            pointCollection.Add(new System.Windows.Point(xAP, yAP));
+
+            p.Points = pointCollection;
+            canvas2DProfile.Children.Add(p);
+
+        }
+
+        /// <summary>
+        /// Logic for Adding hatches to Show Filling on deck plans
+        /// </summary>
+        /// <param name="canvasTwoD">Canvas on which hatch is to be created</param> 
+        /// <param name="Tank_ID">TankID of Tank/Compartment.</param> 
+        /// <param name="percent">Percentage Filling</param> 
+        /// <param name="xx">Collection of all the x coordinates for drawing the hatch.</param> 
+        /// <param name="yy">Collection of all the y coordinates for drawing the hatch.</param> 
+        /// <param name="color">Hatch Color </param> 
+        public void DrawHatchDeckPlan(Canvas canvasTwoD, int Tank_ID, decimal percent, double[] xx, double[] yy, System.Windows.Media.Color color)
+        {
+            try
+            {
+                if (Convert.ToBoolean(Models.BO.clsGlobVar.dtRealModeAllTanks.Rows[Tank_ID - 1]["IsDamaged"]) == true)
+                {
+                    System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                    p.Stroke = System.Windows.Media.Brushes.Black;
+
+                    SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                    mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(220, 255, 0, 0);
+                    p.Fill = mySolidColorBrush;
+
+                    System.Windows.Point[] point = new System.Windows.Point[15];
+                    PointCollection pointCollection = new PointCollection();
+                    for (int index = 1; index <= 13; index++)
+                    {
+
+                        pointCollection.Add(new System.Windows.Point(xx[index], yy[index]));
+
+                    }
+                    p.Points = pointCollection;
+                    canvasTwoD.Children.Add(p);
+
+
+                }
+                else
+                    if (percent > 0 && percent <= 100)
+                    {
+                        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                        p.Stroke = System.Windows.Media.Brushes.Black;
+
+                        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                        mySolidColorBrush.Color = color;
+                        p.Fill = mySolidColorBrush;
+
+                        System.Windows.Point[] point = new System.Windows.Point[15];
+                        PointCollection pointCollection = new PointCollection();
+                        for (int index = 1; index <= 13; index++)
+                        {
+
+                            pointCollection.Add(new System.Windows.Point(xx[index], yy[index]));
+
+                        }
+                        p.Points = pointCollection;
+                        canvasTwoD.Children.Add(p);
+                        percent = 0;
+                    }
+                    else if (percent == 0)
+                    {
+                        //System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                        //p.Stroke = System.Windows.Media.Brushes.Black;
+
+                        //SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                        //mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(0, 255, 0, 0);
+                        //p.Fill = mySolidColorBrush;
+
+                        //System.Windows.Point[] point = new System.Windows.Point[15];
+                        //PointCollection pointCollection = new PointCollection();
+                        //for (int index = 1; index <= 14; index++)
+                        //{
+                        //    pointCollection.Add(new System.Windows.Point(xx[index], yy[index]));
+                        //}
+                        //p.Points = pointCollection;
+                        //canvasTwoD.Children.Add(p);
+                        percent = 0;
+                    }
+            }
+            catch //(Exception ex)
+            {
+                //MessageBox.Show(ex.Message.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Logic for Adding hatches to Show Filling on Profile plan as per Percentage
+        /// </summary>
+        /// <param name="canvasTwoD">Canvas on which hatch is to be created</param> 
+        /// <param name="Tank_ID">TankID of Tank/Compartment.</param> 
+        /// <param name="percent">Percentage Filling</param> 
+        /// <param name="xx">Collection of all the x coordinates for drawing the hatch.</param> 
+        /// <param name="yy">Collection of all the y coordinates for drawing the hatch.</param> 
+        /// <param name="color">Hatch Color </param> 
+        /// 
+
+        // Commented the drawhatchprofile with adding new 
+
+        //public void DrawHatchProfile(Canvas canvasTwoD, int Tank_ID, decimal percent, double[] xx, double[] yy, System.Windows.Media.Color color)
+        //{
+        //    try
+        //    {
+        //        if (Convert.ToBoolean(Models.BO.clsGlobVar.dtRealModeAllTanks.Rows[Tank_ID - 1]["IsDamaged"]) == true)
+        //        {
+        //            System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+        //            p.Stroke = System.Windows.Media.Brushes.Black;
+        //            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+        //            mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(220, 255, 0, 0);
+        //            p.Fill = mySolidColorBrush;
+        //            System.Windows.Point[] point = new System.Windows.Point[25];
+        //            PointCollection pointCollection = new PointCollection();
+        //            pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+        //            pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+        //            pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+        //            pointCollection.Add(new System.Windows.Point(xx[4], yy[4]));
+        //            p.Points = pointCollection;
+        //            canvasTwoD.Children.Add(p);
+
+        //        }
+        //        else if (Tank_ID == 31 || Tank_ID == 33 || Tank_ID == 35)
+        //        {
+        //            if (percent > 0 && percent <= 10)
+        //            {
+        //                System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+        //                p.Stroke = System.Windows.Media.Brushes.Black;
+        //                SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+        //                mySolidColorBrush.Color = color;
+        //                p.Fill = mySolidColorBrush;
+        //                double d = yy[3] - yy[2];
+        //                double Fill = Convert.ToInt32(percent) * (d / 10);
+        //                System.Windows.Point[] point = new System.Windows.Point[25];
+        //                PointCollection pointCollection = new PointCollection();
+        //                pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+        //                pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+        //                pointCollection.Add(new System.Windows.Point(xx[2], yy[2] + Fill));
+        //                pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
+        //                p.Points = pointCollection;
+        //                canvasTwoD.Children.Add(p);
+        //                percent = 0;
+        //            }
+        //            else if (percent > 10 && percent <= 100)
+        //            {
+        //                System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+        //                p.Stroke = System.Windows.Media.Brushes.Black;
+        //                SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+        //                mySolidColorBrush.Color = color;
+        //                p.Fill = mySolidColorBrush;
+        //                //double d = yy[2] - yy[1];
+        //                //double Fill = Convert.ToInt32(percent) * (d / 10);
+        //                System.Windows.Point[] point = new System.Windows.Point[25];
+        //                PointCollection pointCollection = new PointCollection();
+        //                pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+        //                pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+        //                pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+        //                pointCollection.Add(new System.Windows.Point(xx[4], yy[4]));
+        //                p.Points = pointCollection;
+        //                canvasTwoD.Children.Add(p);
+        //                percent = 0;
+        //            }
+
+        //        }
+        //        else if (percent > 0 && percent <= 100)
+        //        {
+        //            System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+        //            p.Stroke = System.Windows.Media.Brushes.Black;
+        //            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+        //            mySolidColorBrush.Color = color;
+        //            p.Fill = mySolidColorBrush;
+        //            double d = yy[3] - yy[2];
+        //            double Fill = Convert.ToInt32(percent) * (d / 100);
+        //            System.Windows.Point[] point = new System.Windows.Point[25];
+        //            PointCollection pointCollection = new PointCollection();
+        //            pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+        //            pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+        //            pointCollection.Add(new System.Windows.Point(xx[2], yy[2] + Fill));
+        //            pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
+        //            p.Points = pointCollection;
+        //            canvasTwoD.Children.Add(p);
+        //            percent = 0;
+        //        }
+        //        else if (percent == 0)
+        //        {
+        //            System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+        //            p.Stroke = System.Windows.Media.Brushes.Black;
+        //            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+        //            mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(0, 255, 255, 255);
+        //            p.Fill = mySolidColorBrush;
+        //            System.Windows.Point[] point = new System.Windows.Point[25];
+        //            PointCollection pointCollection = new PointCollection();
+        //            pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+        //            pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+        //            pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+        //            pointCollection.Add(new System.Windows.Point(xx[4], yy[4]));
+        //            p.Points = pointCollection;
+        //            canvasTwoD.Children.Add(p);
+        //        }
+        //    }
+        //    catch
+        //    {
+
+        //    }
+        //} //
+
+
+        public void DrawHatchProfile(Canvas canvasTwoD, int Tank_ID, decimal percent, double[] xx, double[] yy, System.Windows.Media.Color color)
+        {
+            try
+            {
+                //if (Convert.ToBoolean(Models.BO.clsGlobVar.dtRealModeAllTanks.Rows[Tank_ID - 1]["IsDamaged"]) == true)
+                if (Tank_ID == 1000)
+                {
+                    System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                    p.Stroke = System.Windows.Media.Brushes.Black;
+                    SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                    mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(220, 255, 0, 0);
+                    p.Fill = mySolidColorBrush;
+                    System.Windows.Point[] point = new System.Windows.Point[25];
+                    PointCollection pointCollection = new PointCollection();
+                    pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+                    pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+                    pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+                    pointCollection.Add(new System.Windows.Point(xx[4], yy[4]));
+                    p.Points = pointCollection;
+                    canvasTwoD.Children.Add(p);
+
+                }
+
+                //#region curved
+                //else if (Tank_ID == 38 && percent != 0)      //filling tank id 38 
+                //{
+
+                //    x4 = 4506.5651;
+                //    y4 = 6319.306;
+                //    x3 = -595.0785;
+                //    y3 = 6231.4572;
+                //    x2 = -187.8462;
+                //    y2 = 4100;
+                //    x1 = 4500.0096;
+                //    y1 = 4100;
+
+                //    System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //    p.Stroke = System.Windows.Media.Brushes.Black;
+                //    SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //    mySolidColorBrush.Color = color;
+                //    p.Fill = mySolidColorBrush;
+
+
+                //    double d = y3 - y2;
+                //    double Fill = Convert.ToInt32(percent) * (d / 100);
+                //    double dx = x3 - x2;
+                //    double Fillx = Convert.ToInt32(percent) * (dx / 100);
+                //    System.Windows.Point[] point = new System.Windows.Point[25];
+                //    PointCollection pointCollection = new PointCollection();
+                //    pointCollection.Add(new System.Windows.Point(x1, y1));
+                //    pointCollection.Add(new System.Windows.Point(x2, y2));
+                //    pointCollection.Add(new System.Windows.Point(x2 + Fillx, y1 + Fill));
+                //    pointCollection.Add(new System.Windows.Point(x1, y1 + Fill));
+                //    p.Points = pointCollection;
+                //    canvasTwoD.Children.Add(p);
+                //    percent = 0;
+
+                //}
+                //else if (Tank_ID == 31 || Tank_ID == 33 || Tank_ID == 35)
+                //{
+                //    if (percent > 0 && percent <= 10)
+                //    {
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+                //        double d = yy[3] - yy[2];
+                //        double Fill = Convert.ToInt32(percent) * (d / 10);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+                //        pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+                //        pointCollection.Add(new System.Windows.Point(xx[2], yy[2] + Fill));
+                //        pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+                //    else if (percent > 10 && percent <= 100)
+                //    {
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+                //        pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+                //        pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+                //        pointCollection.Add(new System.Windows.Point(xx[4], yy[4]));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+
+                //}
+                //else if ((Tank_ID == 44 || Tank_ID == 76) && percent != 0 && percent <= 10)   // else condition for  filling the curved tank <=10 compartment
+                //{
+                //    if (percent > 0 && percent <= 10)
+                //    {
+
+                //        if (Tank_ID == 44)
+                //        {
+                //            x1 = 87747.8509;
+                //            y1 = 4000.037;
+                //            x2 = 90732.8238;
+                //            y2 = 4000.0047;
+                //            x3 = 91474.9989;
+                //            y3 = 4892.44;
+                //            x4 = 92314.6868;
+                //            y4 = 5864.5274;
+                //            x5 = 92876.0048;
+                //            y5 = 6500;
+                //            x6 = 87747.8779;
+                //            y6 = 6500;
+                //        }
+                //        else if (Tank_ID == 76)
+                //        {
+                //            x1 = 87747.8779;
+                //            y1 = 6500;
+                //            x2 = 92876.0048;
+                //            y2 = 6500;
+                //            x3 = 94123.9043;
+                //            y3 = 7829.5821;
+                //            x4 = 95249.6596;
+                //            y4 = 8938.5823;
+                //            x5 = 96326.8665;
+                //            y5 = 9949.9084;
+                //            x6 = 87747.8778;
+                //            y6 = 9568.4435;
+
+
+                //        }
+
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+
+
+                //        double d = y3 - y2;
+                //        double Fill = Convert.ToInt32(percent) * (d / 40);
+                //        double dx = x3 - x2;
+                //        double Fillx = Convert.ToInt32(percent) * (dx / 40);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(x1, y1));
+                //        pointCollection.Add(new System.Windows.Point(x2, y2));
+                //        pointCollection.Add(new System.Windows.Point(x2 + Fillx, y1 + Fill));
+                //        pointCollection.Add(new System.Windows.Point(x1, y1 + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+                //}
+
+
+                //else if ((Tank_ID == 43 || Tank_ID == 44 || Tank_ID == 76) && percent != 0)   // else condition for  filling the curved compartment
+                //{
+                //    if (percent > 0 && percent <= 10)
+                //    {
+                //        if (Tank_ID == 43)
+                //        {
+                //            x1 = 85499.9826;
+                //            y1 = 35.895;
+                //            x2 = 87288.4132;
+                //            y2 = 537.4795;
+                //            x3 = 88398.7617;
+                //            y3 = 1299.9649;
+                //            x4 = 89742.2384;
+                //            y4 = 2808.8661;
+                //            x5 = 90732.8238;
+                //            y5 = 4000.0047;
+                //            x6 = 85499.9826;
+                //        }
+
+
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+
+
+                //        double d = y2 - y1;
+                //        double Fill = Convert.ToInt32(percent) * (d / 10);
+                //        double dx = x2 - x1;
+                //        double Fillx = Convert.ToInt32(percent) * (dx / 10);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(x1, y1));
+                //        pointCollection.Add(new System.Windows.Point(x1 + Fillx, y1 + Fill));
+                //        pointCollection.Add(new System.Windows.Point(x1, y1 + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+                //    else if (percent > 10 && percent <= 40)
+                //    {
+                //        if (Tank_ID == 43)
+                //        {
+                //            x1 = 85499.9826;
+                //            y1 = 35.895;
+                //            x2 = 87288.4132;
+                //            y2 = 537.4795;
+                //            x3 = 88398.7617;
+                //            y3 = 1299.9649;
+                //            x4 = 89742.2384;
+                //            y4 = 2808.8661;
+                //            x5 = 90732.8238;
+                //            y5 = 4000.0047;
+                //            x6 = 85499.9826;
+                //        }
+                //        else if (Tank_ID == 44)
+                //        {
+                //            x1 = 87747.8509;
+                //            y1 = 4000.037;
+                //            x2 = 90732.8238;
+                //            y2 = 4000.0047;
+                //            x3 = 91474.9989;
+                //            y3 = 4892.44;
+                //            x4 = 92314.6868;
+                //            y4 = 5864.5274;
+                //            x5 = 92876.0048;
+                //            y5 = 6500;
+                //            x6 = 87747.8779;
+                //            y6 = 6500;
+                //        }
+
+                //        else if (Tank_ID == 76)
+                //        {
+                //            x1 = 51000.8661;
+                //            x1 = 87747.8779;
+                //            y1 = 6500;
+                //            x2 = 92876.0048;
+                //            y2 = 6500;
+                //            x3 = 94123.9043;
+                //            y3 = 7829.5821;
+                //            x4 = 95249.6596;
+                //            y4 = 8938.5823;
+                //            x5 = 96326.8665;
+                //            y5 = 9949.9084;
+                //            x6 = 87747.8778;
+                //            y6 = 9568.4435;
+
+                //        }
+
+
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+
+                //        double d = y3 - y2;
+                //        double Fill = Convert.ToInt32(percent) * (d / 40);
+                //        double dx = x3 - x2;
+                //        double Fillx = Convert.ToInt32(percent) * (dx / 40);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(x1, y1));
+                //        pointCollection.Add(new System.Windows.Point(x2, y2));
+                //        pointCollection.Add(new System.Windows.Point(x2 + Fillx, y2 + Fill));
+                //        pointCollection.Add(new System.Windows.Point(x1, y2 + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+
+                //    else if (percent > 40 && percent <= 70)
+                //    {
+
+                //        if (Tank_ID == 43)
+                //        {
+                //            x1 = 85499.9826;
+                //            y1 = 35.895;
+                //            x2 = 87288.4132;
+                //            y2 = 537.4795;
+                //            x3 = 88398.7617;
+                //            y3 = 1299.9649;
+                //            x4 = 89742.2384;
+                //            y4 = 2808.8661;
+                //            x5 = 90732.8238;
+                //            y5 = 4000.0047;
+                //            x6 = 85499.9826;
+                //        }
+                //        else if (Tank_ID == 44)
+                //        {
+                //            x1 = 87747.8509;
+                //            y1 = 4000.037;
+                //            x2 = 90732.8238;
+                //            y2 = 4000.0047;
+                //            x3 = 91474.9989;
+                //            y3 = 4892.44;
+                //            x4 = 92314.6868;
+                //            y4 = 5864.5274;
+                //            x5 = 92876.0048;
+                //            y5 = 6500;
+                //            x6 = 87747.8779;
+                //            y6 = 6500;
+                //        }
+
+                //        else if (Tank_ID == 76)
+                //        {
+                //            x1 = 87747.8779;
+                //            y1 = 6500;
+                //            x2 = 92876.0048;
+                //            y2 = 6500;
+                //            x3 = 94123.9043;
+                //            y3 = 7829.5821;
+                //            x4 = 95249.6596;
+                //            y4 = 8938.5823;
+                //            x5 = 96326.8665;
+                //            y5 = 9949.9084;
+                //            x6 = 87747.8778;
+                //            y6 = 9568.4435;
+
+                //        }
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+
+                //        double d = y4 - y3;
+                //        double Fill = Convert.ToInt32(percent) * (d / 70);
+                //        double dx = x4 - x3;
+                //        double Fillx = Convert.ToInt32(percent) * (dx / 70);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(x1, y1));
+                //        pointCollection.Add(new System.Windows.Point(x2, y2));
+                //        pointCollection.Add(new System.Windows.Point(x3, y3));
+                //        pointCollection.Add(new System.Windows.Point(x3 + Fillx, y3 + Fill));
+                //        pointCollection.Add(new System.Windows.Point(x1, y3 + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+
+
+                //    else if (percent > 70 && percent <= 100)
+                //    {
+                //        if (Tank_ID == 43)
+                //        {
+                //            x1 = 85499.9826;
+                //            y1 = 35.895;
+                //            x2 = 87288.4132;
+                //            y2 = 537.4795;
+                //            x3 = 88398.7617;
+                //            y3 = 1299.9649;
+                //            x4 = 89742.2384;
+                //            y4 = 2808.8661;
+                //            x5 = 90732.8238;
+                //            y5 = 4000.0047;
+                //            x6 = 85499.9826;
+                //        }
+                //        else if (Tank_ID == 44)
+                //        {
+                //            x1 = 87747.8509;
+                //            y1 = 4000.037;
+                //            x2 = 90732.8238;
+                //            y2 = 4000.0047;
+                //            x3 = 91474.9989;
+                //            y3 = 4892.44;
+                //            x4 = 92314.6868;
+                //            y4 = 5864.5274;
+                //            x5 = 92876.0048;
+                //            y5 = 6500;
+                //            x6 = 87747.8779;
+                //            y6 = 6500;
+                //        }
+                //        else if (Tank_ID == 76)
+                //        {
+                //            x1 = 87747.8779;
+                //            y1 = 6500;
+                //            x2 = 92876.0048;
+                //            y2 = 6500;
+                //            x3 = 94123.9043;
+                //            y3 = 7829.5821;
+                //            x4 = 95249.6596;
+                //            y4 = 8938.5823;
+                //            x5 = 96326.8665;
+                //            y5 = 9949.9084;
+                //            x6 = 87747.8778;
+                //            y6 = 9568.4435;
+
+                //        }
+
+                //        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                //        p.Stroke = System.Windows.Media.Brushes.Black;
+                //        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                //        mySolidColorBrush.Color = color;
+                //        p.Fill = mySolidColorBrush;
+
+                //        double d = y5 - y4;
+                //        double Fill = Convert.ToInt32(percent) * (d / 100);
+                //        double dx = x5 - x4;
+                //        double Fillx = Convert.ToInt32(percent) * (dx / 100);
+                //        System.Windows.Point[] point = new System.Windows.Point[25];
+                //        PointCollection pointCollection = new PointCollection();
+                //        pointCollection.Add(new System.Windows.Point(x1, y1));
+                //        pointCollection.Add(new System.Windows.Point(x2, y2));
+                //        pointCollection.Add(new System.Windows.Point(x3, y3));
+                //        pointCollection.Add(new System.Windows.Point(x4, y4));
+                //        pointCollection.Add(new System.Windows.Point(x4 + Fillx, y4 + Fill));
+                //        pointCollection.Add(new System.Windows.Point(x1, y4 + Fill));
+                //        p.Points = pointCollection;
+                //        canvasTwoD.Children.Add(p);
+                //        percent = 0;
+                //    }
+                //}
+                //    #endregion
+
+
+                else if (percent > 0 && percent <= 100)
+                {
+                    System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                    p.Stroke = System.Windows.Media.Brushes.Black;
+                    SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                    mySolidColorBrush.Color = color;
+                    p.Fill = mySolidColorBrush;
+                    double d = yy[3] - yy[2];
+
+                    double Fill = Convert.ToInt32(percent) * (d / 100);
+                    System.Windows.Point[] point = new System.Windows.Point[25];
+                    PointCollection pointCollection = new PointCollection();
+                    pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+                    pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+                    pointCollection.Add(new System.Windows.Point(xx[2], yy[2] + Fill));
+                    pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
+
+
+                    p.Points = pointCollection;
+                    canvasTwoD.Children.Add(p);
+
+                    percent = 0;
+                }
+                else if (percent == 0)
+                {
+                    //System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
+                    //p.Stroke = System.Windows.Media.Brushes.Black;
+                    //SolidColorBrush mySolidColorBrush = new SolidColorBrush();
+                    //mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(0, 255, 255, 255);
+                    //p.Fill = mySolidColorBrush;
+                    //System.Windows.Point[] point = new System.Windows.Point[25];
+                    //PointCollection pointCollection = new PointCollection();
+                    //pointCollection.Add(new System.Windows.Point(xx[0], yy[0]));
+                    //pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
+                    //pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
+                    //pointCollection.Add(new System.Windows.Point(xx[3], yy[3]));
+                    //p.Points = pointCollection;
+                    //canvasTwoD.Children.Add(p);
+                }
+            }
+            catch //(Exception ex)
+            {
+               // MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void btnAdd_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if ((MessageBox.Show("Are you sure you want to add new Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                {
+                    DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                    string Err = "";
+                    string query = @"INSERT INTO tblFixedLoad ([Load_Name],[Weight],[LCG],[TCG],[VCG],[Length],[Breadth],[Depth])
+                                                 VALUES ('New Variable Load',0,0,0,0,0,0,0)
+                                 INSERT INTO tblFixedLoad_Simulation ([Load_Name],[Weight],[LCG],[TCG],[VCG],[Length],[Breadth],[Depth])
+                                                              VALUES ('New Variable Load',0,0,0,0,0,0,0)";
+                    command.CommandText = query;
+                    command.CommandType = CommandType.Text;
+                    Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+
+                    Models.BO.clsGlobVar.dtRealVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetVariableDetails");
+                    Models.BO.clsGlobVar.dtSimulationVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeVariableDetails");
+                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
+                }
+
+            }
+            catch
+            {
+            }
+        }
+
+        private void btnRemove_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Rows.Count > 1)
+                {
+                    if ((MessageBox.Show("Are you sure, you want to delete selected Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                    {
+                        DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                        string Err = "";
+                        int LoadId;
+                        LoadId = Convert.ToInt16(((dgVariableItems).Items[indexvar] as DataRowView)["Load_Id"]);
+
+                        string query = @"DELETE FROM tblFixedLoad
+                                    WHERE Load_Id=" + LoadId;
+                        command.CommandText = query;
+                        command.CommandType = CommandType.Text;
+                        Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                        Models.BO.clsGlobVar.dtRealVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetVariableDetails");
+                        dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("There should be atleast one row in the table");
+                }
+            }
+            catch
+            {
+            }
+        }
+        int index;
+        private void dgVariableItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            indexvar = (sender as DataGrid).SelectedIndex;
+        }
+
+        private void dgTankCompartment_CurrentCellChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                string Err = "";
+                int TankId;
+                bool IsSensorfaulty = false;
+                decimal percentfill;
+                //if (clsGlobVar.FlagDamageCases == false)
+                {
+
+                    TankId = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["Tank_ID"]);
+                    IsSensorfaulty = Convert.ToBoolean(((sender as DataGrid).Items[index] as DataRowView)["IsSensorFaulty"]);
+                    if (header == "Volume" || header == "Percent Fill" || header == "SG")
+                    {
+
+                        decimal volume = 0, sg, weight = 0;
+                        decimal minsounding = 0;
+                        sg = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["SG"]);
+                        percentfill = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Percent_Full"]);
+
+                        decimal maxsounding = maxVolume[TankId];
+
+                        if (header == "Volume")
+                        {
+                            volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
+                            percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
+                        }
+                        if (header == "Percent Fill")
+                        {
+                            volume = (percentfill * maxsounding) / 100;
+
+                        }
+                        if (header == "SG")
+                        {
+                            volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
+                            weight = volume * sg;
+                        }
+                        weight = volume * sg;
+                        ((sender as DataGrid).Items[index] as DataRowView)["Volume"] = Math.Round(volume, 3);
+                        ((sender as DataGrid).Items[index] as DataRowView)["Weight"] = Math.Round(weight, 3);
+                        ((sender as DataGrid).Items[index] as DataRowView)["Percent_Full"] = Math.Round(percentfill, 3);
+                        decimal res1 = decimal.Compare(minsounding, volume);
+                        decimal res2 = decimal.Compare(volume, maxsounding);
+                        int result1 = (int)res1;
+                        int result2 = (int)res2;
+                        if (result1 > 0 || result2 > 0)
+                        {
+
+                            string error = "Volume should be between " + minsounding + " and " + maxsounding;
+                            System.Windows.MessageBox.Show(error);
+                            // e.Cancel = true;
+                            return;
+                        }
+                        else
+                        {
+
+                            string query = "update tblTank_Status set [Volume]=" + volume + ",SG=" + sg + ",Weight=" + weight + " where Tank_ID=" + TankId;
+                            command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                            command.CommandText = query;
+                            command.CommandType = CommandType.Text;
+                            Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                            query = "update tblLoading_Condition set [Volume]=" + volume + ",SG=" + sg + ",Weight=" + weight + ",Percent_Full=" + percentfill + ",IsManualEntry='" + IsSensorfaulty + "' where Tank_ID=" + TankId;
+                            command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                            command.CommandText = query;
+                            command.CommandType = CommandType.Text;
+                            Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+
+                        }
+                        index = -1;
+                        TankId = 0;
+
+                    }
+
+                }
+            }
+            catch
+            {
+            }
+
+        }
+        private void dgTankCompartment_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            try
+            {
+                header = e.Column.Header.ToString();
+                index = e.Row.GetIndex();
+                if (e.Column.GetType().ToString() == "System.Windows.Controls.DataGridTextColumn")
+                {
+
+                    TextBlock cbo;
+                    cbo = (System.Windows.Controls.TextBlock)e.Column.GetCellContent(e.Row);
+                }
+                if (e.Column.GetType().ToString() == "System.Windows.Controls.DataGridCheckBoxColumn")
+                {
+                    //index = e.Row.GetIndex();
+                    CheckBox cbo;
+                    cbo = (System.Windows.Controls.CheckBox)e.Column.GetCellContent(e.Row);
+                    //cbo.SelectionChanged += new SelectionChangedEventHandler(FSMType_SelectionChanged);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+
+        private void dgTankCompartment_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (!char.IsDigit(e.Text, e.Text.Length - 1)
+                 && !e.Text.Contains('.'))
+            {
+                e.Handled = true;
+            }
+
+            // only allow one decimal point
+            if (e.Text.Contains('.')
+                && tb.Text.IndexOf('.') > -1)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void dgTankCompartment_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
+        {
+            tb = e.Column.GetCellContent(e.Row) as TextBox;
+        }
+
+        private void viewPort3d_Loaded(object sender, RoutedEventArgs e)
+        {
+            TimerGraphicsRefresh = new System.Windows.Threading.DispatcherTimer();
+            TimerGraphicsRefresh.Tick += new EventHandler(TimerGraphicsRefresh_Tick);
+            TimerGraphicsRefresh.Start();
+            TimerGraphicsRefresh.Interval = new TimeSpan(0, 0, 0);
+        }
+        private void TimerGraphicsRefresh_Tick(object sender, EventArgs e)
+        {
+            viewPort3d1.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50000, -20000, -30000), new Size3D(40000, 40000, 40000)));
+           //viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(79, -20, -30), new Size3D(0, 0, 49)));
+            TimerGraphicsRefresh.Stop();
+        }
+
+        private void dgVariableItems_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            try
+            {
+                header = e.Column.Header.ToString();
+                index = e.Row.GetIndex();
+                if (e.Column.GetType().ToString() == "System.Windows.Controls.DataGridTextColumn")
+                {
+
+                    TextBlock cbo;
+                    cbo = (System.Windows.Controls.TextBlock)e.Column.GetCellContent(e.Row);
+                }
+                if (e.Column.GetType().ToString() == "System.Windows.Controls.DataGridCheckBoxColumn")
+                {
+                    //index = e.Row.GetIndex();
+                    CheckBox cbo;
+                    cbo = (System.Windows.Controls.CheckBox)e.Column.GetCellContent(e.Row);
+                    //cbo.SelectionChanged += new SelectionChangedEventHandler(FSMType_SelectionChanged);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+
+        private void dgVariableItems_CurrentCellChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                string Err = "", LoadName = "";
+                int LoadId, fsmType;
+                decimal weight, LCG, TCG, VCG, length, breadth, depth;
+                //if (clsGlobVar.FlagDamageCases == false)
+                {
+                    LoadId = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["Load_Id"]);
+                    LoadName = Convert.ToString(((sender as DataGrid).Items[index] as DataRowView)["Load_Name"]);
+                    weight = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Weight"]);
+                    LCG = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["LCG"]);
+                    TCG = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["TCG"]);
+                    VCG = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["VCG"]);
+                    length = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Length"]);
+                    breadth = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Breadth"]);
+                    depth = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Depth"]);
+
+
+                    string query = "update tblFixedLoad set Load_Name='" + LoadName + "',Weight=" + weight + ",LCG=" + LCG + ",TCG=" + TCG + ",VCG=" + VCG + @"
+                            ,Length=" + length + ",Breadth=" + breadth + ",Depth=" + depth + " where Load_Id=" + LoadId;
+                    command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                    command.CommandText = query;
+                    command.CommandType = CommandType.Text;
+                    Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                    index = -1;
+                    LoadId = 0;
+
+                }
+            }
+            catch
+            {
+            }
+
+        }
+
+        ////private void Refresh3dNew()
+        ////{
+        ////    try
+        ////    {
+        ////        viewPort3d.Children.Clear();
+        ////        DefaultLights light = new DefaultLights();
+        ////        viewPort3d.Children.Add(light);
+        ////        viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+        ////        for (int i = 0; i < 6; i++)
+        ////        {
+        ////            string stats = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["IsDamaged"]);
+        ////            bool isvisible = Convert.ToBoolean((dgFreshWaterTanks.Items[i] as DataRowView)["IsVisible"]);
+        ////            string Nametxt = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["Tank_Name"]);
+        ////            string NameSplit = Nametxt.Split('.')[0];
+        ////            string Name = NameSplit.Replace("/", "");
+
+        ////            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
+        ////            {
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                string str = file.Split('\\')[3];
+        ////                string str1 = str.Split('.')[0];
+        ////                string TankName = str1.Replace("/", "");
+        ////                if (Name == TankName)
+        ////                {
+        ////                    if (isvisible)
+        ////                    {
+        ////                        if (stats == "True")
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                        }
+        ////                        else
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 180, 0, 0, 100);
+        ////                        }
+        ////                        device3D.SetName(TankName); ;
+        ////                        viewPort3d.Children.Add(device3D);
+        ////                    }
+        ////                }
+
+
+
+        ////            }
+
+        ////        }
+        ////        for (int i = 0; i < 11; i++)
+        ////        {
+        ////            string stats = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["IsDamaged"]);
+        ////            bool isvisible = Convert.ToBoolean((dgBallastTanks.Items[i] as DataRowView)["IsVisible"]);
+        ////            string Nametxt = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["Tank_Name"]);
+        ////            string Name = Nametxt.Replace("/", "");
+
+        ////            foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
+        ////            {
+
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                string str = file.Split('\\')[3];
+        ////                string str1 = str.Split('.')[0];
+        ////                string TankName = str1.Replace("/", "");
+        ////                if (Name == TankName)
+        ////                {
+        ////                    if (isvisible)
+        ////                    {
+        ////                        if (stats == "True")
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                        }
+        ////                        else
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 180, 0, 200, 0);
+        ////                        }
+        ////                        device3D.SetName(TankName);
+        ////                        viewPort3d.Children.Add(device3D);
+        ////                    }
+        ////                }
+        ////            }
+
+        ////        }
+        ////        for (int i = 0; i < 30; i++)
+        ////        {
+        ////            string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+        ////            bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
+        ////            string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
+        ////            string splitName = Nametxt.Split('.')[0];
+        ////            string Name = splitName.Replace("/", "");
+        ////            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
+        ////            {
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                string str = file.Split('\\')[3];
+        ////                string str1 = str.Split('.')[0];
+        ////                string TankName = str1.Replace("/", "");
+        ////                string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+        ////                if (Name == TankName)
+        ////                {
+        ////                    if (isvisible)
+        ////                    {
+        ////                        if (stats == "True")
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                        }
+        ////                        else
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 200, 185, 92, 0);
+        ////                        }
+        ////                        device3D.SetName(TankName);
+
+        ////                        viewPort3d.Children.Add(device3D);
+        ////                    }
+        ////                }
+        ////            }
+        ////        }
+        ////        for (int i = 0; i < 8; i++)
+        ////        {
+        ////            string stats = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["IsDamaged"]);
+        ////            bool isvisible = Convert.ToBoolean((dgMiscTanks.Items[i] as DataRowView)["IsVisible"]);
+        ////            string Nametxt = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]);
+        ////            string spliteName = Nametxt.Split('.')[0];
+        ////            string Name = spliteName.Replace("/", "");
+        ////            foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
+        ////            {
+
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                string str = file.Split('\\')[3];
+        ////                string str1 = str.Split('.')[0];
+        ////                string TankName = str1.Replace("/", "");
+        ////                if (Name == TankName)
+        ////                {
+        ////                    if (isvisible)
+        ////                    {
+        ////                        if (stats == "True")
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                        }
+        ////                        else
+        ////                        {
+        ////                            device3D.Content = Display3d(file, 180, 255, 128, 192);
+        ////                        }
+        ////                        device3D.SetName(TankName);
+        ////                        viewPort3d.Children.Add(device3D);
+        ////                    }
+        ////                }
+        ////            }
+        ////        }
+        ////        for (int i = 0; i < 16; i++)
+        ////        {
+        ////            try
+        ////            {
+        ////                string stats = Convert.ToString((dgCompartments.Items[i] as DataRowView)["IsDamaged"]);
+        ////                bool isvisible = Convert.ToBoolean((dgCompartments.Items[i] as DataRowView)["IsVisible"]);
+        ////                string Nametxt = Convert.ToString((dgCompartments.Items[i] as DataRowView)["Tank_Name"]);
+        ////                string spliteName = Nametxt.Split('.')[0];
+        ////                string Name = spliteName.Replace("/", "");
+        ////                foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
+        ////                {
+        ////                    ModelVisual3D device3D = new ModelVisual3D();
+        ////                    string str = file.Split('\\')[3];
+        ////                    string str1 = str.Split('.')[0];
+        ////                    string TankName = str1.Replace("/", "");
+        ////                    string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+        ////                    if (Name == TankName)
+        ////                    {
+        ////                        if (isvisible)
+        ////                        {
+        ////                            if (stats == "True")
+        ////                            {
+        ////                                device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                            }
+        ////                            else
+        ////                            {
+        ////                                device3D.Content = Display3d(file, 120, 239, 228, 176);
+        ////                            }
+        ////                            device3D.SetName(TankName);
+
+        ////                            viewPort3d.Children.Add(device3D);
+        ////                        }
+        ////                    }
+        ////                }
+        ////            }
+        ////            catch
+        ////            {
+        ////            }
+        ////        }
+
+        ////        for (int i = 0; i < 70; i++)
+        ////        {
+        ////            try
+        ////            {
+        ////                string stats = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["IsDamaged"]);
+        ////                bool isvisible = Convert.ToBoolean((dgWaterTightRegion.Items[i] as DataRowView)["IsVisible"]);
+        ////                string Nametxt = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["Tank_Name"]);
+        ////                string spliteName = Nametxt.Split('.')[0];
+        ////                string Name = spliteName.Replace("/", "");
+        ////                foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
+        ////                {
+        ////                    ModelVisual3D device3D = new ModelVisual3D();
+        ////                    string str = file.Split('\\')[3];
+        ////                    string str1 = str.Split('.')[0];
+        ////                    string TankName = str1.Replace("/", "");
+        ////                    string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+        ////                    if (Name == TankName)
+        ////                    {
+        ////                        if (isvisible)
+        ////                        {
+        ////                            if (stats == "True")
+        ////                            {
+        ////                                device3D.Content = Display3d(file, 255, 255, 0, 0);
+        ////                            }
+        ////                            else
+        ////                            {
+        ////                                device3D.Content = Display3d(file, 100, 255, 255, 255);
+        ////                            }
+        ////                            device3D.SetName(TankName);
+
+        ////                            viewPort3d.Children.Add(device3D);
+        ////                        }
+        ////                    }
+        ////                }
+        ////            }
+        ////            catch
+        ////            {
+        ////            }
+        ////        }
+
+
+        ////        foreach (string file in Directory.EnumerateFiles(folderPath, "*.stl"))
+        ////        {
+        ////            string str = file.Split('\\')[1];
+        ////            string str1 = str.Split('.')[0];
+        ////            string TankName = str1.Replace("/", "");
+        ////            if (Name == str1)
+        ////            {
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                device3D.Content = Display3d(file, 70, 150, 150, 150);
+        ////                device3D.SetName(TankName);
+        ////                viewPort3d.Children.Add(device3D);
+        ////            }
+        ////        }
+        ////    }
+        ////    catch
+        ////    {
+        ////    }
+        ////}
+        private void Getpercentage()
+        {
+
+
+            try
+            {
+
+
+              
+                string cs = clsSqlData.GetConnectionString();
+
+
+
+                SqlConnection cn = new SqlConnection(cs);
+                try
+                {
+                    if (cn.State != ConnectionState.Open)
+                    {
+                        cn.Close();
+                        cn.Open();
+                    }
+                }
+
+
+                catch //(System.Exception)
+                {
+                    //System.Windows.MessageBox.Show("Problem in opening connection");
+
+                }
+                DataSet dspercent = new DataSet();
+                //                string query = "SELECT [Percent_Full] FROM [tblSimulationMode_Loading_Condition] WHERE Tank_ID= (SELECT Tank_ID FROM tblMaster_Tank WHERE Tank_Name='" + TankNameForPercentage + "')";
+                string query = "SELECT [Percent_Full] FROM [tblLoading_Condition] WHERE Tank_ID= (SELECT Tank_ID FROM tblMaster_Tank WHERE Tank_Name like'%" + TankNameForPercentage + "%')";
+                SqlCommand cmd = new SqlCommand(query, cn);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                da.Fill(dspercent);
+                cn.Close();
+
+                PercentageFill = Math.Round(Convert.ToDecimal(dspercent.Tables[0].Rows[0]["Percent_Full"].ToString()), 3);
+
+
+
+            }
+
+            catch //(System.Exception)
+            {
+
+
+            }
+        }
+
+
+
+
+        private void Refresh3dNew()
+        {
+            try
+            {
+
+
+                viewPort3d1.Children.Clear();
+                DefaultLights light = new DefaultLights();
+                viewPort3d1.Children.Add(light);
+                viewPort3d1.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+
+                for (int i = 0; i < 6; i++)//6
+                {
+                    try
+                    {
+                        string stats = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["IsDamaged"]);
+                        // bool isvisible = Convert.ToBoolean((dgFreshWaterTanks.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["Tank_Name"]);
+                        string NameSplit = Nametxt.Split('.')[0];
+                        string Name = NameSplit.Replace("/", "");
+                        //string Name = Nametxt.Replace("/", "");
+                        //string Name = Nametxt;
+
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
+                        {
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            if (Name == TankName)
+                            {
+                                TankNameForPercentage = TankName;
+                                Getpercentage();
+                                // if (isvisible)
+                                // {
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    if (PercentageFill == 0)
+                                    {
+                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                    }
+
+                                    else if (PercentageFill > 0 && PercentageFill <= 25)
+                                    {
+                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank25\\", "*.stl"))
+                                        {
+                                            string strfw25 = file1.Split('\\')[3];
+                                            string str1fw25 = strfw25.Split('.')[0];
+                                            string TankName1 = str1fw25.Replace("/", "");
+                                            if (Name == TankName1)
+                                            {
+                                                device3D.Content = Display3d1(file1, 180, 0, 0, 100);
+
+                                            }
+
+
+                                        }
+                                    }
+                                    else if (PercentageFill > 25 && PercentageFill <= 50)
+                                    {
+                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank50\\", "*.stl"))
+                                        {
+                                            string strfw50 = file2.Split('\\')[3];
+                                            string str1fw50 = strfw50.Split('.')[0];
+                                            string TankName2 = str1fw50.Replace("/", "");
+
+                                            if (Name == TankName2)
+                                            {
+                                                device3D.Content = Display3d1(file2, 180, 0, 0, 100);
+
+                                            }
+
+                                        }
+
+                                    }
+                                    else if (PercentageFill > 50 && PercentageFill <= 75)
+                                    {
+                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank75\\", "*.stl"))
+                                        {
+                                            string strfw75 = file3.Split('\\')[3];
+                                            string str1fw75 = strfw75.Split('.')[0];
+                                            string TankName3 = str1fw75.Replace("/", "");
+                                            if (Name == TankName3)
+                                            {
+                                                device3D.Content = Display3d1(file3, 180, 0, 0, 100);
+
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        device3D.Content = Display3d1(file, 180, 0, 0, 100);
+                                    }
+                                }
+                                device3D.SetName(TankName); ;
+                                viewPort3d1.Children.Add(device3D);
+                                //  }
+                            }
+
+                        }
+
+                    }
+                    catch //(Exception ex)
+                    {
+                       // System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+                for (int i = 0; i < 11; i++) //11
+                {
+                    try
+                    {
+                        string stats = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["IsDamaged"]);
+                        //  bool isvisible = Convert.ToBoolean((dgBallastTanks.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["Tank_Name"]);
+                        string NameSplit = Nametxt.Split('.')[0];
+                        string Name = NameSplit.Replace("/", "");
+
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
+                        {
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            if (Name == TankName)
+                            {
+                                TankNameForPercentage = TankName;
+                                Getpercentage();
+                                //if (isvisible)
+                                //{
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    if (PercentageFill == 0)
+                                    {
+                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                    }
+
+                                    else if (PercentageFill > 0 && PercentageFill <= 25)
+                                    {
+                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\BallastTank25\\", "*.stl"))
+                                        {
+                                            string strB25 = file1.Split('\\')[3];
+                                            string str1B25 = strB25.Split('.')[0];
+                                            string TankName1 = str1B25.Replace("/", "");
+                                            if (Name == TankName1)
+                                            {
+                                                device3D.Content = Display3d1(file1, 180, 0, 200, 0);
+
+                                            }
+                                        }
+                                    }
+                                    else if (PercentageFill > 25 && PercentageFill <= 50)
+                                    {
+                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\BallastTank50\\", "*.stl"))
+                                        {
+                                            string strB50 = file2.Split('\\')[3];
+                                            string str1B50 = strB50.Split('.')[0];
+                                            string TankName2 = str1B50.Replace("/", "");
+                                            if (Name == TankName2)
+                                            {
+                                                device3D.Content = Display3d1(file2, 180, 0, 200, 0);
+
+                                            }
+                                        }
+
+
+                                    }
+                                    else if (PercentageFill > 50 && PercentageFill <= 75)
+                                    {
+                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\BallastTank75\\", "*.stl"))
+                                        {
+                                            string strB75 = file3.Split('\\')[3];
+                                            string str1B75 = strB75.Split('.')[0];
+                                            string TankName3 = str1B75.Replace("/", "");
+                                            if (Name == TankName3)
+                                            {
+                                                device3D.Content = Display3d1(file3, 180, 0, 200, 0);
+
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        device3D.Content = Display3d1(file, 180, 0, 200, 0);
+                                    }
+                                }
+                                device3D.SetName(TankName);
+                                viewPort3d1.Children.Add(device3D);
+                                // }
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    {
+                        //System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+                for (int i = 0; i < 30; i++)//30
+                {
+                    try
+                    {
+                        string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+                        // bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
+                        string splitName = Nametxt.Split('.')[0];
+                        string Name = splitName.Replace("/", "");
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
+                        {
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            //string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+                            if (Name == TankName)
+                            {
+                                TankNameForPercentage = TankName;
+                                Getpercentage();
+                                //if (isvisible)
+                                // {
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    if (PercentageFill == 0)
+                                    {
+                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                    }
+
+                                    else if (PercentageFill > 0 && PercentageFill <= 25)
+                                    {
+                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank25\\", "*.stl"))
+                                        {
+                                            string strF25 = file1.Split('\\')[3];
+                                            string str1F25 = strF25.Split('.')[0];
+                                            string TankName1 = str1F25.Replace("/", "");
+                                            if (Name == TankName1)
+                                            {
+                                                device3D.Content = Display3d1(file1, 200, 185, 92, 0);
+
+                                            }
+                                        }
+
+                                    }
+                                    else if (PercentageFill > 25 && PercentageFill <= 50)
+                                    {
+                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank50\\", "*.stl"))
+                                        {
+                                            string strF50 = file2.Split('\\')[3];
+                                            string str1F50 = strF50.Split('.')[0];
+                                            string TankName2 = str1F50.Replace("/", "");
+                                            if (Name == TankName2)
+                                            {
+                                                device3D.Content = Display3d1(file2, 200, 185, 92, 0);
+
+                                            }
+                                        }
+
+                                    }
+                                    else if (PercentageFill > 50 && PercentageFill <= 75)
+                                    {
+                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank75\\", "*.stl"))
+                                        {
+                                            string strF75 = file3.Split('\\')[3];
+                                            string str1F75 = strF75.Split('.')[0];
+                                            string TankName3 = str1F75.Replace("/", "");
+                                            if (Name == TankName3)
+                                            {
+                                                device3D.Content = Display3d1(file3, 200, 185, 92, 0);
+
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        device3D.Content = Display3d1(file, 200, 185, 92, 0);
+                                    }
+                                }
+                                device3D.SetName(TankName);
+
+                                viewPort3d1.Children.Add(device3D);
+
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    {
+                        //System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+                for (int i = 0; i < 8; i++)//8
+                {
+                    try
+                    {
+                        string stats = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["IsDamaged"]);
+                        //  bool isvisible = Convert.ToBoolean((dgMiscTanks.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]);
+                        string spliteName = Nametxt.Split('.')[0];
+                        string Name = spliteName.Replace("/", "");
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
+                        {
+
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            if (Name == TankName)
+                            {
+                                TankNameForPercentage = TankName;
+                                Getpercentage();
+                                // if (isvisible)
+                                // {
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    if (PercentageFill == 0)
+                                    {
+                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                    }
+
+                                    else if (PercentageFill > 0 && PercentageFill <= 25)
+                                    {
+                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\MiscTank25\\", "*.stl"))
+                                        {
+                                            string strM25 = file1.Split('\\')[3];
+                                            string str1M25 = strM25.Split('.')[0];
+                                            string TankName1 = str1M25.Replace("/", "");
+                                            if (Name == TankName1)
+                                            {
+                                                device3D.Content = Display3d1(file1, 180, 255, 128, 192);
+
+                                            }
+                                        }
+
+
+                                    }
+                                    else if (PercentageFill > 25 && PercentageFill <= 50)
+                                    {
+                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
+                                        {
+                                            string strM50 = file2.Split('\\')[3];
+                                            string str1M50 = strM50.Split('.')[0];
+                                            string TankName2 = str1M50.Replace("/", "");
+                                            if (Name == TankName2)
+                                            {
+                                                device3D.Content = Display3d1(file2, 180, 255, 128, 192);
+
+                                            }
+                                        }
+
+                                    }
+                                    else if (PercentageFill > 50 && PercentageFill <= 75)
+                                    {
+                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))//BY SACHIN
+                                        {
+                                            string strM50 = file3.Split('\\')[3];
+                                            string str1M50 = strM50.Split('.')[0];
+                                            string TankName2 = str1M50.Replace("/", "");
+                                            if (Name == TankName2)
+                                            {
+                                                device3D.Content = Display3d1(file3, 180, 255, 128, 192);
+
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        device3D.Content = Display3d1(file, 180, 255, 128, 192);
+                                    }
+                                }
+                                device3D.SetName(TankName);
+                                viewPort3d1.Children.Add(device3D);
+                                // }
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    {
+                       // System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+
+                for (int i = 0; i < 379; i++)//383
+                {
+                    try
+                    {
+                        
+                        string stats = Convert.ToString((dgCompartments.Items[i] as DataRowView)["IsDamaged"]);
+                        // bool isvisible = Convert.ToBoolean((dgCompartments.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgCompartments.Items[i] as DataRowView)["Tank_Name"]);
+                        string spliteName = Nametxt.Split('.')[0];
+                        string Name = spliteName.Replace("/", "");
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
+                        {
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+                            if (Name == TankName)
+                            {
+                                
+                                // if (isvisible)
+                                //{
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    device3D.Content = Display3d1(file, 120, 239, 228, 176);
+                                }
+                                device3D.SetName(TankName);
+
+                                viewPort3d1.Children.Add(device3D);
+                                // }
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    {
+                       // System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+
+                for (int i = 0; i < 68; i++)
+                {
+                    try
+                    {
+                        string stats = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["IsDamaged"]);
+                        //bool isvisible = Convert.ToBoolean((dgWaterTightRegion.Items[i] as DataRowView)["IsVisible"]);
+                        string Nametxt = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["Tank_Name"]);
+                        string spliteName = Nametxt.Split('.')[0];
+                        string Name = spliteName.Replace("/", "");
+
+                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
+                        {
+
+                            ModelVisual3D device3D = new ModelVisual3D();
+                            string str = file.Split('\\')[3];
+                            string str1 = str.Split('.')[0];
+                            string TankName = str1.Replace("/", "");
+                            if (Name == TankName)
+                            {
+                                //if (isvisible)
+                                // {
+                                if (stats == "True")
+                                {
+                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                }
+                                else
+                                {
+                                    device3D.Content = Display3d1(file, 100, 255, 255, 255);
+                                }
+                                device3D.SetName(TankName);
+                                viewPort3d1.Children.Add(device3D);
+                                // }
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    {
+                       // System.Windows.MessageBox.Show(ex.ToString());
+                    }
+                }
+
+
+                ////foreach (string file in Directory.EnumerateFiles(folderPath, "*.stl"))
+                ////{
+                ////    string str = file.Split('\\')[1];
+                ////    string str1 = str.Split('.')[0];
+                ////    string TankName = str1.Replace("/", "");
+                ////    {
+                ////        ModelVisual3D device3D = new ModelVisual3D();
+                ////        device3D.Content = Display3d1(file, 70, 150, 150, 150);
+                ////        device3D.SetName(TankName);
+                ////        viewPort3d1.Children.Add(device3D);
+                ////    }
+                    //}
+
+            }
+            catch //(Exception ex)
+            {
+               // System.Windows.MessageBox.Show(ex.ToString());
+
+            }
+
+        }
+
+        //private Model3D Display3d(string model, byte A, byte R, byte G, byte B)
+        //{
+        //    Model3D device = null;
+        //    Material material = MaterialHelper.CreateMaterial(new SolidColorBrush(System.Windows.Media.Color.FromArgb(A, R, G, B)));
+        //    try
+        //    {
+        //        //Adding a gesture here
+        //        //viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+        //        //Import 3D model file
+        //        ModelImporter import = new ModelImporter();
+        //        import.DefaultMaterial = material;
+
+        //        //Load the 3D model file
+        //        device = import.Load(model);
+
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        // Handle exception in case can not file 3D model
+        //        System.Windows.MessageBox.Show(e.ToString());
+        //        MessageBox.Show("Exception Error : " + e.StackTrace);
+        //    }
+        //    return device;
+        //}
+        private Model3D Display3d1(string model, byte A, byte R, byte G, byte B)
+        {
+            Model3D device1 = null;
+            Material material = MaterialHelper.CreateMaterial(new SolidColorBrush(System.Windows.Media.Color.FromArgb(A, R, G, B)));
+            try
+            {
+                //Adding a gesture here
+                //viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+                //Import 3D model file
+                ModelImporter import = new ModelImporter();
+                import.DefaultMaterial = material;
+
+                //Load the 3D model file
+                device1 = import.Load(model);
+
+
+            }
+            catch //(Exception e)
+            {
+                // Handle exception in case can not file 3D model
+               // System.Windows.MessageBox.Show(e.ToString());
+              //  MessageBox.Show("Exception Error : " + e.StackTrace);
+            }
+            return device1;
+        }
+        private string TankName;
+
+        private string Volume;
+
+        private string PercentFill;
+
+        private string TankStatus;
+
+        public string Tankname
+        {
+            get
+            {
+                return this.TankName;
+            }
+            set
+            {
+                this.TankName = value;
+                this.OnPropertyChanged("Tankname");
+            }
+        }
+
+        public string volume
+        {
+            get
+            {
+                return this.Volume;
+            }
+            set
+            {
+                this.Volume = value;
+                this.OnPropertyChanged("volume");
+            }
+        }
+
+        public string percent
+        {
+            get
+            {
+                return this.PercentFill;
+            }
+            set
+            {
+                this.PercentFill = value;
+                this.OnPropertyChanged("percent");
+            }
+        }
+
+        public string status
+        {
+            get
+            {
+                return this.TankStatus;
+            }
+            set
+            {
+                this.TankStatus = value;
+                this.OnPropertyChanged("status");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        ////private void chkVisible_Click(object sender, RoutedEventArgs e)
+        ////{
+
+
+
+        ////    object a = e.Source;
+        ////    CheckBox chk = (CheckBox)sender;
+
+        ////    DataGridRow row = FindAncestor<DataGridRow>(chk);
+        ////    if (row != null)
+        ////    {
+        ////        DataRowView rv = (DataRowView)row.Item;
+        ////        byte A = 0, R = 0, G = 0, B = 0;
+
+        ////        string Err = "";
+        ////        string query = "update [tblLoading_Condition] set [IsVisible]='" + (bool)chk.IsChecked + "' where Tank_ID=" + rv["Tank_ID"];
+        ////        DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+        ////        command.CommandText = query;
+        ////        command.CommandType = CommandType.Text;
+        ////        Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+        ////        string subfolder = "";
+        ////        if (Convert.ToInt32(rv["Tank_ID"]) <= 11)
+        ////        {
+        ////            subfolder = "BallastTank";
+        ////            A = 180;
+        ////            R = 0;
+        ////            G = 200;
+        ////            B = 0;
+
+        ////        }
+        ////        else if (Convert.ToInt32(rv["Tank_ID"]) > 11 && (Convert.ToInt32(rv["Tank_ID"]) <= 16))
+        ////        {
+        ////            subfolder = "FreshWaterTank";
+        ////            A = 180;
+        ////            R = 0;
+        ////            G = 0;
+        ////            B = 100;
+        ////        }
+        ////        else if (Convert.ToInt32(rv["Tank_ID"]) > 16 && (Convert.ToInt32(rv["Tank_ID"]) <= 46))
+        ////        {
+        ////            subfolder = "FuelOilTank";
+        ////            A = 200;
+        ////            R = 185;
+        ////            G = 92;
+        ////            B = 0;
+        ////        }
+        ////        else if (Convert.ToInt32(rv["Tank_ID"]) > 46 && (Convert.ToInt32(rv["Tank_ID"]) <= 54))
+        ////        {
+        ////            subfolder = "MiscTank";
+        ////            A = 180;
+        ////            R = 255;
+        ////            G = 128;
+        ////            B = 192;
+        ////        }
+        ////        else if (Convert.ToInt32(rv["Tank_ID"]) > 54 && (Convert.ToInt32(rv["Tank_ID"]) <= 434))
+        ////        {
+        ////            subfolder = "Compartment";
+        ////            A = 120;
+        ////            R = 239;
+        ////            G = 228;
+        ////            B = 176;
+        ////        }
+
+        ////        else if (Convert.ToInt32(rv["Tank_ID"]) > 434 && (Convert.ToInt32(rv["Tank_ID"]) <= 504))
+        ////        {
+        ////            subfolder = "WT_REGION";
+        ////            A = 120;
+        ////            R = 239;
+        ////            G = 228;
+        ////            B = 176;
+        ////        }
+        ////        string TankName = Convert.ToString(rv["Tank_Name"]);
+        ////        string FUllTankName = TankName.Split('.')[0];
+        ////        string str1 = FUllTankName.Replace("/", "");
+        ////        if ((bool)chk.IsChecked == false)
+        ////        {
+        ////            for (int j = 0; j <= 152; j++)
+        ////            {
+        ////                try
+        ////                {
+        ////                    Visual3D model = viewPort3d1.Children[j + 1] as Visual3D;
+        ////                    int hh = viewPort3d1.Children.Count;
+        ////                    string modelname = model.GetName();
+        ////                    Visual3D wd = viewPort3d1.Children.LastOrDefault();
+        ////                    string gg = wd.GetName();
+
+        ////                    if (modelname == str1)
+        ////                    {
+        ////                        viewPort3d1.Children.Remove(model);
+        ////                    }
+
+        ////                    if (modelname == gg)
+        ////                        break;
+
+        ////                }
+        ////                catch (Exception ex)
+        ////                {
+        ////                    MessageBox.Show((ex.Message.ToString()));
+        ////                }
+        ////            }
+        ////        }
+        ////        else
+        ////        {
+
+        ////            try
+        ////            {
+        ////                viewPort3d1.Children.RemoveAt(viewPort3d1.Children.Count - 1);
+        ////                //viewPort3d.Children.RemoveAt(viewPort3d.Children.Count - 1);
+        ////                ModelVisual3D device3D = new ModelVisual3D();
+        ////                string file = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + folderPath + "\\" + subfolder + "\\" + TankName + ".stl";
+        ////                device3D.Content = Display3d1(file, A, R, G, B);
+        ////                device3D.SetName(TankName);
+        ////                viewPort3d1.Children.Add(device3D);
+
+        ////                foreach (string file1 in Directory.EnumerateFiles(folderPath, "*.stl"))
+        ////                {
+        ////                    string str = file1.Split('\\')[1];
+        ////                    str1 = str.Split('.')[0];
+        ////                    TankName = str1.Replace("/", "");
+
+        ////                    {
+        ////                        device3D = new ModelVisual3D();
+        ////                        device3D.Content = Display3d1(file1, 70, 150, 150, 150);
+        ////                        device3D.SetName(TankName);
+        ////                        viewPort3d1.Children.Add(device3D);
+        ////                    }
+        ////                }
+        ////            }
+        ////            catch (Exception ex)
+        ////            {
+        ////                MessageBox.Show((ex.Message.ToString()));
+        ////            }
+        ////        }
+
+        ////    }
+        ////}
+        /// <summary>
+        /// Returns the first ancester of specified type
+        /// </summary>
+        public static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        {
+            current = VisualTreeHelper.GetParent(current);
+            while (current != null)
+            {
+                if (current is T)
+                {
+                    return (T)current;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            };
+            return null;
+        }
+
+        private void btn3DZoomExtents_Click(object sender, RoutedEventArgs e)
+        {
+            viewPort3d1.IsZoomEnabled = true;
+           // viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(79, -20, -30), new Size3D(0, 0, 49)));
+            viewPort3d1.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50, -20, -30), new Size3D(0, 0, 49)));
+
+        }
+        //public DataGridCell GetCell(int row, int column)
+        //{
+        //    DataGridRow rowContainer = GetRow(row);
+
+        //    if (rowContainer != null)
+        //    {
+        //        DataGridCellsPresenter presenter = GetVisualChild<DataGridCellsPresenter>(rowContainer);
+
+        //        DataGridCell cell = (DataGridCell)presenter.ItemContainerGenerator.ContainerFromIndex(column);
+        //        if (cell == null)
+        //        {
+        //            dgBallastTanks.ScrollIntoView(rowContainer, dgBallastTanks.Columns[column]);
+        //            cell = (DataGridCell)presenter.ItemContainerGenerator.ContainerFromIndex(column);
+        //        }
+        //        return cell;
+        //    }
+        //    return null;
+        //}
+        //public DataGridRow GetRow(int index)
+        //{
+        //    DataGridRow row = (DataGridRow)dgBallastTanks.ItemContainerGenerator.ContainerFromIndex(index);
+        //    if (row == null)
+        //    {
+        //        dgBallastTanks.UpdateLayout();
+        //        dgBallastTanks.ScrollIntoView(dgBallastTanks.Items[index]);
+        //        row = (DataGridRow)dgBallastTanks.ItemContainerGenerator.ContainerFromIndex(index);
+        //    }
+        //    return row;
+        //}
+
+        //public static T GetVisualChild<T>(Visual parent) where T : Visual
+        //{
+        //    T child = default(T);
+        //    int numVisuals = VisualTreeHelper.GetChildrenCount(parent);
+        //    for (int i = 0; i < numVisuals; i++)
+        //    {
+        //        Visual v = (Visual)VisualTreeHelper.GetChild(parent, i);
+        //        child = v as T;
+        //        if (child == null)
+        //        {
+        //            child = GetVisualChild<T>(v);
+        //        }
+        //        if (child != null)
+        //        {
+        //            break;
+        //        }
+        //    }
+        //    return child;
+        //}
+
+        private void dgFuelOilTanks_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            Models.TableModel.Write_Log("Loading Color");
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+       
+
+        private void dgBallastTanks_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgFreshWaterTanks_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgMiscTanks_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgCompartments_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgWaterTightRegion_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgVariableItems_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            DataRowView item = e.Row.Item as DataRowView;
+            if (item != null)
+            {
+                DataRow row = item.Row;
+
+                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
+
+
+            }
+        }
+
+        private void dgVariableItems_KeyDown(object sender, KeyEventArgs e)
+        {
+            System.Windows.Input.Key k = e.Key;
+
+            if (header != "Item Name")
+            {
+
+                bool controlKeyIsDown = Keyboard.IsKeyDown(Key.LeftShift);
+                if (!controlKeyIsDown && Key.D0 <= k && k <= Key.D9 || Key.NumPad0 <= k && k <= Key.NumPad9 || k == Key.Decimal || k == Key.OemPeriod || k == Key.OemMinus)
+                {
+                }
+
+                else
+                {
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            Models.BO.clsGlobVar.SimulationStabilityType = "Intact";
+        }
+
+        
+
+       
+
+     
+
+
+
+
+    }
+}

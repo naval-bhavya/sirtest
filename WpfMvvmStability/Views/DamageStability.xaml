@@ -1,0 +1,315 @@
+﻿<UserControl x:Class="WpfMvvmStability.Views.DamageStability"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+              xmlns:DV="clr-namespace:System.Windows.Controls.DataVisualization;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+             xmlns:DVC="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+             mc:Ignorable="d" 
+             d:DesignHeight="723" d:DesignWidth="1079">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Blue.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseLight.xaml" />
+
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+    <Grid >
+        <GroupBox Header="Loading Summary" Height="277" HorizontalAlignment="Left" Margin="12,25,0,0" Name="groupBox4" VerticalAlignment="Top" Width="750">
+            <Grid>
+                <DataGrid AutoGenerateColumns="False" Name="dgLoadingSummary" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn MinWidth="120" Width="Auto" Header="Items" Binding="{Binding Tank_Name}"></DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="80" Width="Auto" Header="Percent Full" Binding="{Binding Percent_Full,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="80" Width="Auto" Header="Volume (Cu.m)" Binding="{Binding Volume,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="50" Width="Auto" Header="SG" Binding="{Binding SG,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="80" Width="Auto" Header="Weight (T)" Binding="{Binding Weight,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="70" Width="Auto" Header="LCG (m)" Binding="{Binding LCG,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="70" Width="Auto" Header="TCG (m)" Binding="{Binding TCG,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="70" Width="Auto" Header="VCG (m)" Binding="{Binding VCG,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="50" Width="Auto" Header="FSM (T-m)" Binding="{Binding FSM,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </GroupBox>
+        <!--<my:MenuControl HorizontalAlignment="Left" x:Name="menuControl1" VerticalAlignment="Top" Width="1084" />
+        <WindowsFormsHost Name="windowsFormsHost1" Margin="24,405,472,31">
+
+            <zed:ZedGraphControl x:Name="zedGraph"
+                             Width="500"
+                             Height="320" />
+        </WindowsFormsHost>-->
+        <GroupBox Header="Drafts at Equilibrium (m)" Height="98" HorizontalAlignment="Left" Margin="819,310,0,0" Name="groupBox1" VerticalAlignment="Top" Width="247">
+            <Grid Width="236" Height="60">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="7*" />
+                    <ColumnDefinition Width="222*" />
+                    <ColumnDefinition Width="7*" />
+                </Grid.ColumnDefinitions>
+                <DockPanel Height="60" HorizontalAlignment="Left" Name="dockPanel2" VerticalAlignment="Top" Width="236" Background="#FFB1A7A7" Grid.ColumnSpan="3">
+                    <DataGrid AutoGenerateColumns="False" Height="61" Name="dgDraft" Width="234" ItemsSource="{Binding}" VerticalScrollBarVisibility="Disabled" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn MinWidth="70" Width="40" Header="Fore Draft" Binding="{Binding Fore_draft,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="Aft Draft" Binding="{Binding Aft_draft,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="Mean Draft" Binding="{Binding Mean_draft,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="Equilibrium Output" Height="100" HorizontalAlignment="Left" Margin="12,310,0,0" Name="groupBox2" VerticalAlignment="Top" Width="797">
+            <Grid Height="58">
+                <DockPanel Height="58" HorizontalAlignment="Left" Name="dockPanel4" VerticalAlignment="Top" Width="791" Background="#FFB1A7A7">
+                    <DataGrid AutoGenerateColumns="False" Height="56" Name="dgHydrostatics" Width="790" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" VerticalScrollBarVisibility="Disabled" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn MinWidth="110" Width="Auto" Header="Displacement (T)" Binding="{Binding Displacement,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="Trim (m)" Binding="{Binding Trim,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="Heel (Deg)" Binding="{Binding Heel,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="GMT (m)" Binding="{Binding GMT,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="KG Solid (m)" Binding="{Binding KG(Solid),StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="KG Fluid (m)" Binding="{Binding KG(Fluid),StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="FSC (m)" Binding="{Binding FSC,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="LCG (m)" Binding="{Binding LCG,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="60" Width="Auto" Header="LCF (m)" Binding="{Binding LCF,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="TPC (T)" Binding="{Binding TPC,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="Auto" Header="MTC (T-m)" Binding="{Binding MCT,StringFormat=N2}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="GZ Data" Height="277" HorizontalAlignment="Left" Margin="768,25,0,0" Name="groupBox5" VerticalAlignment="Top" Width="172">
+            <Grid>
+                <DataGrid AutoGenerateColumns="False" Name="dgGZ" ItemsSource="{Binding}" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" CanUserSortColumns="False" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False" >
+                    <DataGrid.Columns>
+                        <DataGridTextColumn MinWidth="80" Width="Auto" Header="Heel (Degree)" Binding="{Binding heelAng,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="65" Width="Auto" Header="GZ (m)" Binding="{Binding heelGZ,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="IMO Stability Criteria-Damage" Height="310" HorizontalAlignment="Left" Margin="623,414,0,0" Name="groupBox6" VerticalAlignment="Top" Width="442">
+            <Grid>
+                <DataGrid AutoGenerateColumns="False" Name="dgDamageStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn MinWidth="60" Width="Auto" Header="Criterion" Binding="{Binding Criterion,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Left" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="40" Width="Auto" Header="Critical Value" Binding="{Binding Critical_Value,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="40" Width="Auto" Header="Actual Value" Binding="{Binding Actual_Value,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn MinWidth="60" Width="40" Header="Status" Binding="{Binding Status,StringFormat=N2}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="GZ Curve" Height="310" HorizontalAlignment="Left" Margin="12,414,0,0" Name="groupBox7" VerticalAlignment="Top" Width="607">
+            <Grid>
+                <DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="LightSteelBlue" Padding="5" FontFamily="Calibri">
+                    <DVC:Chart.Series>
+                        <DVC:LineSeries Title="GZ"
+                                IndependentValueBinding="{Binding Path=Key}"
+                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                        </DVC:LineSeries>
+                    </DVC:Chart.Series>
+                    <DVC:Chart.Axes>
+                        <DVC:LinearAxis Orientation="Y" 
+                                    Title="GZ (m)" 
+                                        Maximum="3"
+                                        Minimum="-2"
+                                        >
+                            <!--<DVC:LinearAxis.AxisLabelStyle>
+                                <Style TargetType="DVC:AxisLabel">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DVC:AxisLabel">
+                                                <TextBlock DataContext="{TemplateBinding FormattedContent}" Text="{Binding Converter={StaticResource NumericToAlphaConverter}}" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DVC:LinearAxis.AxisLabelStyle>-->
+                        </DVC:LinearAxis>
+                        <DVC:LinearAxis Orientation="X" 
+                                    Title="Degree" 
+                                        Maximum="90"
+                                        Minimum="-30"
+                                        >
+                        </DVC:LinearAxis>
+                    </DVC:Chart.Axes>
+                </DVC:Chart>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</UserControl>
