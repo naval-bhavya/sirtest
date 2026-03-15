@@ -63,13 +63,13 @@ namespace WpfMvvmStability.ViewModels
             model = DwgReader.Read(input);
             Models.BO.clsGlobVar.PlanC = model;
 
-            input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanD.dwg");
-            model = DwgReader.Read(input);
-            Models.BO.clsGlobVar.PlanD = model;
+            //input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanD.dwg");
+            //model = DwgReader.Read(input);
+            //Models.BO.clsGlobVar.PlanD = model;
 
-            input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanL.dwg");
-            model = DwgReader.Read(input);
-            Models.BO.clsGlobVar.PlanALL = model;
+            //input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanL.dwg");
+            //model = DwgReader.Read(input);
+            //Models.BO.clsGlobVar.PlanALL = model;
             
            // string [] gg =assembly.GetManifestResourceNames();
            //AssemblyName hh= assembly.GetName();

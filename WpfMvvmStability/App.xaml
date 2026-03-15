@@ -243,7 +243,85 @@
                     </EventTrigger>
                 </Style.Triggers>
             </Style>-->
-            
+
+            <!-- Styles (replace your existing ones) -->
+            <Style x:Key="ModernFlatButton" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#555"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                        CornerRadius="4"
+                        BorderBrush="#FF333333"
+                        BorderThickness="1"
+                        Background="#FFFFFF"
+                        Padding="10,5">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ModernRaisedButton" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Background" Value="#3498DB"/>
+                <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                        CornerRadius="4"
+                        BorderBrush="#3498DB"
+                        BorderThickness="1"
+                        Background="#3498DB"
+                        Padding="20,5">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ClearButton" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#D54B4B"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                        CornerRadius="4"
+                        BorderBrush="#D54B4B"
+                        BorderThickness="1"
+                        Background="#FFFFFF"
+                        Padding="10,5">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ModernButton" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#555"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                        CornerRadius="4"
+                        BorderBrush="#E0E0E0"
+                        BorderThickness="1"
+                        Background="#FFFFFF"
+                        Padding="10,5">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
 
         </ResourceDictionary>
         

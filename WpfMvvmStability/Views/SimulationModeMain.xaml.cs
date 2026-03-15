@@ -237,7 +237,7 @@ namespace WpfMvvmStability.Views
 
                 if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]) < 0)
                 {
-                    heel.Content = "PORT";
+                    lblHeel.Content = "PORT";
                     decimal HeelSTBD = (Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]));
                     HeelSTBD = HeelSTBD * -1;
                     lblHeel.Content = HeelSTBD.ToString("N3");
@@ -245,7 +245,7 @@ namespace WpfMvvmStability.Views
                 }
                 else if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]) > 0)
                 {
-                    heel.Content = "STBD";
+                    lblHeel.Content = "STBD";
                     Double abs = (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]));
                     decimal HeelPort = Convert.ToDecimal((-1) * abs);
                     lblHeel.Content = HeelPort.ToString("N3");
@@ -253,14 +253,14 @@ namespace WpfMvvmStability.Views
                 }
                 else
                 {
-                    heel.Content = " ";
+                    lblHeel.Content = " ";
                     lblHeel.Content = Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"].ToString();
                 }
 
 
                 if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Trim"]) > 0)
                 {
-                    trim.Content = "FWD";
+                    lblTrim.Content = "FWD";
 
                     // lblTrim.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"])); VarTrimAFWD
 
@@ -271,7 +271,7 @@ namespace WpfMvvmStability.Views
                 }
                 else if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Trim"]) < 0)
                 {
-                    trim.Content = "AFT";
+                    lblTrim.Content = "AFT";
                     Double abs = (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]));
                     // lblTrim.Content = Convert.ToString((-1) * abs); VarTrimAFTR
                     decimal VarTrimAFTR = Convert.ToDecimal((-1) * abs);
@@ -280,7 +280,7 @@ namespace WpfMvvmStability.Views
                 }
                 else
                 {
-                    trim.Content = " ";
+                    lblTrim.Content = " ";
                     lblTrim.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]));
                 }
 
@@ -1550,7 +1550,7 @@ namespace WpfMvvmStability.Views
 
             if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]) < 0)
             {
-                heel.Content = "PORT";
+                lblHeel.Content = "PORT";
                 Double abs = (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]));
                 //  lblHeel.Content = Convert.ToString((-1) * abs);
 
@@ -1559,7 +1559,7 @@ namespace WpfMvvmStability.Views
             }
             else if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]) > 0)
             {
-                heel.Content = "STBD";
+                lblHeel.Content = "STBD";
                 //lblHeel.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]));
                 decimal varheel1 = Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]);
                 //decimal varheel1 = Convert.ToDecimal(Convert.ToString((-1) * heel2));
@@ -1568,7 +1568,7 @@ namespace WpfMvvmStability.Views
             else
             {
                 // lblHeel.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]));
-                heel.Content = " ";
+                lblHeel.Content = " ";
                 decimal heel3 = Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Heel"]);
                 lblHeel.Content = heel3.ToString("N3");
             }
@@ -1576,14 +1576,14 @@ namespace WpfMvvmStability.Views
 
             if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]) > 0)
             {
-                trim.Content = "FWD";
+                lblTrim.Content = "FWD";
                 Double abs = (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]));
                 decimal trim1 = Convert.ToDecimal((-1) * abs);
                 lblTrim.Content = abs.ToString("N3");
             }
             else if (Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]) < 0)
             {
-                trim.Content = "AFT";
+                lblTrim.Content = "AFT";
                 //lblTrim.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]));
                 decimal trim2 = Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]);
                 decimal trim1 = Convert.ToDecimal((-1) * trim2);
@@ -1591,7 +1591,7 @@ namespace WpfMvvmStability.Views
             }
             else
             {
-                trim.Content = " ";
+                lblTrim.Content = " ";
                 //alblTrim.Content = (Convert.ToString(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]));
                 decimal trim3 = Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["TRIM"]);
                 lblTrim.Content = trim3.ToString("N3");
@@ -5938,7 +5938,7 @@ namespace WpfMvvmStability.Views
                         }
                     }
                 }
-                for (int i = 0; i < 383; i++)
+                for (int i = 0; i < 380; i++)
                 {
                     try
                     {

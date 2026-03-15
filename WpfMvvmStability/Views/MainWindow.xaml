@@ -10,242 +10,695 @@
         xmlns:modelViewer="clr-namespace:WpfMvvmStability.ViewModels"
         xmlns:modelView="clr-namespace:WpfMvvmStability.Views" 
    
-    Title="P15B" WindowStartupLocation="CenterScreen" Name="MainWin" ResizeMode="CanMinimize" WindowStyle="SingleBorderWindow" Topmost="False" xmlns:my="clr-namespace:WpfMvvmStability" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Top="Auto" Left="Auto" BorderThickness="0" SnapsToDevicePixels="False" FontFamily="Calibri"  WindowState="Normal" Loaded="Main_Loaded" Height="870" Width="1099.89" Icon="/Stability;component/Lnt2.ico">
-    <Window.Resources>
-        
-        <ControlTemplate TargetType="Frame" x:Key="templateRealMode">
-            <DockPanel>
-               <ToolBar DockPanel.Dock="Top" >
-                    <DockPanel Margin="1">
-                        <StackPanel
-                    Margin="1"
-                    Orientation="Horizontal"
-                    DockPanel.Dock="Top">
-                            <Button
-                    Content="Back"
-                    Click="OnBackward"
-                                FontSize="14"
-                    Width="50" Height="30"
-                    IsEnabled="{TemplateBinding CanGoBack}" />
-                   
-                            <Button Content="Stability"  FontSize="14" VerticalContentAlignment="Center"  Margin="40,0,10,0" BorderThickness="1" Click="OnGoPageRealStabilitySummary" Width="80" Height="30"  />
-                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14"  HorizontalContentAlignment="Center" Name="lblRealStabilityType" />
-                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" HorizontalContentAlignment="Center" x:Name="lblRealStabilityStatus"/>
-                           
-                           
+    Title="" WindowStartupLocation="CenterScreen" Name="MainWin" 
+    ResizeMode="CanMinimize" WindowStyle="SingleBorderWindow" Topmost="False" 
+    xmlns:my="clr-namespace:WpfMvvmStability" 
+    BorderThickness="0" SnapsToDevicePixels="True" FontFamily="Calibri"  
+    WindowState="Normal" Loaded="Main_Loaded" Height="870" Width="1300" 
+       
+    Icon="/Stability;component/logo.ico" Background="#F0F2F5">
 
-                            <Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Corrective Action" FontFamily="Calibri" FontSize="14" Name="btnRealModeCorrectiveAction" Visibility="Hidden"  SnapsToDevicePixels="False" Click="OnGoPageRealCorrectiveAction"  />
-                            <Button Click="OnGoPageRealReport" Margin="10,0,10,0" BorderThickness="1" Width="80" Height="30"  FontSize="14" Content="Reports" />
-                            <Label   BorderThickness="0" Content="                                      " Name="lblConnectionstatus"  />
-                            <Label BorderBrush="#FF727272"  Margin="1,0,10,0" Background="Red"  BorderThickness="1" Content="COMMUNICATION" FontSize="14" HorizontalContentAlignment="Center" Name="lblStatus"  />
-                            <Button BorderBrush="#FF727272" Margin="100,0,10,0" Click="btnExit_Click" Content="Switch To IPMS" FontFamily="Calibri" FontSize="14" Name="btnExit" Grid.Row="1" Grid.RowSpan="1" Grid.Column="13" />
-                           
-                            
+    <Window.Resources>
+
+        <!-- ================= LIGHT BLUE THEME PALETTE ================= -->
+
+        <!-- Primary -->
+        <Color x:Key="PrimaryColor">#1890FF</Color>
+        <Color x:Key="PrimaryLightColor">#40A9FF</Color>
+        <Color x:Key="PrimaryDarkColor">#096DD9</Color>
+        <Color x:Key="PrimaryBgColor">#E6F7FF</Color>
+        <Color x:Key="PrimaryBorderColor">#91D5FF</Color>
+
+        <!-- Neutral / Background -->
+        <Color x:Key="PageBgColor">#F0F2F5</Color>
+        <Color x:Key="CardBgColor">#FFFFFF</Color>
+        <Color x:Key="BorderColor">#E0E0E0</Color>
+        <Color x:Key="DividerColor">#D9D9D9</Color>
+
+        <!-- Text -->
+        <Color x:Key="TextPrimaryColor">#333333</Color>
+        <Color x:Key="TextSecondaryColor">#555555</Color>
+        <Color x:Key="TextDisabledColor">#999999</Color>
+
+        <!-- Success / Danger / Warning -->
+        <Color x:Key="SuccessColor">#52C41A</Color>
+        <Color x:Key="DangerColor">#FF4D4F</Color>
+        <Color x:Key="DangerBgColor">#FFF1F0</Color>
+        <Color x:Key="WarningColor">#FA8C16</Color>
+        <Color x:Key="WarningBgColor">#FFF7E6</Color>
+
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+        <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLightColor}"/>
+        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}"/>
+        <SolidColorBrush x:Key="PrimaryBgBrush" Color="{StaticResource PrimaryBgColor}"/>
+        <SolidColorBrush x:Key="PrimaryBorderBrush" Color="{StaticResource PrimaryBorderColor}"/>
+
+        <SolidColorBrush x:Key="PageBgBrush" Color="{StaticResource PageBgColor}"/>
+        <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerColor}"/>
+
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+        <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabledColor}"/>
+
+        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+        <SolidColorBrush x:Key="DangerBgBrush" Color="{StaticResource DangerBgColor}"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+        <SolidColorBrush x:Key="WarningBgBrush" Color="{StaticResource WarningBgColor}"/>
+
+        <!-- ================= MODERN STYLES ================= -->
+
+        <!-- 1. Button Styles -->
+        <Style TargetType="Button" x:Key="ModernButton">
+            <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="{StaticResource PrimaryBgBrush}"/>
+                                <Setter Property="BorderBrush" TargetName="Border" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrimaryButton" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Button" x:Key="DangerButton" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="{StaticResource DangerBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 2. Label Styles -->
+        <Style TargetType="Label" x:Key="StatusLabel">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 3. TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" 
+                                Background="{StaticResource BorderBrush}" 
+                                BorderThickness="0" 
+                                Margin="0,0,2,0" 
+                                CornerRadius="4,4,0,0"
+                                Height="35"
+                                Width="200">
+                            <ContentPresenter x:Name="ContentSite" 
+                                              VerticalAlignment="Center" 
+                                              HorizontalAlignment="Center"
+                                              ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource CardBgBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DividerBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ================= MODERN MENU STYLES ================= -->
+
+        <!-- Top Level Menu Item Style (The Bar) -->
+        <Style x:Key="MenuHeaderStyle" TargetType="MenuItem">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Border" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <ContentPresenter x:Name="HeaderHost" ContentSource="Header" RecognizesAccessKey="True" 
+                                                  Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsSubmenuOpen}" 
+                                       AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                    <Border x:Name="SubmenuBorder" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" 
+                                            SnapsToDevicePixels="True" Effect="{DynamicResource DropShadow}">
+                                        <ScrollViewer Margin="0,4" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="{StaticResource PrimaryBgBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="{StaticResource PrimaryBgBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sub Menu Item Style (The Dropdown) -->
+        <Style x:Key="SubMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="20,8,10,8"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Border" Background="Transparent">
+                            <Grid>
+                                <ContentPresenter x:Name="HeaderHost" ContentSource="Header" RecognizesAccessKey="True"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="#F0F0F0"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ================= TEMPLATES ================= -->
+
+        <ControlTemplate TargetType="Frame" x:Key="templateRealMode">
+            <DockPanel Background="#FAFBFF">
+                <Border DockPanel.Dock="Top" Background="#030032" BorderThickness="0" Padding="12,8">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.15" Color="Black"/>
+                    </Border.Effect>
+                    <Grid>
+                        <!-- Left side buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+
+                            <!-- Back Button -->
+                            <Button Content="⬅ Back" Click="OnBackward" 
+                        IsEnabled="{TemplateBinding CanGoBack}"
+                        Width="120" Height="36" FontSize="13" FontWeight="SemiBold"
+                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Stability Button -->
+                            <Button Content="Stability" Click="OnGoPageRealStabilitySummary" 
+                        Width="120" Height="36" Margin="10,0,5,0" FontSize="13" FontWeight="SemiBold"
+                        Foreground="#030032" Background="#FFFFFF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Stability Type Label -->
+                            <Border Name="borderRealStabilityType" Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
+                        BorderBrush="#1F48FF">
+                                <Label Name="lblRealStabilityType" Content="NA" 
+                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                           FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                            </Border>
+
+                            <!-- Stability Status Label -->
+                            <Border Name="borderRealStabilityStatus" Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
+                        BorderBrush="#1F48FF">
+                                <Label Name="lblRealStabilityStatus" Content="NA" 
+                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                           FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                            </Border>
+
+                            <!-- Corrective Action Button -->
+                            <Button Content="Corrective Action" Name="btnRealModeCorrectiveAction" 
+                        Click="OnGoPageRealCorrectiveAction" Visibility="Hidden"
+                        Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
+                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
                         </StackPanel>
-                    </DockPanel>
-                </ToolBar>
-                <Border
-                        BorderBrush="Blue"
-                        Margin="1"
-                        BorderThickness="4"
-                        Padding="1"
-                        CornerRadius="4">
-                    <ContentPresenter DockPanel.Dock="Bottom" />
+
+                        <!-- Right side buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+                            <!-- Reports Button -->
+                            <Button Content="Reports" Click="OnGoPageRealReport" 
+                        Width="120" Height="36" Margin="5,0" FontSize="13" FontWeight="SemiBold"
+                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Status Label -->
+                            <Border Background="#FF4757" CornerRadius="8" Margin="10,0" Height="36" 
+                        Width="120" VerticalAlignment="Center">
+                                <Label Name="lblStatus" Content="COMMUNICATION" 
+                           Foreground="#FFFFFF" FontSize="10" FontWeight="Bold"
+                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </Border>
+
+                            <!-- Switch to IPMS Button --><!--
+                            <Button Name="btnExit" Content="Switch To IPMS" Click="btnExit_Click" 
+                        Width="120" Height="36" FontSize="12" FontWeight="SemiBold"
+                        Foreground="#FFFFFF" Background="#FF4757" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>-->
+
+                        </StackPanel>
+                    </Grid>
                 </Border>
-                
+                <Border Background="#030032" Padding="5">
+                    <ContentPresenter />
+                </Border>
             </DockPanel>
         </ControlTemplate>
-        <ControlTemplate TargetType="Frame" x:Key="templateSimulationMode">
-            <DockPanel>
-                <ToolBar DockPanel.Dock="Top" >
-                    <DockPanel Margin="1">
-                        <StackPanel
-                    Margin="1"
-                    Orientation="Horizontal"
-                    DockPanel.Dock="Top">
-                            <Button
-                    Content="Back"
-                    Click="OnBackward"
-                                FontSize="14"
-                    Width="80" Height="30"
-                    IsEnabled="{TemplateBinding CanGoBack}" />
-                  
-                            <Button Content="Stability" IsEnabled="False" Name="btnSimulationModeStability" FontSize="14" Margin="40,0,10,0" BorderThickness="1" Click="OnGoPageSimulationStabilitySummary" Width="80" Height="30"  />
-                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" FontWeight="Bold" HorizontalContentAlignment="Center" Name="lblSimulationStabilityType" />
-                            <Label BorderBrush="#FF727272" Margin="10,0,10,0" BorderThickness="1" Content="NA" FontSize="14" HorizontalContentAlignment="Center" Name="lblSimulationStabilityStatus" />
-                            <Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Corrective Action" FontFamily="Calibri" FontSize="14" Name="btnSimulationModeCorrectiveAction" SnapsToDevicePixels="False" Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False"  />
-                            <!--<Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Calculate" FontFamily="Calibri" FontSize="11" Height="25"  Name="btnSimulationCalculate" SnapsToDevicePixels="False" Click="btnSimulationCalculate_Click" />-->
-                            <Button BorderBrush="#FF727272" Margin="40,0,10,0" Content="Reports" FontFamily="Calibri" FontSize="14" Height="30"   Width="90"  Name="btnSimulationGenerateReport" SnapsToDevicePixels="False" Click="btnSimulationGenerateReport_Click" IsEnabled="False"  />
-                            <Label BorderBrush="#FF727272"  Margin="10,0,10,0" BorderThickness="1" Content="OFFLINE MODE"  Background="White" Foreground="Red" FontSize="14" HorizontalContentAlignment="Center" Name="lblconnectionstatus"  />
-                            <!--<Button BorderBrush="#FF727272" Margin="10,0,10,0" Content="Save" FontFamily="Calibri" FontSize="11" Height="25"  Name="btnSaveLoadingCondition" SnapsToDevicePixels="False" Click="btnSaveLoadingCondition_Click" />-->
-                            <Button BorderBrush="#FF727272" Margin="100,0,10,0" Click="btnExitSimulation_Click" Content="Switch To IPMS" FontFamily="Calibri" FontSize="14" Height="30" Name="btnExitSimulation"  HorizontalAlignment="Left" />
-                        </StackPanel>
-                    </DockPanel>
-                </ToolBar>
-                <Border Name="SimulationBorder"
-                        BorderBrush="Red"
-                        Margin="1"
-                        BorderThickness="4"
-                        Padding="1"
-                        CornerRadius="7">
-                    <ContentPresenter DockPanel.Dock="Bottom" />
-                </Border>
 
+        <ControlTemplate TargetType="Frame" x:Key="templateSimulationMode">
+            <DockPanel Background="#FAFBFF">
+                <Border DockPanel.Dock="Top" Background="#030032" BorderThickness="0" Padding="12,8">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.15" Color="Black"/>
+                    </Border.Effect>
+                    <Grid>
+                        <!-- Left side buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+
+                            <!-- Back Button -->
+                            <Button Content="⬅ Back" Click="OnBackward" 
+                            IsEnabled="{TemplateBinding CanGoBack}"
+                            Width="120" Height="36" FontSize="13" FontWeight="SemiBold"
+                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Stability Button -->
+                            <Button Content="Stability" Name="btnSimulationModeStability" 
+                            Click="OnGoPageSimulationStabilitySummary" IsEnabled="False"
+                            Width="120" Height="36" Margin="10,0,5,0" FontSize="13" FontWeight="SemiBold"
+                            Foreground="#030032" Background="#FFFFFF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Stability Type Label -->
+                            <Border Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
+                            BorderBrush="#1F48FF" >
+                                <Label Name="lblSimulationStabilityType" Content="NA" 
+                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                               FontSize="12" FontWeight="Bold" Foreground="#030032"/>
+                            </Border>
+
+                            <!-- Stability Status Label -->
+                            <Border Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
+                            BorderBrush="#1F48FF" >
+                                <Label Name="lblSimulationStabilityStatus" Content="NA" 
+                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                               FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                            </Border>
+
+                            <!-- Corrective Action Button -->
+                            <Button Content="Corrective Action" Name="btnSimulationModeCorrectiveAction" 
+                            Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False"
+                            Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
+                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                        </StackPanel>
+
+                        <!-- Right side buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+                            <!-- Reports Button -->
+                            <Button Content="Reports" Name="btnSimulationGenerateReport" 
+                            Click="btnSimulationGenerateReport_Click" IsEnabled="False"
+                            Width="120" Height="36" Margin="5,0" FontSize="13" FontWeight="SemiBold"
+                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+
+                            <!-- Status Label -->
+                            <Border Background="#FF9F43" CornerRadius="8" Margin="10,0" Height="36" 
+                            Width="120" VerticalAlignment="Center">
+                                <Label Name="lblconnectionstatus" Content="OFFLINE MODE" 
+                               Foreground="#FFFFFF" FontSize="10" FontWeight="Bold"
+                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </Border>
+
+                            <!-- Switch to IPMS Button -->
+                            <!--<Button Name="btnExitSimulation" Content="Switch To IPMS" Click="btnExitSimulation_Click" 
+                            Width="120" Height="36" FontSize="12" FontWeight="SemiBold"
+                            Foreground="#FFFFFF" Background="#FF4757" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>-->
+
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Background="#030032" Padding="5">
+                    <ContentPresenter />
+                </Border>
             </DockPanel>
         </ControlTemplate>
 
     </Window.Resources>
 
     <Grid>
-            <Grid.RowDefinitions>
-            <RowDefinition Height="27" />
-            <RowDefinition Height="835*" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        
-        <Menu Name="MainMenu" BorderBrush="Black" DockPanel.Dock="Top" Background="#FFBEBEBE">
-            <Menu.Items>
-                <MenuItem Header="_File" Background="#FFBEBEBE" FontFamily="Calibri">
-                    <!--<MenuItem Header="_Real Mode" Name="RM" Click="RM_Click" Background="#FFBEBEBE"></MenuItem>
-                    <MenuItem Header="_Simulation Mode" Name="SM" Click="SM_Click" Background="#FFBEBEBE"></MenuItem>-->
-                    <MenuItem Header="_Main Particulars" Name="Doc1"  Click="Doc1_click" Background="#FFBEBEBE"></MenuItem>
-                    <MenuItem Header="_General Arrangement" Name="Doc2"  Click="Doc2_click" Background="#FFBEBEBE"></MenuItem>
-                    <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Background="#FFBEBEBE"></MenuItem>
-                    <MenuItem Header="_Print Report" Name="Printreport"  Click="Printreport_click" Background="#FFBEBEBE"></MenuItem>
-                    <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Background="#FFBEBEBE"></MenuItem>
-                </MenuItem>
-                <MenuItem Header="_View" Background="#FFBEBEBE" FontFamily="Calibri">
-                    <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Background="#FFBEBEBE" Click="SavedLoadingCondition_Click"></MenuItem>
-                    <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition"  Background="#FFBEBEBE" Click="StandardLoadingCondition_Click"></MenuItem>
-                </MenuItem>
-                <MenuItem Header="_Tools" Background="#FFBEBEBE" FontFamily="Calibri">
-                    <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Background="#FFBEBEBE"/>
-                    <!--<MenuItem Header="_Set IPMS Path" Name="setipmspath" Click="setipmspath_Click" Background="#FFBEBEBE"/>-->
-                </MenuItem>
-                <MenuItem Header="_Master Input"   FontFamily="Calibri" Background="#FFBEBEBE" Click="MenuItem_Click" VerticalAlignment="Top" VerticalContentAlignment="Center">
-                    <MenuItem Header="_LightShip Data" Name="LightShip"   Background="#FFBEBEBE" Click="LightShip_Click" />
-                    <MenuItem Header="_Stability Settings" Name="settings"   Background="#FFBEBEBE" Click="settings_Click" />
-                    <MenuItem Header="_Wind Speed" Name="windspeed"   Background="#FFBEBEBE" Click="windspeed_Click" />
-                   
-
-                </MenuItem>
-                <MenuItem Header="_Damage Cases" Name="MDamage" FontFamily="Calibri" Background="#FFBEBEBE"  VerticalAlignment="Top" FontSize="14">
-                    <ComboBox Name="cMBDamage" Width="145" SelectionChanged="cMBDamage_SelectionChanged" >
-                        <ComboBoxItem Content="Select Damage Case"  IsSelected="True"/>
-                        <ComboBoxItem Content=" GHIJ(ii) "/>
-                        <ComboBoxItem Content=" KLMN(ii) " />
-                        <ComboBoxItem Content=" LMNOP(ii) " />
-                        <ComboBoxItem Content=" EFGH " />
-                        <ComboBoxItem Content=" ABCD "/>
-                        <ComboBoxItem Content=" BCDE " />
-                        <ComboBoxItem Content=" CDE " />
-                        <ComboBoxItem Content=" IJKL(I) " />
-                        <ComboBoxItem Content=" JKL(II) " />
-                        <ComboBoxItem Content=" AB " />
-                        <ComboBoxItem Content=" CD " />
-                        <ComboBoxItem Content=" FG " />
-                        <ComboBoxItem Content=" LM " />
-                        <ComboBoxItem Content=" MN " />
-                        <ComboBoxItem Content=" A "/>
-                        <ComboBoxItem Content=" B " />
-                        <ComboBoxItem Content=" C " />
-                        <ComboBoxItem Content=" D "/>
-                        <ComboBoxItem Content=" E " />
-                        <ComboBoxItem Content=" F " />
-                        <ComboBoxItem Content=" G " />
-                        <ComboBoxItem Content=" H " />
-                        <ComboBoxItem Content=" I " />
-                        <ComboBoxItem Content=" J " />
-                        <ComboBoxItem Content=" K " />
-                        <ComboBoxItem Content=" L " />
-                        <ComboBoxItem Content=" M " />
-                        <ComboBoxItem Content=" N " />
-                        <ComboBoxItem Content=" O " />
-                        <ComboBoxItem Content=" P " />
-                        <ComboBoxItem Content=" Q " /> 
-                        <ComboBoxItem Content=" LM(III)" />
-                        <ComboBoxItem Content=" JK(I) " />
-                        <ComboBoxItem Content=" NO(I) " />
-                        <ComboBoxItem Content=" NO(III) " />
-                        <ComboBoxItem Content=" KL(II) " />
-                    </ComboBox>
-                    <MenuItem Header="Switch To Intact" Name="menuIntactDamage"  Background="#FFBEBEBE" VerticalAlignment="Top" Click="menuIntactDamage_Click" />
-                </MenuItem>
-                <MenuItem Header="_Help" FontFamily="Calibri" Background="#FFBEBEBE" Click="MenuItem_Click"  VerticalAlignment="Top">
-                    <MenuItem Header="_User Manual" Name="UserManual"  Click="OpenUserManual_Click" Background="#FFBEBEBE"/>
-                    <MenuItem Header="_About" Name="About" Click="About_Click" Background="#FFBEBEBE" VerticalAlignment="Top" />
-                </MenuItem>
 
 
-            </Menu.Items>
+        <!-- MODERN MENU BAR -->
+        <!-- Background White, Bottom Border for separation, ItemsPanel ensures proper layout -->
+        <Menu Name="MainMenu" Background="#030032" Foreground="#FFFFFF" FontFamily="Segoe UI" FontSize="13" VerticalAlignment="Top">
+            <Menu.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </Menu.ItemsPanel>
+
+            <Menu.Resources>
+                <!-- Top-level menu header style -->
+                <Style x:Key="ModernMenuHeader" TargetType="MenuItem">
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="Padding" Value="14,8"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter Property="Background" Value="#1F48FF"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+
+                <!-- Submenu item style -->
+                <Style x:Key="ModernSubMenuItem" TargetType="MenuItem">
+                    <Setter Property="Foreground" Value="#030032"/>
+                    <Setter Property="Padding" Value="20,8"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="FontWeight" Value="Regular"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter Property="Background" Value="#EEF1FF"/>
+                            <Setter Property="Foreground" Value="#1F48FF"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+
+                <!-- Separator style -->
+                <Style x:Key="ModernSeparator" TargetType="Separator">
+                    <Setter Property="Background" Value="#E8E8E8"/>
+                    <Setter Property="Margin" Value="10,4"/>
+                    <Setter Property="Height" Value="1"/>
+                </Style>
+            </Menu.Resources>
+
+            <!-- File -->
+            <MenuItem Header="_File" Style="{StaticResource ModernMenuHeader}">
+                <MenuItem Header="_Main Particulars" Name="Doc1" Click="Doc1_click" Style="{StaticResource ModernSubMenuItem}"/>
+                <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
+                <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
+                <Separator Style="{StaticResource ModernSeparator}"/>
+                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                <Separator Style="{StaticResource ModernSeparator}"/>
+                <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
+            </MenuItem>
+
+            <!-- View -->
+            <MenuItem Header="_View" Style="{StaticResource ModernMenuHeader}">
+                <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="SavedLoadingCondition_Click"/>
+                <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="StandardLoadingCondition_Click"/>
+            </MenuItem>
+
+            <!-- Tools -->
+            <MenuItem Header="_Tools" Style="{StaticResource ModernMenuHeader}">
+                <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernSubMenuItem}"/>
+            </MenuItem>
+
+            <!-- Master Input -->
+            <MenuItem Header="_Master Input" Style="{StaticResource ModernMenuHeader}">
+                <MenuItem Header="_LightShip Data" Name="LightShip" Style="{StaticResource ModernSubMenuItem}" Click="LightShip_Click"/>
+                <MenuItem Header="_Stability Settings" Name="settings" Style="{StaticResource ModernSubMenuItem}" Click="settings_Click"/>
+                <MenuItem Header="_Wind Speed" Name="windspeed" Style="{StaticResource ModernSubMenuItem}" Click="windspeed_Click"/>
+            </MenuItem>
+
+            <!-- Damage Cases -->
+            <MenuItem Header="_Damage Cases" Name="MDamage" Style="{StaticResource ModernMenuHeader}">
+                <Border Background="#FFFFFF" Padding="14" CornerRadius="8" BorderBrush="#E0E4EF" BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.08" Color="Black"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="Select Damage Case" FontWeight="SemiBold" Margin="0,0,0,8" 
+                           Foreground="#030032" FontSize="13" FontFamily="Segoe UI"/>
+
+                        <Border BorderBrush="#1F48FF" BorderThickness="1.5" CornerRadius="6" Padding="0">
+                            <ComboBox Name="cMBDamage" Width="240" SelectionChanged="cMBDamage_SelectionChanged" 
+                              Height="34" FontFamily="Segoe UI" FontSize="13" BorderThickness="0"
+                              Background="#FFFFFF" Foreground="#030032">
+                                <ComboBoxItem Content="Select Damage Case" IsSelected="True"/>
+                                <ComboBoxItem Content=" GHIJ(ii) "/>
+                                <ComboBoxItem Content=" KLMN(ii) "/>
+                                <ComboBoxItem Content=" LMNOP(ii) "/>
+                                <ComboBoxItem Content=" EFGH "/>
+                                <ComboBoxItem Content=" ABCD "/>
+                                <ComboBoxItem Content=" BCDE "/>
+                                <ComboBoxItem Content=" CDE "/>
+                                <ComboBoxItem Content=" IJKL(I) "/>
+                                <ComboBoxItem Content=" JKL(II) "/>
+                                <ComboBoxItem Content=" AB "/>
+                                <ComboBoxItem Content=" CD "/>
+                                <ComboBoxItem Content=" FG "/>
+                                <ComboBoxItem Content=" LM "/>
+                                <ComboBoxItem Content=" MN "/>
+                                <ComboBoxItem Content=" A "/>
+                                <ComboBoxItem Content=" B "/>
+                                <ComboBoxItem Content=" C "/>
+                                <ComboBoxItem Content=" D "/>
+                                <ComboBoxItem Content=" E "/>
+                                <ComboBoxItem Content=" F "/>
+                                <ComboBoxItem Content=" G "/>
+                                <ComboBoxItem Content=" H "/>
+                                <ComboBoxItem Content=" I "/>
+                                <ComboBoxItem Content=" J "/>
+                                <ComboBoxItem Content=" K "/>
+                                <ComboBoxItem Content=" L "/>
+                                <ComboBoxItem Content=" M "/>
+                                <ComboBoxItem Content=" N "/>
+                                <ComboBoxItem Content=" O "/>
+                                <ComboBoxItem Content=" P "/>
+                                <ComboBoxItem Content=" Q "/>
+                                <ComboBoxItem Content=" LM(III)"/>
+                                <ComboBoxItem Content=" JK(I) "/>
+                                <ComboBoxItem Content=" NO(I) "/>
+                                <ComboBoxItem Content=" NO(III) "/>
+                                <ComboBoxItem Content=" KL(II) "/>
+                            </ComboBox>
+                        </Border>
+
+                        <Button Content="Switch To Intact" Name="menuIntactDamage" Margin="0,12,0,0" 
+                        Height="34" Width="240" FontSize="13" FontWeight="SemiBold"
+                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand"
+                        Click="menuIntactDamage_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </MenuItem>
+
+            <!-- Help -->
+            <MenuItem Header="_Help" Style="{StaticResource ModernMenuHeader}">
+                <MenuItem Header="_User Manual" Name="UserManual" Click="OpenUserManual_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                <MenuItem Header="_About" Name="About" Click="About_Click" Style="{StaticResource ModernSubMenuItem}"/>
+            </MenuItem>
         </Menu>
-        <DockPanel LastChildFill="True" Grid.Row="1" Background="#FFBEBEBE">
-            <TabControl BorderBrush="#FF727272" BorderThickness="1" FontFamily="Calibri" FontSize="14" Name="tabControl1" OverridesDefaultStyle="False" Padding="0" SnapsToDevicePixels="True" TabStripPlacement="Bottom" UseLayoutRounding="False" Background="#FFBEBEBE" SelectionChanged="tabControl1_SelectionChanged">
+
+        <!-- Main Content Area -->
+        <DockPanel LastChildFill="True" Grid.Row="1" Background="{StaticResource PageBgBrush}">
+            <TabControl Name="tabControl1" BorderThickness="0" Background="Transparent" 
+            VerticalContentAlignment="Stretch"
+            TabStripPlacement="Bottom" SelectionChanged="tabControl1_SelectionChanged">
+
+                <TabControl.Style>
+                    <Style TargetType="TabControl">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabControl">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <ContentPresenter Grid.Row="0" 
+                                              ContentSource="SelectedContent"/>
+                                        <UniformGrid Grid.Row="1" Rows="1" 
+                                         IsItemsHost="True"/>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Style>
+
                 <TabControl.Resources>
                     <Style TargetType="TabItem">
-                        <Setter Property="Control.Foreground" Value="Black" />
-                        <Setter Property="Control.Template">
+                        <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
-                                    <Border BorderBrush="#FF727272" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Height="30" Margin="0,0" Name="Border">
-                                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" Margin="10,2" Name="ContentSite" VerticalAlignment="Center" />
+                                    <Border Name="tabBorder" 
+                                Background="#030032" 
+                                BorderBrush="#1F48FF" 
+                                BorderThickness="0" 
+                                Padding="10,8" 
+                                Cursor="Hand">
+                                        <ContentPresenter ContentSource="Header" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              TextBlock.Foreground="#FFFFFF"
+                                              TextBlock.FontSize="14"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
-                                        <Trigger Property="TabItem.IsSelected" Value="True">
-                                            <Setter Property="Border.Background" TargetName="Border" Value="#CC1BA1E2" />
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#1F48FF"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF"/>
                                         </Trigger>
-                                        <Trigger Property="TabItem.IsSelected" Value="False">
-                                            <Setter Property="Border.Background" TargetName="Border" Value="#AA9E9E9E" />
-                                        </Trigger>
+                                        <!--<Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="#162FA0"/>
+                                        </Trigger>-->
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
                     </Style>
                 </TabControl.Resources>
-                <TabItem BorderBrush="#FF727272"  FontFamily="Calibri" FontSize="14" Header="Real Mode"  Name="tabItemReal" Width="200" Background="#FFBEBEBE" DataContext="{Binding}" GotFocus="tabItemReal_GotFocus">
-                    <Grid IsItemsHost="False" ShowGridLines="False">
-               
-                        <StackPanel Grid.RowSpan="2">
-                            <Frame  Template="{StaticResource templateRealMode}" Name="frameRealMode" ></Frame>
-                        </StackPanel>
-                        <DockPanel LastChildFill="True" Grid.Row="1">
 
-                            <Label Content="Loading..." Name="tbProgress" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="#80796969" />
-                            
-                        </DockPanel>
-                       
+                <!-- Real Mode Tab -->
+                <TabItem Header="Sensor Streaming" Name="tabItemReal" GotFocus="tabItemReal_GotFocus">
+                    <Grid Background="{StaticResource PrimaryBgBrush}" Margin="0,0,0,5">
+                        <Frame Template="{StaticResource templateRealMode}" Name="frameRealMode" />
+                        <Label Content="Loading..." Name="tbProgress" HorizontalContentAlignment="Center" 
+                   VerticalContentAlignment="Center" 
+                   Background="#80000000" Foreground="White" FontSize="16" Visibility="Collapsed"/>
                     </Grid>
                 </TabItem>
-                <TabItem BorderBrush="#CC1BA1E2"  FontFamily="Calibri" FontSize="14" Header="Simulation Mode" Name="tabItemSimulation" Width="200" GotFocus="tabItemSimulation_GotFocus">
-                    <Grid IsItemsHost="False" ShowGridLines="False">
-                        <StackPanel Grid.RowSpan="2">
-                            <Frame Template="{StaticResource templateSimulationMode}" Name="frameSimulationMode" Navigated="frameSimulationMode_Navigated"></Frame>
-                        </StackPanel> 
+
+                <!-- Simulation Mode Tab -->
+                <TabItem Header="Virtual Simulation" Name="tabItemSimulation" GotFocus="tabItemSimulation_GotFocus">
+                    <Grid Background="{StaticResource WarningBgBrush}" Margin="0,0,0,5">
+                        <Frame Template="{StaticResource templateSimulationMode}" Name="frameSimulationMode" 
+                   Navigated="frameSimulationMode_Navigated"/>
                     </Grid>
                 </TabItem>
-                <!--<TabItem Header="PDF Viewer" Visibility="Collapsed" Name="ViewPDF" Loaded="ViewPDF_Loaded">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="26*" />
-                            <RowDefinition Height="716*" />
-                            <RowDefinition Height="28*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="27.919" />
-                            <ColumnDefinition Width="187.459" />
-                            <ColumnDefinition Width="29" />
-                            <ColumnDefinition Width="794.619" />
-                            <ColumnDefinition Width="36.893" />
-                        </Grid.ColumnDefinitions>
-                        <ListBox Grid.Column="1" Grid.Row="1" Name="listBoxPDF" SelectionChanged="listBoxPDF_SelectionChanged" />
-                        <WebBrowser Grid.Column="3" Name="webBrowserPDF" Width="794.619" OpacityMask="#FFCBC8C8" Grid.ColumnSpan="2" Margin="2.622,-6,33.89,32" Grid.RowSpan="2" />
-                        <Label Content="Please Generate Report" Grid.Column="1" Grid.Row="1" Height="28" HorizontalAlignment="Left" Margin="12.526,259.866,0,0" Name="lblListBoxError" VerticalAlignment="Top" Width="150.13" Foreground="Red" />
-                        <Label Content="Please Select File from the List" Height="28" HorizontalAlignment="Left" Margin="327.622,259.867,0,0" Name="lblBrowserError" VerticalAlignment="Top" Width="182.13" Grid.Column="3" Grid.Row="1" Foreground="#FFD45A5A" />
-                    </Grid>
-                </TabItem>-->
+
             </TabControl>
-            
+
         </DockPanel>
     </Grid>
- 
+
 </Window>

@@ -1,4 +1,4 @@
-﻿<Page x:Class="WpfMvvmStability.Views.RealModeMain"
+﻿<!--<Page x:Class="WpfMvvmStability.Views.RealModeMain"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -11,21 +11,176 @@
             xmlns:local="clr-namespace:WpfMvvmStability"
             xmlns:System="clr-namespace:System;assembly=mscorlib"
             xmlns:Controls="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
-             mc:Ignorable="d" xmlns:my="clr-namespace:WpfMvvmStability" xmlns:my1="clr-namespace:WpfMvvmStability.Views" DataContext="{Binding}"  FontFamily="Calibri" Background="#FFBEBEBE" UseLayoutRounding="False" Height="730" Width="1084" Loaded="Page_Loaded">
+             mc:Ignorable="d" xmlns:my="clr-namespace:WpfMvvmStability" xmlns:my1="clr-namespace:WpfMvvmStability.Views" DataContext="{Binding}"  FontFamily="Calibri" Background="#F0F2F5" UseLayoutRounding="True" Height="730" Width="1300" Loaded="Page_Loaded">
 
     <Page.Resources>
+        --><!-- ================= MODERN STYLES (Matching SimulationMode) ================= --><!--
+
         <Style TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="FontFamily" Value="Calibri" />
         </Style>
+
         <Style TargetType="{x:Type DataGridRow}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="BorderBrush" Value="#F0F0F0"/>
+        </Style>
 
-            <Setter Property="Background" Value="#FFBEBEBE"></Setter>
+        --><!-- DataGridCell Style - All cells white background --><!--
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E6F7FF"/>
+                    <Setter Property="BorderBrush" Value="#1890FF"/>
+                    <Setter Property="Foreground" Value="#262626"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
+        --><!-- DataGrid Style (Matching Simulation Mode) --><!--
+        <Style TargetType="DataGrid" x:Key="ModernDataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#F0F0F0"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#FAFAFA"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserReorderColumns" Value="False"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Calibri"/>
+        </Style>
+
+        --><!-- DataGrid Header Style --><!--
+        <Style TargetType="DataGridColumnHeader" x:Key="ModernDataGridHeader">
+            <Setter Property="Background" Value="#F5F7FA"/>
+            <Setter Property="Foreground" Value="#555"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Calibri"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Height" Value="26"/>
+        </Style>
+
+        --><!-- Button Styles --><!--
+        <Style TargetType="Button" x:Key="ModernButton">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#CCC"/>
+            <Setter Property="Padding" Value="15,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="3"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="#E6F7FF"/>
+                                <Setter Property="BorderBrush" TargetName="Border" Value="#1890FF"/>
+                                <Setter Property="Foreground" Value="#1890FF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrimaryButton" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#1890FF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1890FF"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#40A9FF"/>
+                    <Setter Property="BorderBrush" Value="#40A9FF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        --><!-- Expander Style --><!--
+        <Style TargetType="Expander">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Foreground" Value="#555"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        --><!-- TabControl Style --><!--
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        --><!-- TabItem Style --><!--
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Foreground" Value="#555"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Background="{TemplateBinding Background}" CornerRadius="4,4,0,0" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#FFFFFF"/>
+                                <Setter Property="Foreground" Value="#1890FF"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        --><!-- Value Labels --><!--
+        <Style TargetType="Label" x:Key="ValueLabel">
+            <Setter Property="Background" Value="#E8F5E9"/>
+            <Setter Property="Foreground" Value="#2E7D32"/>
+            <Setter Property="BorderBrush" Value="#C8E6C9"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style TargetType="Label" x:Key="HeaderLabel">
+            <Setter Property="Foreground" Value="#555"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0"/>
         </Style>
     </Page.Resources>
-    
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="831*" />
@@ -40,122 +195,207 @@
             <RowDefinition Height="239*" />
         </Grid.RowDefinitions>
 
-        <TabControl Name="tabControl2" IsEnabled="True" BorderBrush="#FF727272" FontFamily="Calibri" TabStripPlacement="Top" VerticalContentAlignment="Top" Foreground="White" Grid.ColumnSpan="3" >
+        <TabControl Name="tabControl2" 
+            IsEnabled="True" 
+            BorderBrush="#E0E0E0" 
+            BorderThickness="0" 
+            FontFamily="Calibri" 
+            TabStripPlacement="Top" 
+            VerticalContentAlignment="Stretch" 
+            Foreground="#555" 
+            Grid.ColumnSpan="3"
+            Background="White">
+
             <TabControl.Resources>
-                <Style TargetType="TabItem">
-                    <Setter Property="Foreground" Value="White" />
+                --><!-- Modern Color Palette (Matching SimulationMode) --><!--
+                <SolidColorBrush x:Key="AppBackground" Color="#FFFFFF"/>
+                <SolidColorBrush x:Key="ContentBackground" Color="#FFFFFF"/>
+                <SolidColorBrush x:Key="TabBackground" Color="#E0E0E0"/>
+                <SolidColorBrush x:Key="AccentBrush" Color="#1890FF"/>
+                --><!-- Modern Blue Accent --><!--
+                <SolidColorBrush x:Key="TextPrimary" Color="#555555"/>
+                --><!-- Dark Text --><!--
+                <SolidColorBrush x:Key="TextSecondary" Color="#999999"/>
+                --><!-- Medium Gray Text --><!--
+                <SolidColorBrush x:Key="CanvasPaper" Color="#FFFFFF"/>
+                --><!-- White for Drawing Areas -->
+
+                <!-- Style for Top Horizontal Tabs (Graphics 2D / 3D) - Matching SimulationMode --><!--
+                <Style x:Key="MainTabItemStyle" TargetType="TabItem">
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="Padding" Value="15,8"/>
+                    <Setter Property="Margin" Value="2,0"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="TabItem">
-                                <Border Name="Border"  BorderThickness="1,1,1,0" BorderBrush="#FF727272" CornerRadius="4,4,0,0" Margin="0,0" Height="Auto">
-                                    <ContentPresenter x:Name="ContentSite"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        ContentSource="Header"
-                                        Margin="10,2"/>
-                                </Border>
+                                <Grid>
+                                    <Border Name="Border" 
+                                    Background="{TemplateBinding Background}" 
+                                    CornerRadius="4,4,0,0"
+                                    Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter x:Name="ContentSite" 
+                                                  VerticalAlignment="Center" 
+                                                  HorizontalAlignment="Center" 
+                                                  ContentSource="Header"/>
+                                    </Border>
+                                </Grid>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#FF727272" />
-
-                                    </Trigger>
-                                    <Trigger Property="IsSelected" Value="False">
-                                        <Setter TargetName="Border" Property="Background" Value="#8A909296" />
+                                        <Setter TargetName="Border" Property="Background" Value="#FFFFFF"/>
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
                 </Style>
+
+                --><!-- Style for Vertical Side Tabs (Right Side) - Matching SimulationMode --><!--
+                <Style x:Key="VerticalTabItemStyle" TargetType="TabItem">
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="Padding" Value="15,8"/>
+                    <Setter Property="Margin" Value="2,0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Grid>
+                                    <Border Name="Border" 
+                                    Background="{TemplateBinding Background}" 
+                                    CornerRadius="4,4,0,0"
+                                    Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter x:Name="ContentSite" 
+                                                  VerticalAlignment="Center" 
+                                                  HorizontalAlignment="Center" 
+                                                  ContentSource="Header">
+                                            <ContentPresenter.LayoutTransform>
+                                                <RotateTransform Angle="90" />
+                                            </ContentPresenter.LayoutTransform>
+                                        </ContentPresenter>
+                                    </Border>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Border" Property="Background" Value="#FFFFFF"/>
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                --><!-- Modern Button Style - Matching SimulationMode --><!--
+                <Style TargetType="Button" x:Key="ModernButtonStyle" BasedOn="{StaticResource PrimaryButton}">
+                    <Setter Property="Background" Value="#1890FF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="15,6"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="3">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#40A9FF"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#0050B3"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
             </TabControl.Resources>
-            <TabItem Header="Graphics 2D" Name="tabItem3" Foreground="White" FontSize="13" FontFamily="Verdana" BorderThickness="0" BorderBrush="White">
-                <Grid Background="#B7DCE5">
 
-                    <TabControl Name="tabControl5" TabStripPlacement="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            --><!-- Main Tab 1: Graphics 2D --><!--
+            <TabItem Header="Graphics 2D" Name="tabItem3" Style="{StaticResource MainTabItemStyle}">
+                <Grid Background="{StaticResource ContentBackground}">
 
-                        <TabControl.Resources>
-                            <Style TargetType="{x:Type TabItem}">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="TabItem">
-                                            <Border Name="Border" BorderThickness="1,1,1,1" BorderBrush="#FF727272" CornerRadius="4,4,4,4" Margin="0,0,0,0" Height="Auto">
-                                                <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2" />
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Border" Property="Background" Value="#FF727272" />
-                                                </Trigger>
-                                                <Trigger Property="IsSelected" Value="False">
-                                                    <Setter TargetName="Border" Property="Background" Value="#8A909296" />
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter Property="HeaderTemplate">
-                                    <Setter.Value>
-                                        <DataTemplate>
-                                            <ContentPresenter Content="{TemplateBinding Content}">
-                                                <ContentPresenter.LayoutTransform>
-                                                    <RotateTransform Angle="90" />
-                                                </ContentPresenter.LayoutTransform>
-                                            </ContentPresenter>
-                                        </DataTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter Property="Padding" Value="3" />
-                            </Style>
-                        </TabControl.Resources>
-                        
-                        <TabItem Header="PROFILE" Name="tabItem7" FontFamily="Verdana" Foreground="White" Height="65" FontSize="13">
-                            <Grid Background="#FFBEBEBE">
-                                <DockPanel Name="dockPanelProfile" Background="#B7DCE5" >
-                                    <Controls:ZoomControl x:Name="zoomControlProfile" ZoomBoxBackground="{x:Null}" Background="#B7DCE5" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" MaxZoomDelta="5" RenderTransformOrigin="0,0">
+                    <TabControl Name="tabControl5" 
+                        TabStripPlacement="Left" 
+                        VerticalContentAlignment="Stretch" 
+                        HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        BorderThickness="0">
+
+                        --><!-- Inner Tab: PROFILE --><!--
+                        <TabItem Header="PROFILE" Name="tabItem7" Style="{StaticResource VerticalTabItemStyle}">
+                            <Grid Background="{StaticResource ContentBackground}">
+                                <DockPanel Name="dockPanelProfile" Background="{StaticResource ContentBackground}">
+                                    <Controls:ZoomControl x:Name="zoomControlProfile" 
+                                                ZoomBoxBackground="{x:Null}" 
+                                                Background="{StaticResource ContentBackground}" 
+                                                Foreground="{x:Null}" 
+                                                Mode="Fill" 
+                                                ModifierMode="ZoomIn" 
+                                                MinZoom="3" 
+                                                MaxZoomDelta="5" 
+                                                RenderTransformOrigin="0,0">
                                         <Controls:ZoomControl.Resources>
+                                            <Style TargetType="Slider">
+                                                <Setter Property="Foreground" Value="DodgerBlue"/>
+                                                <Setter Property="Background" Value="Aquamarine"/>
+                                            </Style>
                                             <Style TargetType="{x:Type Rectangle}">
-                                                <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled"
-                                        Value="True" />
-                                                <Setter Property="extbehaviour:DragBehaviour.X"
-                                        Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Left)}" />
-                                                <Setter Property="extbehaviour:DragBehaviour.Y"
-                                        Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Top)}" />
+                                                <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True" />
+                                                <Setter Property="extbehaviour:DragBehaviour.X" Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Left)}" />
+                                                <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Top)}" />
                                             </Style>
                                         </Controls:ZoomControl.Resources>
-                                        <Grid Background="#B7DCE5" Width="185" Height="60">
-                                            <Canvas Background="#FFBEBEBE" Name="canvas2DProfile" RenderTransformOrigin="0,0" Margin="0.794,0,4.885,1.987"></Canvas>
+                                        <Grid Background="{StaticResource ContentBackground}" Width="185" Height="60">
+                                            <Canvas Background="{StaticResource CanvasPaper}" Name="canvas2DProfile" RenderTransformOrigin="0,0" Margin="0.794,0,4.885,1.987"/>
                                         </Grid>
                                     </Controls:ZoomControl>
                                 </DockPanel>
                             </Grid>
                         </TabItem>
-                       
-                        <TabItem Header="D50|40"  Name="tabItem8" Foreground="White"  FontFamily="Verdana" FontSize="12.8" Height="60">
-                            <Grid  Background="#B7DCE5">
-                                <DockPanel Name="dockPanelBottom" Background="#B7DCE5">
-                                    <Controls:ZoomControl x:Name="zoomControlBottom"  Background="#B7DCE5" MinZoom="3">
-                                        <Grid Background="#B7DCE5" Width="176.25" Height="52.5">
-                                            <Canvas Background="#FFBEBEBE" Name="canvas2DPlanA" Margin="-0.135,-0.432,0.385,0.932"></Canvas>
-                                        </Grid>
-                                    </Controls:ZoomControl>
 
-                                </DockPanel>
-                            </Grid>
-                        </TabItem>
-                        <TabItem Header="D30|20" Name="tabItem9" Foreground="White"  FontFamily="Verdana" FontSize="12.80"  Height="60">
-                            <Grid Background="#FFBEBEBE">
-                                <DockPanel Name="dockPanelDeck" Background="#B7DCE5">
-                                    <Controls:ZoomControl x:Name="zoomControlDeck" Background="#B7DCE5" MinZoom="3">
-                                        <Grid Background="#B7DCE5" Width="176.25" Height="52.5">
-                                            <Canvas Background="#FFBEBEBE" Name="canvas2DPlanB"></Canvas>
+                        --><!-- Inner Tab: D50|40 --><!--
+                        <TabItem Header="D50|40" Name="tabItem8" Style="{StaticResource VerticalTabItemStyle}">
+                            <Grid Background="{StaticResource ContentBackground}">
+                                <DockPanel Name="dockPanelBottom" Background="{StaticResource ContentBackground}">
+                                    <Controls:ZoomControl x:Name="zoomControlBottom" Background="{StaticResource ContentBackground}" MinZoom="3">
+                                        <Grid Background="{StaticResource ContentBackground}" Width="176.25" Height="52.5">
+                                            <Canvas Background="{StaticResource CanvasPaper}" Name="canvas2DPlanA" Margin="-0.135,-0.432,0.385,0.932"/>
                                         </Grid>
                                     </Controls:ZoomControl>
                                 </DockPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="D10|01" Name="tabItem10" Height="60" Foreground="White"  FontFamily="Verdana" FontSize="12.80">
-                            <Grid Background="#B7DCE5">
-                                <DockPanel Background="#B7DCE5" Name="dockPanel1">
-                                    <Controls:ZoomControl Background="#B7DCE5" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl1" ZoomBoxBackground="{x:Null}" Width="1025" MinZoom="3">
+
+                        --><!-- Inner Tab: D30|20 --><!--
+                        <TabItem Header="D30|20" Name="tabItem9" Style="{StaticResource VerticalTabItemStyle}">
+                            <Grid Background="{StaticResource ContentBackground}">
+                                <DockPanel Name="dockPanelDeck" Background="{StaticResource ContentBackground}">
+                                    <Controls:ZoomControl x:Name="zoomControlDeck" Background="{StaticResource ContentBackground}" MinZoom="3">
+                                        <Grid Background="{StaticResource ContentBackground}" Width="176.25" Height="52.5">
+                                            <Canvas Background="{StaticResource CanvasPaper}" Name="canvas2DPlanB"/>
+                                        </Grid>
+                                    </Controls:ZoomControl>
+                                </DockPanel>
+                            </Grid>
+                        </TabItem>
+
+                        --><!-- Inner Tab: D10|01 --><!--
+                        <TabItem Header="D10|01" Name="tabItem10" Style="{StaticResource VerticalTabItemStyle}">
+                            <Grid Background="{StaticResource ContentBackground}">
+                                <DockPanel Background="{StaticResource ContentBackground}" Name="dockPanel1">
+                                    <Controls:ZoomControl Background="{StaticResource ContentBackground}" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl1" ZoomBoxBackground="{x:Null}" Width="1025" MinZoom="3">
                                         <Controls:ZoomControl.Resources>
                                             <Style TargetType="{x:Type Rectangle}">
                                                 <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True" />
@@ -163,17 +403,19 @@
                                                 <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Top)}" />
                                             </Style>
                                         </Controls:ZoomControl.Resources>
-                                        <Grid Background="#B7DCE5" Height="52.5" Width="180">
-                                            <Canvas Background="#FFBEBEBE" Name="canvas2DPlanC" Margin="0,0,-0.031,0" />
+                                        <Grid Background="{StaticResource ContentBackground}" Height="52.5" Width="180">
+                                            <Canvas Background="{StaticResource CanvasPaper}" Name="canvas2DPlanC" Margin="0,0,-0.031,0" />
                                         </Grid>
                                     </Controls:ZoomControl>
                                 </DockPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="ALL" Name="tabItem21" Height="60" Foreground="White"  FontFamily="Verdana" FontSize="12.80">
-                            <Grid  Background="#B7DCE5">
-                                <DockPanel Background="#B7DCE5" Name="dockPanel21">
-                                    <Controls:ZoomControl Background="#B7DCE5" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl21" ZoomBoxBackground="{x:Null}" Width="1025" RenderTransformOrigin="0,0" MinZoom="3">
+
+                        --><!-- Inner Tab: ALL --><!--
+                        <TabItem Header="ALL" Name="tabItem21" Style="{StaticResource VerticalTabItemStyle}">
+                            <Grid Background="{StaticResource ContentBackground}">
+                                <DockPanel Background="{StaticResource ContentBackground}" Name="dockPanel21">
+                                    <Controls:ZoomControl Background="{StaticResource ContentBackground}" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl21" ZoomBoxBackground="{x:Null}" Width="1025" RenderTransformOrigin="0,0" MinZoom="3">
                                         <Controls:ZoomControl.Resources>
                                             <Style TargetType="{x:Type Rectangle}">
                                                 <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True" />
@@ -181,10 +423,8 @@
                                                 <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Top)}" />
                                             </Style>
                                         </Controls:ZoomControl.Resources>
-                                        <Grid Background="#B7DCE5" Height="52.5" Width="177.5">
-                                            <Canvas Background="Transparent" Name="canvas2DPlanALL" Margin="0,0,-0.031,0" RenderTransformOrigin="0,0" Focusable="True" Opacity="9" >
-                                               
-                                            </Canvas>
+                                        <Grid Background="{StaticResource ContentBackground}" Height="52.5" Width="177.5">
+                                            <Canvas Background="Transparent" Name="canvas2DPlanALL" Margin="0,0,-0.031,0" RenderTransformOrigin="0,0" Focusable="True" Opacity="9" />
                                         </Grid>
                                     </Controls:ZoomControl>
                                 </DockPanel>
@@ -194,40 +434,125 @@
                     </TabControl>
                 </Grid>
             </TabItem>
-            <TabItem Header="Graphics 3D" FontSize="13" FontFamily="Verdana" Name="tabItem6" >
-                <Grid>
-                    <Border BorderBrush="Silver" BorderThickness="1" Name="border2">
-                        <helix:HelixViewport3D x:Name="viewPort3d1" ZoomExtentsWhenLoaded="False" BorderBrush="#FF4B3737" BorderThickness="1" RenderTransform="{Binding}" ShowCoordinateSystem="True" IsMoveEnabled="True" IsManipulationEnabled="True" IsTextSearchCaseSensitive="True" IsTextSearchEnabled="True" RotateAroundMouseDownPoint="False" ZoomAroundMouseDownPoint="True"  Loaded="viewPort3d_Loaded" ViewCubeWidth="80" ShowCameraTarget="True">
+
+            --><!-- Main Tab 2: Graphics 3D --><!--
+            <TabItem Header="Graphics 3D" Name="tabItem6" Style="{StaticResource MainTabItemStyle}">
+                <Grid Background="{StaticResource ContentBackground}">
+                    --><!-- 3D Viewport with subtle border --><!--
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Name="border2" Margin="10" CornerRadius="2">
+                        <helix:HelixViewport3D x:Name="viewPort3d1" 
+                                     ZoomExtentsWhenLoaded="False" 
+                                     BorderBrush="Transparent" 
+                                     BorderThickness="0" 
+                                     RenderTransform="{Binding}" 
+                                     ShowCoordinateSystem="True" 
+                                     IsMoveEnabled="True" 
+                                     IsManipulationEnabled="True" 
+                                     IsTextSearchCaseSensitive="True" 
+                                     IsTextSearchEnabled="True" 
+                                     RotateAroundMouseDownPoint="False" 
+                                     ZoomAroundMouseDownPoint="True"  
+                                     Loaded="viewPort3d_Loaded" 
+                                     ViewCubeWidth="80" 
+                                     ShowCameraTarget="True">
                             <helix:HelixViewport3D.Background>
                                 <ImageBrush ImageSource="/Stability;component/Images/Background.jpg" />
                             </helix:HelixViewport3D.Background>
                         </helix:HelixViewport3D>
                     </Border>
-                    <Button Content="Zoom extents" Height="23" HorizontalAlignment="Left" Margin="948,16,0,0" Name="btn3DZoomExtents" VerticalAlignment="Top" Width="112.778" Click="btn3DZoomExtents_Click" Background="#00000000" />
+
+                    --><!-- Modern Zoom Button --><!--
+                    <Button Content="Zoom Extents" 
+                    Height="32" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,15,15,0" 
+                    Name="btn3DZoomExtents" 
+                    VerticalAlignment="Top" 
+                    Width="140" 
+                    Click="btn3DZoomExtents_Click" 
+                    Style="{StaticResource ModernButtonStyle}" />
                 </Grid>
             </TabItem>
+
         </TabControl>
-        <TabControl Background="Transparent" Name="tabControl3" BorderThickness="1" Foreground="Black" FontFamily="Calibri" BorderBrush="Black" Grid.Row="1" Grid.RowSpan="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,5,05">
+        <TabControl Name="tabControl3" 
+            Background="#F0F2F5" 
+            BorderThickness="0" 
+            Foreground="#555" 
+            FontFamily="Calibri" 
+            Grid.Row="1" 
+            Grid.RowSpan="4" 
+            Grid.Column="1" 
+            Grid.ColumnSpan="2" 
+            Margin="5">
+
             <TabControl.Resources>
+                --><!-- Modern Palette (Matching SimulationMode) --><!--
+                <SolidColorBrush x:Key="PanelBackground" Color="#F0F2F5"/>
+                <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
+                <SolidColorBrush x:Key="BorderBrush" Color="#E0E0E0"/>
+                <SolidColorBrush x:Key="AccentColor" Color="#1890FF"/>
+                <SolidColorBrush x:Key="ValueText" Color="#2E7D32"/>
+                --><!-- Green for values --><!--
+                <SolidColorBrush x:Key="LabelText" Color="#555555"/>
+                <SolidColorBrush x:Key="HeaderBackground" Color="#F5F7FA"/>
+                <SolidColorBrush x:Key="StatusText" Color="#52C41A"/>
+                --><!-- Green for status -->
+
+                <!-- Style for Value Labels (The Numbers) --><!--
+                <Style x:Key="DataValueStyle" TargetType="Label">
+                    <Setter Property="Foreground" Value="{StaticResource ValueText}"/>
+                    <Setter Property="Background" Value="#E8F5E9"/>
+                    <Setter Property="BorderBrush" Value="#C8E6C9"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="8,4"/>
+                    <Setter Property="Margin" Value="0,2"/>
+                    <Setter Property="Height" Value="28"/>
+                </Style>
+
+                --><!-- Style for Field Name Labels --><!--
+                <Style x:Key="FieldLabelStyle" TargetType="Label">
+                    <Setter Property="Foreground" Value="{StaticResource LabelText}"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                    <Setter Property="Padding" Value="5,0,10,0"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </Style>
+
+                --><!-- Section Header Style --><!--
+                <Style x:Key="SectionHeaderStyle" TargetType="Label">
+                    <Setter Property="Foreground" Value="#555"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Padding" Value="10,8"/>
+                    <Setter Property="Background" Value="{StaticResource HeaderBackground}"/>
+                </Style>
+
+                --><!-- Tab Item Style --><!--
                 <Style TargetType="TabItem">
-                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                    <Setter Property="Foreground" Value="#555"/>
+                    <Setter Property="Padding" Value="15,8"/>
+                    <Setter Property="Margin" Value="2,0"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="TabItem">
-                                <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#FF727272" CornerRadius="4,4,0,0" Margin="0,0" Height="Auto">
-                                    <ContentPresenter x:Name="ContentSite"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        ContentSource="Header"
-                                        Margin="10,2"/>
+                                <Border Name="Border" Background="{TemplateBinding Background}" CornerRadius="4,4,0,0" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter ContentSource="Header" TextElement.FontSize="12"/>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#FF727272" />
-
+                                        <Setter TargetName="Border" Property="Background" Value="#FFFFFF"/>
+                                        <Setter Property="Foreground" Value="#1890FF"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
                                     </Trigger>
                                     <Trigger Property="IsSelected" Value="False">
-                                        <Setter TargetName="Border" Property="Background" Value="#8A909296" />
+                                        <Setter Property="Foreground" Value="#999999"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -235,166 +560,185 @@
                     </Setter>
                 </Style>
             </TabControl.Resources>
-            <TabItem Header="Outputs" FontSize="13" FontFamily="Verdana" Name="tabItem4" Foreground="White">
-                <Grid>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="177*" />
-                                <ColumnDefinition Width="66*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="39*" />
-                                <RowDefinition Height="2*" />
-                                <RowDefinition Height="70*" />
-                                <RowDefinition Height="2*" />
-                                <RowDefinition Height="150*" />
-                                <RowDefinition Height="2*" />
-                                <RowDefinition Height="124*" />
-                                <RowDefinition Height="2*" />
-                                <!--<RowDefinition Height="30*" />-->
-                            </Grid.RowDefinitions>
-                            <Border Margin="1" Grid.ColumnSpan="2" Grid.Row="0" BorderBrush="White" BorderThickness="1">
-                                <Grid>
+
+            <TabItem Header="Outputs" Name="tabItem4" Foreground="Black">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Background="{StaticResource PanelBackground}" Margin="0" Grid.IsSharedSizeScope="True">
+
+                        --><!-- Section 1: General (Matches first Border in original) --><!--
+                        <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="10,10,10,5" CornerRadius="4">
+                            <Grid Margin="15,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Content="GMt(m)" Name="lebelGM" Style="{StaticResource FieldLabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                <Label Name="lblGMT" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="0" Grid.Column="1"/>
+
+                                <Label Content="Displacement(T)" Name="label1" Style="{StaticResource FieldLabelStyle}" Grid.Row="1" Grid.Column="0"/>
+                                <Label Name="lblDisplacement" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="1" Grid.Column="1"/>
+                            </Grid>
+                        </Border>
+
+                        --><!-- Section 2: Stability (Matches second Border in original) --><!--
+                        <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="10,5" CornerRadius="4">
+                            <Grid Margin="15,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    --><!-- Extra column for status labels --><!--
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Trim (m)" Name="label4" Style="{StaticResource FieldLabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                <Label Name="lblTrim" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="0" Grid.Column="1"/>
+                                <Label Name="label5" Foreground="{StaticResource StatusText}" Grid.Row="0" Grid.Column="2" Margin="5,0,0,0"/>
+
+                                <Label Content="List(deg.)" Name="label6" Style="{StaticResource FieldLabelStyle}" Grid.Row="1" Grid.Column="0"/>
+                                <Label Name="lblHeel" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="1" Grid.Column="1"/>
+                                <Label Name="label8" Foreground="{StaticResource StatusText}" Grid.Row="1" Grid.Column="2" Margin="5,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        --><!-- Section 3: Drafts (Matches third Border in original) --><!--
+                        <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="10,5" CornerRadius="4">
+                            <StackPanel>
+                                <Label Name="lbldrafts" Content="Drafts" Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <Grid Margin="15,10">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="62*" />
-                                        <ColumnDefinition Width="50*" />
-                                        <ColumnDefinition Width="85*" />
-                                        <ColumnDefinition Width="41*" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="39*" />
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <Label Content="GMt(m)" Height="29" Name="lebelGM" Width="71" FontFamily="Verdana" HorizontalContentAlignment="Left" BorderThickness="0.5" Foreground="Black" Target="{Binding}"  FontSize="13" ></Label>
-                                    <Label Content="0" Name="lblGMT" FontFamily="Calibri"  HorizontalContentAlignment="Center" BorderThickness="1" Foreground="Black"  Background="#FF0FE628" BorderBrush="Black" Margin="0,1" Grid.Column="1"></Label>
-                                    <Label Content="Displacement(T)" FontFamily="Calibri" FontSize="12" Foreground="Black"  IsEnabled="False" Name="label1" Grid.Column="1" Grid.ColumnSpan="2" Margin="46,0,2,0" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12"  Foreground="Black"  HorizontalContentAlignment="Center" Name="lblDisplacement" VerticalContentAlignment="Center" Grid.Column="3" Margin="0,2,0,1" />
-                                </Grid>
 
-                            </Border>
-                            <Border Margin="1" Grid.ColumnSpan="2" Grid.Row="2" BorderBrush="White" BorderThickness="1">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="26*" />
-                                        <RowDefinition Height="28*" />
-                                    </Grid.RowDefinitions>
+                                    <Label Content="AP" Name="label2" Style="{StaticResource FieldLabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                    <Label Name="lblDraftAP" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <Label Content="Propeller" Name="label17" Style="{StaticResource FieldLabelStyle}" Grid.Row="1" Grid.Column="0"/>
+                                    <Label Name="lblPROPELLER" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="1" Grid.Column="1"/>
+
+                                    <Label Content="Aft Mark" Name="label12" Style="{StaticResource FieldLabelStyle}" Grid.Row="2" Grid.Column="0"/>
+                                    <Label Name="lblDraftAftMark" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="2" Grid.Column="1"/>
+
+                                    <Label Content="Mid" Name="label15" Style="{StaticResource FieldLabelStyle}" Grid.Row="3" Grid.Column="0"/>
+                                    <Label Name="lblDraftMean" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="3" Grid.Column="1"/>
+
+                                    <Label Content="Fwd Mark" Name="label14" Style="{StaticResource FieldLabelStyle}" Grid.Row="4" Grid.Column="0"/>
+                                    <Label Name="lblDraftFwdMark" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="4" Grid.Column="1"/>
+
+                                    <Label Content="Sonar Dome" Name="label16" Style="{StaticResource FieldLabelStyle}" Grid.Row="5" Grid.Column="0"/>
+                                    <Label Name="lblSONARDOME" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="5" Grid.Column="1"/>
+
+                                    <Label Content="FP" Name="label7" Style="{StaticResource FieldLabelStyle}" Grid.Row="6" Grid.Column="0"/>
+                                    <Label Name="lblDraftFP" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="6" Grid.Column="1"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        --><!-- Section 4: Hydrostatics (Matches fourth Border in original) --><!--
+                        <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="10,5,10,10" CornerRadius="4">
+                            <StackPanel>
+                                <Label Name="lblhydrostatics" Content="Hydrostatics" Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <Grid Margin="15,10">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="124*" />
-                                        <ColumnDefinition Width="56*" />
-                                        <ColumnDefinition Width="48*" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Label BorderThickness="0.5" Content="Trim (m)" FontFamily="Verdana" FontSize="12" Foreground="Black" HorizontalContentAlignment="Left" Name="label4"  Grid.Column="0" Grid.Row="0" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12" Foreground="Black"  HorizontalContentAlignment="Center" Name="lblTrim" VerticalContentAlignment="Top" Margin="0,-1,0,2" Grid.Column="2"/>
-                                    <Label   Name="label5"  Foreground="#FF4141DB" Grid.Column="1" Margin="22,0,0,0" />
-                                    <Label BorderThickness="0.5" Content="List(deg.)" FontFamily="Verdana" Foreground="Black"  HorizontalContentAlignment="Left" Name="label6"   FontSize="13" Grid.Row="1" />
-                                    <Label BorderThickness="1" Content="0" VerticalContentAlignment="Center" FontFamily="Calibri" Foreground="Black" Margin="0,1,0,0" HorizontalContentAlignment="Center" Name="lblHeel"  Background="#FF0FE628" BorderBrush="Black" Grid.Column="2" Grid.Row="1" />
-                                    <Label  Name="label8" Foreground="#FF4141DB" Grid.Column="1"  Grid.Row="1" Margin="22,0,0,0" />
-                                </Grid>
-                            </Border>
-                            <Border Margin="1" Grid.ColumnSpan="2" Grid.Row="4" BorderBrush="White" BorderThickness="1">
-                                <Grid>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="10*" />
-                                        <RowDefinition Height="25*" />
-                                        <RowDefinition Height="25*" />
-                                        <RowDefinition Height="25*" />
-                                        <RowDefinition Height="25*" />
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="70*" />
-                                        <ColumnDefinition Width="40*" />
-                                        <ColumnDefinition Width="78*" />
-                                        <ColumnDefinition Width="40*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Label Name="lbldrafts" Content="Drafts" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" FontSize="10" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#FF509FAD" FontFamily="Verdana"  Margin="0,-2,0,0"></Label>
-                                    <Label Content="AP" Name="label2" FontFamily="Verdana" HorizontalContentAlignment="Left" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Row="1" Margin="0,2,0,0"></Label>
-                                    <Label FontFamily="Verdana" HorizontalContentAlignment="Center" Name="lblDraftAP" Content="0" BorderThickness="1" Foreground="Black" FontSize="12"  Margin="0,1" BorderBrush="Black" Background="#FF0FE628" Grid.Column="1" Grid.Row="1" ></Label>
-                                    <Label Content="Propeller" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label17" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Column="2" Grid.Row="1" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" HorizontalContentAlignment="Center" Name="lblPROPELLER" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="3" Grid.Row="1" VerticalContentAlignment="Center" Margin="0,1"></Label>
-                                    <Label Content="Aft Mark" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label12" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Row="2" Grid.Column="0" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" HorizontalContentAlignment="Center" Margin="0,1" Name="lblDraftAftMark" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="1" Grid.Row="2"></Label>
-                                    <Label Content="Mid" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label15" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Column="2" Grid.Row="2" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" Margin="0,1" HorizontalContentAlignment="Center" Name="lblDraftMean" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="3" Grid.Row="2"></Label>
-                                    <Label Content="Fwd Mark" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label14" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Row="3" Grid.Column="0" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" Margin="0,1" HorizontalContentAlignment="Center" Name="lblDraftFwdMark" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="1" Grid.Row="3" VerticalContentAlignment="Top"></Label>
-                                    <Label Content="Sonar Dome" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label16" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Column="2" Grid.Row="3" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" Margin="0,1" HorizontalContentAlignment="Center" Name="lblSONARDOME" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="3" Grid.Row="3"></Label>
-                                    <Label Content="FP" FontFamily="Verdana" HorizontalContentAlignment="Left" Name="label7" BorderThickness="0.5" Foreground="Black" FontSize="12" Grid.Row="4" Grid.Column="0" ></Label>
-                                    <Label Content="0" FontFamily="Verdana" HorizontalContentAlignment="Center" Margin="0,1,0,1" Name="lblDraftFP" BorderThickness="1" Foreground="Black" FontSize="12" BorderBrush="Black" Background="#FF0FE628" Grid.Column="1" Grid.Row="4"></Label>
 
+                                    <Label Content="KG(m)" Name="lbeGM" Style="{StaticResource FieldLabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                    <Label Name="lblKG" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <Label Content="KGf(m)" Name="lobeGM" Style="{StaticResource FieldLabelStyle}" Grid.Row="1" Grid.Column="0"/>
+                                    <Label Name="lblKGF" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="1" Grid.Column="1"/>
+
+                                    <Label Content="LCG(m)" Name="lebeGM" Style="{StaticResource FieldLabelStyle}" Grid.Row="2" Grid.Column="0"/>
+                                    <Label Name="lblLCG" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="2" Grid.Column="1"/>
+
+                                    <Label Content="FSC(m)" Name="ltobeGM" Style="{StaticResource FieldLabelStyle}" Grid.Row="3" Grid.Column="0"/>
+                                    <Label Name="lblFSC" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="3" Grid.Column="1"/>
+
+                                    <Label Content="TPC(T/cm)" Name="label9" Style="{StaticResource FieldLabelStyle}" Grid.Row="4" Grid.Column="0"/>
+                                    <Label Name="lblTPC" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="4" Grid.Column="1"/>
+
+                                    <Label Content="MTC(T-m/cm)" Name="label19" Style="{StaticResource FieldLabelStyle}" Grid.Row="5" Grid.Column="0"/>
+                                    <Label Name="lblMTC" Content="0" Style="{StaticResource DataValueStyle}" Grid.Row="5" Grid.Column="1"/>
                                 </Grid>
+                            </StackPanel>
+                        </Border>
 
-                            </Border>
-                            <Border Margin="1" Grid.ColumnSpan="2" Grid.Row="6" BorderBrush="White" BorderThickness="1">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="9*" />
-                                        <RowDefinition Height="24*" />
-                                        <RowDefinition Height="24*" />
-                                        <RowDefinition Height="24*" />
-
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60*" />
-                                        <ColumnDefinition Width="45*" />
-                                        <ColumnDefinition Width="78*" />
-                                        <ColumnDefinition Width="45*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Label Name="lblhydrostatics" Content="Hydrostatics"  HorizontalContentAlignment="Left" VerticalContentAlignment="Top" FontSize="10"  Grid.RowSpan="2" Background="#FF509FAD"  FontFamily="Verdana" Margin="0,-2,01,18" VerticalAlignment="Center" HorizontalAlignment="Left">
-
-                                    </Label>
-                                    <Label BorderThickness="0.5" Content="KG(m)" FontFamily="Verdana" FontSize="12" Foreground="Black" Height="25" Margin="0,4,0,0"  HorizontalContentAlignment="Left"  Name="lbeGM"  Grid.Row="1"  />
-                                    <Label BorderThickness="0.5" Content="KGf(m)" FontFamily="Verdana" FontSize="13" Foreground="Black" Height="25" HorizontalContentAlignment="Left" Name="lobeGM"  Grid.Column="0" Grid.Row="3" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="13" Margin="0,2,0,1" HorizontalContentAlignment="Center"  Name="lblKGF"  Grid.Column="1" Grid.Row="3" />
-                                    <Label BorderThickness="0.5" Content="LCG(m)" FontFamily="Verdana" FontSize="13" Foreground="Black"  HorizontalAlignment="Left" HorizontalContentAlignment="Left" Name="lebeGM" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" Margin="0,2,0,1" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12" HorizontalContentAlignment="Center"  Name="lblKG"  Grid.Column="1" Grid.Row="1" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" Margin="0,2,0,1" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12"  HorizontalContentAlignment="Center" Name="lblLCG" Grid.Column="1" Grid.Row="2" />
-                                    <Label BorderThickness="0.5" Content="FSC(m)" FontFamily="Verdana" FontSize="13" Foreground="Black" Height="25" HorizontalContentAlignment="Left" Name="ltobeGM" Grid.Column="2" Grid.Row="2" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12" Margin="0,2,0,1" HorizontalContentAlignment="Center" Name="lblFSC"  Grid.Column="3" Grid.Row="2" />
-                                    <Label BorderThickness="0.5" Content="TPC(T/cm)" FontFamily="Verdana" FontSize="12" Foreground="Black"  HorizontalAlignment="Left" HorizontalContentAlignment="Left"  Name="label9" VerticalAlignment="Top"  Grid.Row="1" Grid.Column="2" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" Margin="0,2,0,1" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12" HorizontalContentAlignment="Center" Name="lblTPC" Grid.Column="3" Grid.Row="1" />
-                                    <Label BorderThickness="0.5" Content="MTC(T-m/cm)" FontFamily="Verdana" FontSize="12" Foreground="Black" Height="25" HorizontalContentAlignment="Left"  Name="label19" Grid.Column="2"  Grid.Row="3" />
-                                    <Label Background="#FF0FE628" BorderBrush="Black" Margin="0,2,0,1" BorderThickness="1" Content="0" FontFamily="Verdana" FontSize="12"  HorizontalContentAlignment="Center" Name="lblMTC" Grid.Column="3" Grid.Row="3" />
-
-                                </Grid>
-                            </Border>
-                         </Grid>
-
-                </Grid>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
-        <TabControl Name="tabControl4" BorderThickness="1" Foreground="Black" FontFamily="Calibri" BorderBrush="#FF727272" Grid.Row="1" Grid.RowSpan="4" Grid.Column="0" Margin="0,0,0,0">
+        <TabControl Name="tabControl4" BorderThickness="0" Foreground="#555" FontFamily="Calibri" BorderBrush="transparent" Grid.Row="1" Grid.RowSpan="4" Grid.Column="0" Margin="0,0,0,0" Background="#FFFFFF">
             <TabControl.Resources>
                 <Style TargetType="TabItem">
-                    <Setter Property="Foreground" Value="Black" />
+                    <Setter Property="Foreground" Value="#555" />
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                    <Setter Property="Padding" Value="15,8"/>
+                    <Setter Property="Margin" Value="2,0"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="TabItem">
-                                <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#FF727272" CornerRadius="4,4,0,0" Margin="0,0" Height="Auto">
-                                    <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2" />
+                                <Border Name="Border" BorderThickness="0" Background="{TemplateBinding Background}" CornerRadius="4,4,0,0" Padding="{TemplateBinding Padding}" Height="Auto">
+                                    <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" />
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#FF727272" />
+                                        <Setter TargetName="Border" Property="Background" Value="#FFFFFF" />
+                                        <Setter Property="Foreground" Value="#1890FF"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
                                     </Trigger>
                                     <Trigger Property="IsSelected" Value="False">
-                                        <Setter TargetName="Border" Property="Background" Value="#8A909296" />
+                                        <Setter TargetName="Border" Property="Background" Value="#E0E0E0" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
                 </Style>
+                --><!-- Modern DataGrid Styling --><!--
+                <Style TargetType="DataGrid" BasedOn="{StaticResource ModernDataGrid}"/>
+                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
             </TabControl.Resources>
-            <TabItem Header="Tanks" FontSize="13" Name="tabItem5" Foreground="White">
+            <TabItem Header="Tanks" FontSize="12" Name="tabItem5" Foreground="#555" Background="White">
                 <Grid>
-                    <ScrollViewer Name="scrollViewer1" BorderBrush="#FF727272" Foreground="#FF727272" Margin="0,0,0,0" >
+                    <ScrollViewer Name="scrollViewer1" BorderBrush="#E0E0E0" Foreground="#555" Margin="0" >
                         <StackPanel Height="Auto" Name="stackPanel2" Width="Auto">
-                            <Expander Header="Ballast Tanks"  Name="expander1" IsExpanded="True" FontFamily="Calibri" Background="#FF727272" BorderBrush="#FF727272"  Padding="5" Margin="0" FontSize="12">
+                            <Expander Header="Ballast Tanks"  Name="expander1" IsExpanded="True" FontFamily="Calibri" Background="White" BorderBrush="#E0E0E0"  Padding="5" Margin="5" FontSize="12" Foreground="#555" BorderThickness="0,0,0,1">
                                 <Grid>
-                                  
-                                    <DataGrid Name="dgBallastTanks" CanUserResizeColumns="False" CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" FontSize="12" MinRowHeight="20" RowHeight="20" ItemsSource="{Binding}" Background="#FF8D8D8D" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" PreviewTextInput="dgTankCompartment_PreviewTextInput" FontWeight="Normal" LoadingRow="dgBallastTanks_LoadingRow" Width="795" HorizontalScrollBarVisibility="Disabled">
+
+                                    <DataGrid Name="dgBallastTanks" CanUserResizeColumns="False" CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" FontSize="12" MinRowHeight="20" RowHeight="20" ItemsSource="{Binding}" Background="White" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" PreviewTextInput="dgTankCompartment_PreviewTextInput" FontWeight="Normal" LoadingRow="dgBallastTanks_LoadingRow" Width="1000" HorizontalScrollBarVisibility="Disabled" BorderBrush="#E0E0E0" BorderThickness="1">
                                         <DataGrid.Columns>
-                                            <!--<DataGridTemplateColumn>
+                                            --><!--<DataGridTemplateColumn>
                                                 <DataGridTemplateColumn.Header>
                                                     <Label Content="3D" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="1" Target="{Binding}" FlowDirection="LeftToRight" Width="20"/>
                                                 </DataGridTemplateColumn.Header>
@@ -403,7 +747,7 @@
                                                         <CheckBox IsChecked="{Binding Path=IsVisible,Mode=TwoWay}" Margin="1 1 1 1" Click="chkVisible_Click" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>-->
+                                            </DataGridTemplateColumn>--><!--
                                             <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="160"  ClipboardContentBinding="{Binding}">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
@@ -472,7 +816,7 @@
                                                     </Style>
                                                 </DataGridTextColumn.HeaderStyle>
                                             </DataGridTextColumn>
-                                         
+
                                             <DataGridTextColumn Header="Volume(cu.m)" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="95">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
@@ -640,13 +984,13 @@
                                                 </DataGridTextColumn.HeaderStyle>
                                             </DataGridTextColumn>
                                         </DataGrid.Columns>
-                                        <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                                        <DataGrid.RowBackground>White</DataGrid.RowBackground>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="Foreground" Value="White" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="Foreground" Value="#262626" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -655,8 +999,8 @@
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <Style.Triggers>
                                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="BorderBrush" Value="#FF727272" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="BorderBrush" Value="#1890FF" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -664,11 +1008,11 @@
                                     </DataGrid>
                                 </Grid>
                             </Expander>
-                            <Expander Header="Fuel Oil Tanks" Name="expander2" FontFamily="Calibri"  FontSize="12" Background="#FF727272" BorderBrush="#FF727272">
+                            <Expander Header="Fuel Oil Tanks" Name="expander2" FontFamily="Calibri"  FontSize="12" Background="White" BorderBrush="#E0E0E0" Foreground="#555" BorderThickness="0,0,0,1">
                                 <Grid>
-                                    <DataGrid Name="dgFuelOilTanks" CanUserResizeColumns="False"  CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" RowHeight="20" MinRowHeight="20" Background="#FF8D8D8D" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" HorizontalContentAlignment="Center" LoadingRow="dgFuelOilTanks_LoadingRow" HorizontalScrollBarVisibility="Disabled">
+                                    <DataGrid Name="dgFuelOilTanks"  Width="1000" CanUserResizeColumns="False"  CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" RowHeight="20" MinRowHeight="20" Background="White" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" HorizontalContentAlignment="Center" LoadingRow="dgFuelOilTanks_LoadingRow" HorizontalScrollBarVisibility="Disabled" BorderBrush="#E0E0E0" BorderThickness="1" FontFamily="Calibri" FontSize="12">
                                         <DataGrid.Columns>
-                                            <!--<DataGridTemplateColumn>
+                                            --><!--<DataGridTemplateColumn>
                                                 <DataGridTemplateColumn.Header>
                                                     <Label Content="3D" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="0" Target="{Binding}" FlowDirection="LeftToRight" Width="20"/>
                                                 </DataGridTemplateColumn.Header>
@@ -677,7 +1021,7 @@
                                                         <CheckBox IsChecked="{Binding Path=IsVisible,Mode=TwoWay}" Margin="1 1 1 1" Click="chkVisible_Click" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>-->
+                                            </DataGridTemplateColumn>--><!--
                                             <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="165" ClipboardContentBinding="{Binding}">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style  TargetType="TextBlock">
@@ -913,13 +1257,13 @@
                                                 </DataGridTextColumn.HeaderStyle>
                                             </DataGridTextColumn>
                                         </DataGrid.Columns>
-                                        <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                                        <DataGrid.RowBackground>White</DataGrid.RowBackground>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="Foreground" Value="White" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="Foreground" Value="#262626" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -928,8 +1272,8 @@
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <Style.Triggers>
                                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="BorderBrush" Value="#FF727272" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="BorderBrush" Value="#1890FF" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -937,11 +1281,11 @@
                                     </DataGrid>
                                 </Grid>
                             </Expander>
-                            <Expander Header="FreshWater Tanks" Name="expander3" FontFamily="Calibri" FontSize="12" Background="#FF727272" BorderBrush="#FF727272">
+                            <Expander Header="FreshWater Tanks" Name="expander3" FontFamily="Calibri" FontSize="12" Background="White" BorderBrush="#E0E0E0" Foreground="#555" BorderThickness="0,0,0,1">
                                 <Grid>
-                                    <DataGrid Name="dgFreshWaterTanks" CanUserResizeColumns="False" CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" RowHeight="20" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgFreshWaterTanks_LoadingRow" Background="#FF8D8D8D" HorizontalScrollBarVisibility="Disabled">
+                                    <DataGrid Name="dgFreshWaterTanks" CanUserResizeColumns="False"  Width="1000" CanUserAddRows="False"  CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" RowHeight="20" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgFreshWaterTanks_LoadingRow" Background="White" HorizontalScrollBarVisibility="Disabled" BorderBrush="#E0E0E0" BorderThickness="1" FontFamily="Calibri" FontSize="12">
                                         <DataGrid.Columns>
-                                            <!--<DataGridTemplateColumn>
+                                            --><!--<DataGridTemplateColumn>
                                                 <DataGridTemplateColumn.Header>
                                                     <Label Content="3D" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="0" Target="{Binding}" FlowDirection="LeftToRight" Width="20"/>
                                                 </DataGridTemplateColumn.Header>
@@ -950,7 +1294,7 @@
                                                         <CheckBox IsChecked="{Binding Path=IsVisible,Mode=TwoWay}" Margin="1 1 1 1" Click="chkVisible_Click" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>-->
+                                            </DataGridTemplateColumn>--><!--
                                             <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="165" ClipboardContentBinding="{Binding}">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
@@ -1184,16 +1528,16 @@
                                                         <Setter Property="FontWeight" Value="Bold" />
                                                     </Style>
                                                 </DataGridTextColumn.HeaderStyle>
-                                                
+
                                             </DataGridTextColumn>
                                         </DataGrid.Columns>
-                                        <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                                        <DataGrid.RowBackground>White</DataGrid.RowBackground>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="Foreground" Value="White" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="Foreground" Value="#262626" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1202,8 +1546,8 @@
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <Style.Triggers>
                                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="BorderBrush" Value="#FF727272" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="BorderBrush" Value="#1890FF" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1211,11 +1555,11 @@
                                     </DataGrid>
                                 </Grid>
                             </Expander>
-                            <Expander Header="Miscellaneous Tanks" Name="expander4" FontFamily="Calibri"  FontSize="12" Background="#FF727272" BorderBrush="#FF727272">
+                            <Expander Header="Miscellaneous Tanks" Name="expander4" FontFamily="Calibri"  FontSize="12" Background="White" BorderBrush="#E0E0E0" Foreground="#555" BorderThickness="0,0,0,1">
                                 <Grid>
-                                    <DataGrid Name="dgMiscTanks" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False"  CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" RowHeight="20" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgMiscTanks_LoadingRow" Background="#FF8D8D8D" HorizontalScrollBarVisibility="Disabled">
+                                    <DataGrid Name="dgMiscTanks"  Width="1000" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False"  CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" FontSize="12" RowHeight="20" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgMiscTanks_LoadingRow" Background="White" HorizontalScrollBarVisibility="Disabled" BorderBrush="#E0E0E0" BorderThickness="1">
                                         <DataGrid.Columns>
-                                            <!--<DataGridTemplateColumn>
+                                            --><!--<DataGridTemplateColumn>
                                                 <DataGridTemplateColumn.Header>
                                                     <Label Content="3D" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="0" Target="{Binding}" FlowDirection="LeftToRight" Width="20"/>
                                                 </DataGridTemplateColumn.Header>
@@ -1224,7 +1568,7 @@
                                                         <CheckBox IsChecked="{Binding Path=IsVisible,Mode=TwoWay}" Margin="1 1 1 1" Click="chkVisible_Click" />
                                                     </DataTemplate>
                                                 </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>-->
+                                            </DataGridTemplateColumn>--><!--
                                             <DataGridTextColumn Header=" Tank Name" Binding="{Binding Path=Tank_Name}" Width="190" ClipboardContentBinding="{Binding}">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
@@ -1460,13 +1804,13 @@
                                                 </DataGridTextColumn.HeaderStyle>
                                             </DataGridTextColumn>
                                         </DataGrid.Columns>
-                                        <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                                        <DataGrid.RowBackground>White</DataGrid.RowBackground>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="Foreground" Value="White" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="Foreground" Value="#262626" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1475,8 +1819,8 @@
                                             <Style TargetType="{x:Type DataGridCell}">
                                                 <Style.Triggers>
                                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                        <Setter Property="Background" Value="#FF727272" />
-                                                        <Setter Property="BorderBrush" Value="#FF727272" />
+                                                        <Setter Property="Background" Value="#E6F7FF" />
+                                                        <Setter Property="BorderBrush" Value="#1890FF" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1486,24 +1830,24 @@
                             </Expander>
                         </StackPanel>
                     </ScrollViewer>
-                   
+
                 </Grid>
             </TabItem>
 
             <TabItem Header="Compartments" Name="tabItem12"  FontSize="13" Foreground="White" Padding="5,1">
-                <Grid Width="829">
-                    <!--<Grid.RowDefinitions>
+                <Grid Width="1000">
+                    --><!--<Grid.RowDefinitions>
                         <RowDefinition Height="94.93*" />
                         <RowDefinition Height="301.081*" />
-                    </Grid.RowDefinitions>-->
-                    <DataGrid Name="dgCompartments" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False"  BorderBrush="Blue" CanUserSortColumns="False" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" BorderThickness="1" RowHeight="20" MinRowHeight="20" Background="#FF8D8D8D" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" Margin="-2,-5.052,0,0" ItemsSource="{Binding}"  DataContext="{Binding ElementName=dgCompartments}" HorizontalContentAlignment="Left" HorizontalAlignment="Left" LoadingRow="dgCompartments_LoadingRow" Width="824" HorizontalScrollBarVisibility="Visible"  FrozenColumnCount ="2" Height="254.052" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
+                    </Grid.RowDefinitions>--><!--
+                    <DataGrid Name="dgCompartments" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False"  BorderBrush="Blue" CanUserSortColumns="False" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="All" FontFamily="Calibri" BorderThickness="1" RowHeight="20" MinRowHeight="20" Background="White" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" Margin="-2,-5,0,0" ItemsSource="{Binding}"  DataContext="{Binding ElementName=dgCompartments}" HorizontalContentAlignment="Left" LoadingRow="dgCompartments_LoadingRow" HorizontalScrollBarVisibility="Visible"  FrozenColumnCount ="2" Height="254" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="1001">
                         <DataGrid.Columns>
-                            <!--<DataGridTemplateColumn>-->
-                                <!--<DataGridTemplateColumn.Header>
+                            --><!--<DataGridTemplateColumn>-->
+                            <!--<DataGridTemplateColumn.Header>
                                     <Label Content="3D" HorizontalAlignment="Stretch"  Width="30" VerticalAlignment="Center" Padding="0" Target="{Binding}" FlowDirection="LeftToRight" VerticalContentAlignment="Stretch" />
                                 </DataGridTemplateColumn.Header>-->
-   
-                                <!--<DataGridTemplateColumn.CellTemplate>
+
+                            <!--<DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding Path=IsVisible,Mode=TwoWay}" Margin="1 1 1 1" Click="chkVisible_Click" />
                                     </DataTemplate>
@@ -1524,7 +1868,7 @@
                                         <CheckBox x:Name="chkName" IsChecked="{Binding Source, Mode=TwoWay, NotifyOnTargetUpdated=True, UpdateSourceTrigger=PropertyChanged}" Margin="2,0,2,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>-->
+                            </DataGridTemplateColumn>--><!--
                             <DataGridTextColumn Header="Compartment Name" Binding="{Binding Path=Tank_Name}"  Width="210" ClipboardContentBinding="{Binding}" FontFamily="Calibri" >
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -1551,7 +1895,7 @@
                                     </Style>
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
-                          
+
                             <DataGridTextColumn Header="Innage(mm)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="75">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -1649,27 +1993,27 @@
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="LCG(M)"  Binding="{ Binding Path=LCG,StringFormat={}{0:0.00}}" SortMemberPath=" LCG" >
-                            <DataGridTextColumn.ElementStyle>
+                                <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
                                         <Setter Property="FontSize" Value="11" />
                                         <Setter Property="FontFamily" Value="Calibri" />
                                     </Style>
-                            </DataGridTextColumn.ElementStyle>
-                                   <DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn.ElementStyle>
+                                <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="left" />
                                         <Setter Property="FontWeight" Value="Bold" />
                                     </Style>
                                 </DataGridTextColumn.HeaderStyle>
-                              </DataGridTextColumn>
-                             <DataGridTextColumn Header="VCG(M)"   Binding="{Binding Path=VCG, StringFormat={}{0:0.00}}" SortMemberPath=" VCG" >
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="VCG(M)"   Binding="{Binding Path=VCG, StringFormat={}{0:0.00}}" SortMemberPath=" VCG" >
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
-                                         <Setter Property="FontSize" Value="11" />
+                                        <Setter Property="FontSize" Value="11" />
                                         <Setter Property="FontFamily" Value="Calibri" />
-                                     
+
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.HeaderStyle>
@@ -1680,13 +2024,13 @@
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="TCG(M)"  Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" SortMemberPath=" TCG" >
-                            <DataGridTextColumn.ElementStyle>
+                                <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
                                         <Setter Property="FontSize" Value="11" />
                                         <Setter Property="FontFamily" Value="Calibri" />
                                     </Style>
-                            </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="left" />
@@ -1757,7 +2101,7 @@
                                     </Style>
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
-                            <!--<DataGridTextColumn Header="Sensor" Width="75" IsReadOnly="True"/>-->
+                            --><!--<DataGridTextColumn Header="Sensor" Width="75" IsReadOnly="True"/>--><!--
                         </DataGrid.Columns>
                         <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
                         <DataGrid.RowStyle>
@@ -1784,10 +2128,10 @@
                 </Grid>
             </TabItem>
             <TabItem FontSize="13"  Foreground="White" Name="tabItem2" Header="WT Region">
-                <Grid Width="43">
-                    <DataGrid AutoGenerateColumns="False" Background="#FF8D8D8D"  BorderThickness="1" BorderBrush="Blue" CanUserAddRows="False" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False"  FontFamily="Calibri" FontSize="12" GridLinesVisibility="All" HeadersVisibility="Column" IsReadOnly="False" MinRowHeight="20" Name="dgWaterTightRegion"  RowBackground="#FFD8D8D8" RowDetailsVisibilityMode="Collapsed" RowHeight="20" SelectionMode="Single" Margin="-394,-4,-394,0" LoadingRow="dgWaterTightRegion_LoadingRow" HorizontalScrollBarVisibility="Disabled" Height="259.569" VerticalAlignment="Top">
+                <Grid>
+                    <DataGrid  Width="1000" AutoGenerateColumns="False" Background="White"  BorderThickness="1" BorderBrush="Blue" CanUserAddRows="False" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False"  FontFamily="Calibri" FontSize="12" GridLinesVisibility="All" HeadersVisibility="Column" IsReadOnly="False" MinRowHeight="20" Name="dgWaterTightRegion"  RowBackground="White" RowDetailsVisibilityMode="Collapsed" RowHeight="20" SelectionMode="Single" Margin="-394,-4,-394,0" LoadingRow="dgWaterTightRegion_LoadingRow" HorizontalScrollBarVisibility="Disabled" Height="259.569" VerticalAlignment="Top">
                         <DataGrid.Columns>
-                            <!--<DataGridTemplateColumn>
+                            --><!--<DataGridTemplateColumn>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox Click="chkVisible_Click" IsChecked="{Binding Path=IsVisible, Mode=TwoWay}" Margin="1 1 1 1" />
@@ -1796,7 +2140,7 @@
                                 <DataGridTemplateColumn.Header>
                                     <Label Content="3D" FlowDirection="LeftToRight" Width="60" FontStretch="Expanded"  Padding="0" Target="{Binding}" VerticalAlignment="Center" />
                                 </DataGridTemplateColumn.Header>
-                            </DataGridTemplateColumn>-->
+                            </DataGridTemplateColumn>--><!--
                             <DataGridTextColumn Binding="{Binding Path=Tank_Name}" ClipboardContentBinding="{Binding}" FontFamily="Calibri" FontSize="11" Header="WT Region" Width="160">
                                 <DataGridTextColumn.CellStyle>
                                     <Style TargetType="DataGridCell">
@@ -1920,13 +2264,13 @@
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="     LCG(M)"   FontFamily="Calibri" Binding="{Binding Path=LCG,StringFormat=\{0:0.00\}}" SortMemberPath="LCG" >
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
                                         <Setter Property="TextBlock.FontSize" Value="11" />
                                         <Setter Property="TextBlock.FontFamily" Value="Calibri" />
                                     </Style>
-                            </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="left" />
@@ -1936,13 +2280,13 @@
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="VCG(M)"  FontFamily="Calibri" Binding="{Binding Path=VCG,StringFormat=\{0:0.00\}}" Width="75" SortMemberPath="VCG">
 
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
                                         <Setter Property="TextBlock.FontSize" Value="11" />
                                         <Setter Property="TextBlock.FontFamily" Value="Calibri" />
                                     </Style>
-                            </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="center" />
@@ -1952,13 +2296,13 @@
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="  TCG(M)"  FontFamily="Calibri" Binding="{Binding Path=TCG,StringFormat=\{0:0.00\}}"  Width="70" SortMemberPath="TCG">
 
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
                                         <Setter Property="TextBlock.FontSize" Value="11" />
                                         <Setter Property="TextBlock.FontFamily" Value="Calibri" />
                                     </Style>
-                            </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="left" />
@@ -1981,7 +2325,7 @@
                                         <Setter Property="Foreground" Value="Black"></Setter>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
-                                <!--<DataGridTextColumn.CellStyle>
+                                --><!--<DataGridTextColumn.CellStyle>
                                     <Style TargetType="DataGridCell">
                                         <Setter Property="IsEnabled" Value="False"></Setter>
                                         <Style.Triggers>
@@ -1990,32 +2334,33 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </DataGridTextColumn.CellStyle>-->
+                                </DataGridTextColumn.CellStyle>--><!--
                                 <DataGridTextColumn.HeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="HorizontalContentAlignment" Value="left" />
                                         <Setter Property="FontWeight" Value="Bold" />
                                     </Style>
                                 </DataGridTextColumn.HeaderStyle>
-                                
+
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type DataGridCell}">
                                 <Style.Triggers>
                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                        <Setter Property="Control.Background" Value="#FF727272" />
-                                        <Setter Property="Control.BorderBrush" Value="#FF727272" />
+                                        <Setter Property="Control.Background" Value="#E6F7FF" />
+                                        <Setter Property="Control.BorderBrush" Value="#1890FF" />
                                     </Trigger>
                                 </Style.Triggers>
+                                <Setter Property="Background" Value="White"/>
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <Style.Triggers>
                                     <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                        <Setter Property="Control.Background" Value="#FF727272" />
-                                        <Setter Property="Control.Foreground" Value="White" />
+                                        <Setter Property="Control.Background" Value="#E6F7FF" />
+                                        <Setter Property="Control.Foreground" Value="#262626" />
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -2025,7 +2370,7 @@
             </TabItem>
             <TabItem Header="Fixed Load" Name="tabItem11" FontSize="13"  Foreground="White">
                 <Grid>
-                    <DataGrid AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" FontSize="12" CanUserResizeRows="False" CanUserSortColumns="False" GridLinesVisibility="All" HeadersVisibility="Column" IsReadOnly="False" Name="dgVariableItems" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" FontFamily="Calibri" ItemStringFormat="###.##" MinRowHeight="20" RowHeight="20" Background="#FF8D8D8D" PreparingCellForEdit="dgVariableItems_PreparingCellForEdit" Margin="-3,-2,0,70.267" SelectionChanged="dgVariableItems_SelectionChanged" BeginningEdit="dgVariableItems_BeginningEdit" CurrentCellChanged="dgVariableItems_CurrentCellChanged" LoadingRow="dgVariableItems_LoadingRow" BorderThickness="1" BorderBrush="Blue" KeyDown="dgVariableItems_KeyDown">
+                    <DataGrid AutoGenerateColumns="False"  Width="1000" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" FontSize="12" CanUserResizeRows="False" CanUserSortColumns="False" GridLinesVisibility="All" HeadersVisibility="Column" IsReadOnly="False" Name="dgVariableItems" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" FontFamily="Calibri" ItemStringFormat="###.##" MinRowHeight="20" RowHeight="20" Background="White" PreparingCellForEdit="dgVariableItems_PreparingCellForEdit" Margin="-3,-2,0,70.267" SelectionChanged="dgVariableItems_SelectionChanged" BeginningEdit="dgVariableItems_BeginningEdit" CurrentCellChanged="dgVariableItems_CurrentCellChanged" LoadingRow="dgVariableItems_LoadingRow" BorderThickness="1" BorderBrush="Blue" KeyDown="dgVariableItems_KeyDown">
                         <DataGrid.Columns>
                             <DataGridTextColumn Binding="{Binding Path=Load_Name}" ClipboardContentBinding="{Binding}" Header="Item Name" Width="340" IsReadOnly="False" FontFamily="Calibri">
                                 <DataGridTextColumn.ElementStyle>
@@ -2148,13 +2493,13 @@
                                 </DataGridTextColumn.HeaderStyle>
                             </DataGridTextColumn>
                         </DataGrid.Columns>
-                        <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                        <DataGrid.RowBackground>White</DataGrid.RowBackground>
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#FF727272" />
-                                        <Setter Property="Foreground" Value="White" />
+                                        <Setter Property="Background" Value="#E6F7FF" />
+                                        <Setter Property="Foreground" Value="#262626" />
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -2163,10 +2508,11 @@
                             <Style TargetType="{x:Type DataGridCell}">
                                 <Style.Triggers>
                                     <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#FF727272" />
-                                        <Setter Property="BorderBrush" Value="#FF727272" />
+                                        <Setter Property="Background" Value="#E6F7FF" />
+                                        <Setter Property="BorderBrush" Value="#1890FF" />
                                     </Trigger>
                                 </Style.Triggers>
+                                <Setter Property="Background" Value="White"/>
                             </Style>
                         </DataGrid.Resources>
                     </DataGrid>
@@ -2175,7 +2521,850 @@
                 </Grid>
             </TabItem>
         </TabControl>
-       
+
     </Grid>
-    
+
+</Page>-->
+<Page x:Class="WpfMvvmStability.Views.RealModeMain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:helix="http://helix-toolkit.org/wpf"
+             xmlns:viewModels="clr-namespace:WpfMvvmStability.ViewModels"
+             xmlns:Models="clr-namespace:WpfMvvmStability.Models.BO"
+             xmlns:extbehaviour="clr-namespace:WPFExtensions.AttachedBehaviours;assembly=WPFExtensions"
+            xmlns:cmd="clr-namespace:WPFExtensions.ViewModel.Commanding;assembly=WPFExtensions"
+            xmlns:local="clr-namespace:WpfMvvmStability"
+            xmlns:System="clr-namespace:System;assembly=mscorlib"
+            xmlns:Controls="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
+             mc:Ignorable="d" xmlns:my="clr-namespace:WpfMvvmStability" xmlns:my1="clr-namespace:WpfMvvmStability.Views" DataContext="{Binding}" FontFamily="Segoe UI" Background="#030032" UseLayoutRounding="True" Height="730" Width="1300" Loaded="Page_Loaded">
+
+    <Page.Resources>
+        <!-- ================= MODERN COLOR PALETTE ================= -->
+        <Color x:Key="PrimaryColor">#1F48FF</Color>
+        <Color x:Key="PrimaryLightColor">#4A6FFF</Color>
+        <Color x:Key="PrimaryDarkColor">#1636CC</Color>
+        <Color x:Key="PrimaryBgColor">#EEF1FF</Color>
+        <Color x:Key="NavyColor">#030032</Color>
+        <Color x:Key="PageBgColor">#F8F9FC</Color>
+        <Color x:Key="CardBgColor">#FFFFFF</Color>
+        <Color x:Key="BorderColor">#E2E5F0</Color>
+        <Color x:Key="TextPrimaryColor">#030032</Color>
+        <Color x:Key="TextSecondaryColor">#4A4A6A</Color>
+        <Color x:Key="SuccessColor">#10B981</Color>
+        <Color x:Key="DangerColor">#EF4444</Color>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+        <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLightColor}"/>
+        <SolidColorBrush x:Key="PrimaryBgBrush" Color="{StaticResource PrimaryBgColor}"/>
+        <SolidColorBrush x:Key="NavyBrush" Color="{StaticResource NavyColor}"/>
+        <SolidColorBrush x:Key="PageBgBrush" Color="{StaticResource PageBgColor}"/>
+        <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+
+        <!-- TextBlock default -->
+        <Style TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- DataGridRow default -->
+        <Style TargetType="{x:Type DataGridRow}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="BorderBrush" Value="#F0F1F5"/>
+        </Style>
+
+        <!-- DataGridCell default -->
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EEF1FF"/>
+                    <Setter Property="BorderBrush" Value="#1F48FF"/>
+                    <Setter Property="Foreground" Value="#030032"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Modern DataGrid -->
+        <Style TargetType="DataGrid" x:Key="ModernDataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#F0F1F5"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#FAFAFC"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserReorderColumns" Value="False"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- Modern DataGrid Header - Dark Navy -->
+        <Style TargetType="DataGridColumnHeader" x:Key="ModernDataGridHeader">
+            <Setter Property="Background" Value="#030032"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="BorderBrush" Value="#1F48FF"/>
+            <Setter Property="BorderThickness" Value="0,0,0.5,0"/>
+            <Setter Property="Height" Value="30"/>
+        </Style>
+
+        <!-- Column cell style: disabled black text -->
+        <Style x:Key="CellDisabledBlack" TargetType="DataGridCell">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <!-- Column cell style: disabled, red if damaged -->
+        <Style x:Key="CellDamaged" TargetType="DataGridCell">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsDamaged}" Value="True">
+                    <Setter Property="Foreground" Value="#EF4444"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Column cell style: disabled, blue if sensor faulty -->
+        <Style x:Key="CellSensorFaulty" TargetType="DataGridCell">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSensorFaulty}" Value="True">
+                    <Setter Property="IsEnabled" Value="True"/>
+                    <Setter Property="Foreground" Value="#1F48FF"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Element style: centered text -->
+        <Style x:Key="CenterText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- Element style: left text -->
+        <Style x:Key="LeftText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- Row style for selection -->
+        <Style x:Key="ModernRowStyle" TargetType="{x:Type DataGridRow}">
+            <Setter Property="Background" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EEF1FF"/>
+                    <Setter Property="Foreground" Value="#030032"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Cell resource style for selection -->
+        <Style x:Key="ModernCellSelection" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EEF1FF"/>
+                    <Setter Property="BorderBrush" Value="#1F48FF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Button Styles -->
+        <Style TargetType="Button" x:Key="ModernButton">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="15,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="Border" Value="#EEF1FF"/>
+                                <Setter Property="BorderBrush" TargetName="Border" Value="#1F48FF"/>
+                                <Setter Property="Foreground" Value="#1F48FF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrimaryButton" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#1F48FF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1F48FF"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#4A6FFF"/>
+                    <Setter Property="BorderBrush" Value="#4A6FFF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Button" x:Key="ClearButton" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#FEF2F2"/>
+            <Setter Property="Foreground" Value="#EF4444"/>
+            <Setter Property="BorderBrush" Value="#EF4444"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EF4444"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Expander -->
+        <Style TargetType="Expander">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Foreground" Value="#4A4A6A"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <!-- TabControl -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <!-- TabItem -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="#E8EAF0"/>
+            <Setter Property="Foreground" Value="#4A4A6A"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Background="{TemplateBinding Background}" CornerRadius="6,6,0,0" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="White"/>
+                                <Setter Property="Foreground" Value="#1F48FF"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Value Labels -->
+        <Style TargetType="Label" x:Key="ValueLabel">
+            <Setter Property="Background" Value="#EEF1FF"/>
+            <Setter Property="Foreground" Value="#1F48FF"/>
+            <Setter Property="BorderBrush" Value="#B3C0FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <Style TargetType="Label" x:Key="HeaderLabel">
+            <Setter Property="Foreground" Value="#4A4A6A"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="350"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= TOP: GRAPHICS ================= -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Margin="5,0,5,0" Background="White" CornerRadius="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.06" Color="#030032"/>
+            </Border.Effect>
+            <TabControl Name="tabControl2" IsEnabled="True" Background="Transparent" BorderThickness="0">
+                <TabControl.Resources>
+                    <SolidColorBrush x:Key="AppBackground" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="ContentBackground" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="AccentBrush" Color="#1F48FF"/>
+                    <SolidColorBrush x:Key="TextPrimary" Color="#030032"/>
+                    <SolidColorBrush x:Key="TextSecondary" Color="#4A4A6A"/>
+                    <SolidColorBrush x:Key="CanvasPaper" Color="#FFFFFF"/>
+
+                    <Style x:Key="MainTabItemStyle" TargetType="TabItem">
+                        <Setter Property="Background" Value="#E8EAF0"/>
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                        <Setter Property="FontSize" Value="13"/>
+                        <Setter Property="Padding" Value="16,8"/>
+                        <Setter Property="Margin" Value="2,0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border Name="Border" Background="{TemplateBinding Background}" CornerRadius="6,6,0,0" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#FFFFFF"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style x:Key="VerticalTabItemStyle" TargetType="TabItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Padding" Value="8,6"/>
+                        <Setter Property="Margin" Value="3,2"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border Name="Border" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header">
+                                            <ContentPresenter.LayoutTransform>
+                                                <RotateTransform Angle="90"/>
+                                            </ContentPresenter.LayoutTransform>
+                                        </ContentPresenter>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#1F48FF"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" Value="#EEF1FF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style TargetType="Button" x:Key="ModernButtonStyle">
+                        <Setter Property="Background" Value="#1F48FF"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="15,6"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#4A6FFF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter Property="Background" Value="#1636CC"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+
+                <!-- Graphics 2D -->
+                <TabItem Header="Graphics 2D" Name="tabItem3" Style="{StaticResource MainTabItemStyle}">
+                    <Grid Background="White">
+                        <TabControl Name="tabControl5" TabStripPlacement="Left" Background="Transparent" BorderThickness="0">
+                            <TabItem Header="PROFILE" Name="tabItem7" Style="{StaticResource VerticalTabItemStyle}">
+                                <Grid Background="White">
+                                    <DockPanel Name="dockPanelProfile" Background="White">
+                                        <Controls:ZoomControl x:Name="zoomControlProfile" ZoomBoxBackground="{x:Null}" Background="White" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" MaxZoomDelta="5" RenderTransformOrigin="0,0">
+                                            <Controls:ZoomControl.Resources>
+                                                <Style TargetType="Slider">
+                                                    <Setter Property="Foreground" Value="#1F48FF"/>
+                                                    <Setter Property="Background" Value="#EEF1FF"/>
+                                                </Style>
+                                                <Style TargetType="{x:Type Rectangle}">
+                                                    <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.X" Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Left)}"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self},Path=(Canvas.Top)}"/>
+                                                </Style>
+                                            </Controls:ZoomControl.Resources>
+                                            <Grid Background="White" Width="185" Height="60">
+                                                <Canvas Background="White" Name="canvas2DProfile" RenderTransformOrigin="0,0" Margin="0.794,0,4.885,1.987"/>
+                                            </Grid>
+                                        </Controls:ZoomControl>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="D50|40" Name="tabItem8" Style="{StaticResource VerticalTabItemStyle}">
+                                <Grid Background="White">
+                                    <DockPanel Name="dockPanelBottom" Background="White">
+                                        <Controls:ZoomControl x:Name="zoomControlBottom" Background="White" MinZoom="3">
+                                            <Grid Background="White" Width="176.25" Height="52.5">
+                                                <Canvas Background="White" Name="canvas2DPlanA" Margin="-0.135,-0.432,0.385,0.932"/>
+                                            </Grid>
+                                        </Controls:ZoomControl>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="D30|20" Name="tabItem9" Style="{StaticResource VerticalTabItemStyle}">
+                                <Grid Background="White">
+                                    <DockPanel Name="dockPanelDeck" Background="White">
+                                        <Controls:ZoomControl x:Name="zoomControlDeck" Background="White" MinZoom="3">
+                                            <Grid Background="White" Width="176.25" Height="52.5">
+                                                <Canvas Background="White" Name="canvas2DPlanB"/>
+                                            </Grid>
+                                        </Controls:ZoomControl>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="D10|01" Name="tabItem10" Style="{StaticResource VerticalTabItemStyle}">
+                                <Grid Background="White">
+                                    <DockPanel Background="White" Name="dockPanel1">
+                                        <Controls:ZoomControl Background="White" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl1" ZoomBoxBackground="{x:Null}" Width="1025" MinZoom="3">
+                                            <Controls:ZoomControl.Resources>
+                                                <Style TargetType="{x:Type Rectangle}">
+                                                    <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.X" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Left)}"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Top)}"/>
+                                                </Style>
+                                            </Controls:ZoomControl.Resources>
+                                            <Grid Background="White" Height="52.5" Width="180">
+                                                <Canvas Background="White" Name="canvas2DPlanC" Margin="0,0,-0.031,0"/>
+                                            </Grid>
+                                        </Controls:ZoomControl>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="ALL" Name="tabItem21" Style="{StaticResource VerticalTabItemStyle}">
+                                <Grid Background="White">
+                                    <DockPanel Background="White" Name="dockPanel21">
+                                        <Controls:ZoomControl Background="White" Foreground="{x:Null}" Mode="Fill" ModifierMode="ZoomIn" Name="zoomControl21" ZoomBoxBackground="{x:Null}" Width="1025" RenderTransformOrigin="0,0" MinZoom="3">
+                                            <Controls:ZoomControl.Resources>
+                                                <Style TargetType="{x:Type Rectangle}">
+                                                    <Setter Property="extbehaviour:DragBehaviour.IsDragEnabled" Value="True"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.X" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Left)}"/>
+                                                    <Setter Property="extbehaviour:DragBehaviour.Y" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Canvas.Top)}"/>
+                                                </Style>
+                                            </Controls:ZoomControl.Resources>
+                                            <Grid Background="White" Height="52.5" Width="177.5">
+                                                <Canvas Background="Transparent" Name="canvas2DPlanALL" Margin="0,0,-0.031,0" RenderTransformOrigin="0,0" Focusable="True" Opacity="9"/>
+                                            </Grid>
+                                        </Controls:ZoomControl>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </TabItem>
+
+                <!-- Graphics 3D -->
+                <TabItem Header="Graphics 3D" Name="tabItem6" Style="{StaticResource MainTabItemStyle}">
+                    <Grid Background="White">
+                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Name="border2" Margin="8" CornerRadius="8">
+                            <helix:HelixViewport3D x:Name="viewPort3d1" ZoomExtentsWhenLoaded="False" BorderBrush="Transparent" BorderThickness="0" RenderTransform="{Binding}" ShowCoordinateSystem="True" IsMoveEnabled="True" IsManipulationEnabled="True" IsTextSearchCaseSensitive="True" IsTextSearchEnabled="True" RotateAroundMouseDownPoint="False" ZoomAroundMouseDownPoint="True" Loaded="viewPort3d_Loaded" ViewCubeWidth="80" ShowCameraTarget="True">
+                                <helix:HelixViewport3D.Background>
+                                    <ImageBrush ImageSource="/Stability;component/Images/Background.jpg"/>
+                                </helix:HelixViewport3D.Background>
+                            </helix:HelixViewport3D>
+                        </Border>
+                        <Button Content="Zoom Extents" Height="34" HorizontalAlignment="Right" Margin="0,15,15,0" Name="btn3DZoomExtents" VerticalAlignment="Top" Width="140" Click="btn3DZoomExtents_Click" Style="{StaticResource ModernButtonStyle}"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Border>
+
+        <!-- ================= RIGHT PANEL: OUTPUTS ================= -->
+        <Border Grid.Row="2" Grid.Column="1" Margin="5,0,5,5" Background="White" CornerRadius="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.06" Color="#030032"/>
+            </Border.Effect>
+            <TabControl Name="tabControl3" Background="Transparent" BorderThickness="0">
+                <TabItem Header="Outputs" Name="tabItem4">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Background="#F8F9FC" Margin="0" Grid.IsSharedSizeScope="True">
+
+                            <!-- Stability Summary -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="8,8,8,4" CornerRadius="8" Padding="12">
+                                <StackPanel>
+                                    <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,8" HorizontalAlignment="Left">
+                                        <TextBlock Text="Stability Summary" FontWeight="Bold" Foreground="White" FontSize="12"/>
+                                    </Border>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Content="GMt(m)" Name="lebelGM" Style="{StaticResource HeaderLabel}" Grid.Row="0" Grid.Column="0"/>
+                                        <Label Name="lblGMT" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="0" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="Displacement(T)" Name="label1" Style="{StaticResource HeaderLabel}" Grid.Row="1" Grid.Column="0"/>
+                                        <Label Name="lblDisplacement" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Trim & List -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="8,4" CornerRadius="8" Padding="12">
+                                <StackPanel>
+                                    <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,8" HorizontalAlignment="Left">
+                                        <TextBlock Text="Trim &amp; List" FontWeight="Bold" Foreground="White" FontSize="12"/>
+                                    </Border>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Content="Trim (m)" Name="label4" Style="{StaticResource HeaderLabel}" Grid.Row="0" Grid.Column="0"/>
+                                        <Label Name="lblTrim" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="0" Grid.Column="1" Margin="0,2"/>
+                                        <Label Name="label5" Foreground="#10B981" Grid.Row="0" Grid.Column="2" Margin="5,0,0,0"/>
+                                        <Label Content="List(deg.)" Name="label6" Style="{StaticResource HeaderLabel}" Grid.Row="1" Grid.Column="0"/>
+                                        <Label Name="lblHeel" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+                                        <Label Name="label8" Foreground="#10B981" Grid.Row="1" Grid.Column="2" Margin="5,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Drafts -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="8,4" CornerRadius="8" Padding="12">
+                                <StackPanel>
+                                    <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,8" HorizontalAlignment="Left">
+                                        <TextBlock Text="Drafts" Name="lbldrafts" FontWeight="Bold" Foreground="White" FontSize="12"/>
+                                    </Border>
+                                    <Border Background="#F8F9FC" CornerRadius="6" Padding="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Label Content="AP" Name="label2" Style="{StaticResource HeaderLabel}" Grid.Row="0" Grid.Column="0"/>
+                                            <Label Name="lblDraftAP" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="0" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="Propeller" Name="label17" Style="{StaticResource HeaderLabel}" Grid.Row="1" Grid.Column="0"/>
+                                            <Label Name="lblPROPELLER" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="Aft Mark" Name="label12" Style="{StaticResource HeaderLabel}" Grid.Row="2" Grid.Column="0"/>
+                                            <Label Name="lblDraftAftMark" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="2" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="Mid" Name="label15" Style="{StaticResource HeaderLabel}" Grid.Row="3" Grid.Column="0"/>
+                                            <Label Name="lblDraftMean" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="3" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="Fwd Mark" Name="label14" Style="{StaticResource HeaderLabel}" Grid.Row="4" Grid.Column="0"/>
+                                            <Label Name="lblDraftFwdMark" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="4" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="Sonar Dome" Name="label16" Style="{StaticResource HeaderLabel}" Grid.Row="5" Grid.Column="0"/>
+                                            <Label Name="lblSONARDOME" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="5" Grid.Column="1" Margin="0,2"/>
+                                            <Label Content="FP" Name="label7" Style="{StaticResource HeaderLabel}" Grid.Row="6" Grid.Column="0"/>
+                                            <Label Name="lblDraftFP" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="6" Grid.Column="1" Margin="0,2"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Hydrostatics -->
+                            <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="8,4,8,8" CornerRadius="8" Padding="12">
+                                <StackPanel>
+                                    <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,8" HorizontalAlignment="Left">
+                                        <TextBlock Text="Hydrostatics" Name="lblhydrostatics" FontWeight="Bold" Foreground="White" FontSize="12"/>
+                                    </Border>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Content="KG(m)" Name="lbeGM" Style="{StaticResource HeaderLabel}" Grid.Row="0" Grid.Column="0"/>
+                                        <Label Name="lblKG" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="0" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="KGf(m)" Name="lobeGM" Style="{StaticResource HeaderLabel}" Grid.Row="1" Grid.Column="0"/>
+                                        <Label Name="lblKGF" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="LCG(m)" Name="lebeGM" Style="{StaticResource HeaderLabel}" Grid.Row="2" Grid.Column="0"/>
+                                        <Label Name="lblLCG" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="2" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="FSC(m)" Name="ltobeGM" Style="{StaticResource HeaderLabel}" Grid.Row="3" Grid.Column="0"/>
+                                        <Label Name="lblFSC" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="3" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="TPC(T/cm)" Name="label9" Style="{StaticResource HeaderLabel}" Grid.Row="4" Grid.Column="0"/>
+                                        <Label Name="lblTPC" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="4" Grid.Column="1" Margin="0,2"/>
+                                        <Label Content="MTC(T-m/cm)" Name="label19" Style="{StaticResource HeaderLabel}" Grid.Row="5" Grid.Column="0"/>
+                                        <Label Name="lblMTC" Content="0" Style="{StaticResource ValueLabel}" Grid.Row="5" Grid.Column="1" Margin="0,2"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Border>
+
+        <!-- ================= LEFT PANEL: TANKS ================= -->
+        <Border Grid.Row="2" Grid.Column="0" Margin="5,0,0,5" Background="White" CornerRadius="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.06" Color="#030032"/>
+            </Border.Effect>
+            <TabControl Name="tabControl4" Background="Transparent" BorderThickness="0">
+                <TabItem Header="Tanks" Name="tabItem5">
+                    <ScrollViewer Name="scrollViewer1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Name="stackPanel2">
+                            <!-- Ballast Tanks -->
+                            <Expander Header="Ballast Tanks" Name="expander1" IsExpanded="True" BorderBrush="#1F48FF">
+                                <Grid Margin="5">
+                                    <DataGrid Name="dgBallastTanks" CanUserResizeColumns="False" CanUserAddRows="False" CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" MinRowHeight="20" RowHeight="22" ItemsSource="{Binding}" Background="White" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" PreviewTextInput="dgTankCompartment_PreviewTextInput" FontWeight="Normal" LoadingRow="dgBallastTanks_LoadingRow" HorizontalScrollBarVisibility="Disabled" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontFamily="Segoe UI" FontSize="11">
+                                        <DataGrid.ColumnHeaderStyle>
+                                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                                        </DataGrid.ColumnHeaderStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="160" ClipboardContentBinding="{Binding}" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                            <DataGridTextColumn Header="Innage(m)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Volume(cu.m)" Binding="{Binding Path=Volume,StringFormat={}{0:0.00}}" Width="95" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="Percent Fill" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="89" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="SG" Binding="{Binding Path=SG,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="LCG(m)" Binding="{Binding Path=LCG,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="VCG(m)" Binding="{Binding Path=VCG,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="TCG(m)" Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                        </DataGrid.Columns>
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                                        </DataGrid.RowStyle>
+                                    </DataGrid>
+                                </Grid>
+                            </Expander>
+
+                            <!-- Fuel Oil Tanks -->
+                            <Expander Header="Fuel Oil Tanks" Name="expander2" BorderBrush="#F59E0B">
+                                <Grid Margin="5">
+                                    <DataGrid Name="dgFuelOilTanks" CanUserResizeColumns="False" CanUserAddRows="False" CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" RowHeight="22" MinRowHeight="20" Background="White" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" HorizontalContentAlignment="Center" LoadingRow="dgFuelOilTanks_LoadingRow" HorizontalScrollBarVisibility="Disabled" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontFamily="Segoe UI" FontSize="11">
+                                        <DataGrid.ColumnHeaderStyle>
+                                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                                        </DataGrid.ColumnHeaderStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="165" ClipboardContentBinding="{Binding}" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                            <DataGridTextColumn Header="Innage(m)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Volume" Binding="{Binding Path=Volume,StringFormat={}{0:0.00}}" Width="85" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="Percent Fill" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="SG" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="LCG(m)" Binding="{Binding Path=LCG,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="VCG(m)" Binding="{Binding Path=VCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="TCG(m)" Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                        </DataGrid.Columns>
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                                        </DataGrid.RowStyle>
+                                    </DataGrid>
+                                </Grid>
+                            </Expander>
+
+                            <!-- FreshWater Tanks -->
+                            <Expander Header="FreshWater Tanks" Name="expander3" BorderBrush="#06B6D4">
+                                <Grid Margin="5">
+                                    <DataGrid Name="dgFreshWaterTanks" CanUserResizeColumns="False" CanUserAddRows="False" CanUserReorderColumns="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" RowHeight="22" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgFreshWaterTanks_LoadingRow" Background="White" HorizontalScrollBarVisibility="Disabled" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontFamily="Segoe UI" FontSize="11">
+                                        <DataGrid.ColumnHeaderStyle>
+                                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                                        </DataGrid.ColumnHeaderStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="165" ClipboardContentBinding="{Binding}" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                            <DataGridTextColumn Header="Innage(m)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Volume" Binding="{Binding Path=Volume,StringFormat={}{0:0.00}}" Width="95" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="Percent Fill" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="89" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="SG" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="LCG(m)" Binding="{Binding Path=LCG,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="VCG(m)" Binding="{Binding Path=VCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="TCG(m)" Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                        </DataGrid.Columns>
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                                        </DataGrid.RowStyle>
+                                    </DataGrid>
+                                </Grid>
+                            </Expander>
+
+                            <!-- Miscellaneous Tanks -->
+                            <Expander Header="Miscellaneous Tanks" Name="expander4" BorderBrush="#8B5CF6">
+                                <Grid Margin="5">
+                                    <DataGrid Name="dgMiscTanks" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" CanUserSortColumns="False" Height="150" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" RowHeight="22" MinRowHeight="20" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" BeginningEdit="dgTankCompartment_BeginningEdit" LoadingRow="dgMiscTanks_LoadingRow" Background="White" HorizontalScrollBarVisibility="Disabled" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" FontFamily="Segoe UI" FontSize="11">
+                                        <DataGrid.ColumnHeaderStyle>
+                                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                                        </DataGrid.ColumnHeaderStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="190" ClipboardContentBinding="{Binding}" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                            <DataGridTextColumn Header="Innage(m)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="Volume" Binding="{Binding Path=Volume,StringFormat={}{0:0.00}}" Width="80" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="Percent Fill" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="SG" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                            <DataGridTextColumn Header="LCG(m)" Binding="{Binding Path=LCG,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="VCG(m)" Binding="{Binding Path=VCG,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="TCG(m)" Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" Width="55" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                            <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.00}}" Width="65" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                        </DataGrid.Columns>
+                                        <DataGrid.RowStyle>
+                                            <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                                        </DataGrid.RowStyle>
+                                    </DataGrid>
+                                </Grid>
+                            </Expander>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- Compartments -->
+                <TabItem Header="Compartments" Name="tabItem12">
+                    <Grid Margin="5">
+                        <DataGrid Name="dgCompartments" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" CanUserSortColumns="False" AutoGenerateColumns="False" CanUserResizeRows="False" IsReadOnly="False" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" BorderThickness="1" RowHeight="22" MinRowHeight="20" Background="White" PreviewTextInput="dgTankCompartment_PreviewTextInput" PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" BeginningEdit="dgTankCompartment_BeginningEdit" CurrentCellChanged="dgTankCompartment_CurrentCellChanged" ItemsSource="{Binding}" DataContext="{Binding ElementName=dgCompartments}" LoadingRow="dgCompartments_LoadingRow" HorizontalScrollBarVisibility="Visible" FrozenColumnCount="2" VerticalScrollBarVisibility="Auto" BorderBrush="{StaticResource BorderBrush}" FontFamily="Segoe UI" FontSize="11">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Compartment Name" Binding="{Binding Path=Tank_Name}" Width="210" ClipboardContentBinding="{Binding}" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                <DataGridTextColumn Header="Innage(mm)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="75" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                <DataGridTextColumn Header="Volume(cu.m)" Binding="{Binding Path=Volume,StringFormat={}{0:0.00}}" Width="90" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                <DataGridTextColumn Header="Percent Fill" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                <DataGridTextColumn Header="LCG(M)" Binding="{Binding Path=LCG,StringFormat={}{0:0.00}}" SortMemberPath="LCG" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="VCG(M)" Binding="{Binding Path=VCG,StringFormat={}{0:0.00}}" SortMemberPath="VCG" Width="75" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="TCG(M)" Binding="{Binding Path=TCG,StringFormat={}{0:0.00}}" SortMemberPath="TCG" Width="70" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="75" IsReadOnly="False" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                <DataGridTextColumn Visibility="Hidden" Header="Flood Rate(TPH)" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="95" IsReadOnly="True" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Visibility="Hidden" Header="Flood Time(min)" Binding="{Binding Path=FloodTime,StringFormat={}{0:0.00}}" Width="95" IsReadOnly="True" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                            </DataGrid.Columns>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                            </DataGrid.RowStyle>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- WT Region -->
+                <TabItem Header="WT Region" Name="tabItem2">
+                    <Grid Margin="5">
+                        <DataGrid AutoGenerateColumns="False" Background="White" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" CanUserAddRows="False" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Segoe UI" FontSize="11" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" HeadersVisibility="Column" IsReadOnly="False" MinRowHeight="20" Name="dgWaterTightRegion" RowBackground="White" RowDetailsVisibilityMode="Collapsed" RowHeight="22" SelectionMode="Single" LoadingRow="dgWaterTightRegion_LoadingRow" HorizontalScrollBarVisibility="Disabled">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding Path=Tank_Name}" ClipboardContentBinding="{Binding}" Header="WT Region" Width="160" ElementStyle="{StaticResource LeftText}" CellStyle="{StaticResource CellDamaged}"/>
+                                <DataGridTextColumn Header="Innage(m)" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="80" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                <DataGridTextColumn Header="Mass(T)" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="75" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Volume,StringFormat=\{0:0.00\}}" Header="Volume(cu.m)" Width="115" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Percent_Full,StringFormat=\{0:0.00\}}" Header="Percent Fill" Width="95" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellSensorFaulty}"/>
+                                <DataGridTextColumn Header="LCG(M)" Binding="{Binding Path=LCG,StringFormat=\{0:0.00\}}" SortMemberPath="LCG" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="VCG(M)" Binding="{Binding Path=VCG,StringFormat=\{0:0.00\}}" Width="75" SortMemberPath="VCG" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="TCG(M)" Binding="{Binding Path=TCG,StringFormat=\{0:0.00\}}" Width="70" SortMemberPath="TCG" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Header="FSM(T-m)" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="85" IsReadOnly="False" ElementStyle="{StaticResource CenterText}" CellStyle="{StaticResource CellDisabledBlack}"/>
+                            </DataGrid.Columns>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                            </DataGrid.RowStyle>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- Fixed Load -->
+                <TabItem Header="Fixed Load" Name="tabItem11">
+                    <DockPanel Margin="5" LastChildFill="True">
+                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,5,8">
+                            <Button Content="ADD" Name="btnAdd" Width="80" Style="{StaticResource PrimaryButton}" Click="btnAdd_Click" Margin="0,0,5,0" Padding="10,6"/>
+                            <Button Content="REMOVE" Name="btnRemove" Width="90" Style="{StaticResource ClearButton}" Click="btnRemove_Click" Padding="10,6"/>
+                        </StackPanel>
+                        <DataGrid AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" FontSize="11" CanUserResizeRows="False" CanUserSortColumns="False" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F0F1F5" HeadersVisibility="Column" IsReadOnly="False" Name="dgVariableItems" RowDetailsVisibilityMode="Collapsed" SelectionMode="Single" FontFamily="Segoe UI" MinRowHeight="20" RowHeight="22" Background="White" PreparingCellForEdit="dgVariableItems_PreparingCellForEdit" SelectionChanged="dgVariableItems_SelectionChanged" BeginningEdit="dgVariableItems_BeginningEdit" CurrentCellChanged="dgVariableItems_CurrentCellChanged" LoadingRow="dgVariableItems_LoadingRow" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" KeyDown="dgVariableItems_KeyDown" HorizontalScrollBarVisibility="Disabled">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridHeader}"/>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding Path=Load_Name}" ClipboardContentBinding="{Binding}" Header="Item Name" Width="2*" IsReadOnly="False" ElementStyle="{StaticResource LeftText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Weight,StringFormat=\{0:0.00\}}" Header="Weight(t)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=LCG,StringFormat=\{0:0.00\}}" Header="LCG(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=VCG,StringFormat=\{0:0.00\}}" Header="VCG(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=TCG,StringFormat=\{0:0.00\}}" Header="TCG(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Length,StringFormat=\{0:0.00\}}" Header="Length(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Breadth,StringFormat=\{0:0.00\}}" Header="Breadth(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                                <DataGridTextColumn Binding="{Binding Path=Depth,StringFormat=\{0:0.00\}}" Header="Depth(m)" Width="*" ElementStyle="{StaticResource CenterText}"/>
+                            </DataGrid.Columns>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource ModernRowStyle}"/>
+                            </DataGrid.RowStyle>
+                        </DataGrid>
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+        </Border>
+    </Grid>
 </Page>
+

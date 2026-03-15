@@ -6,7 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:DV="clr-namespace:System.Windows.Controls.DataVisualization;assembly=System.Windows.Controls.DataVisualization.Toolkit"
              xmlns:DVC="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
-             mc:Ignorable="d" Height="900" Background="#FFBEBEBE" Width="1079" >
+             mc:Ignorable="d" Height="900" Background="#FFFFFFFF" Width="1280" >
     <Page.Resources>
 
         <ResourceDictionary>
@@ -22,9 +22,9 @@
 
     </Page.Resources>
     <Grid>
-        <GroupBox Header="Loading Summary" Height="196" HorizontalAlignment="Left" Margin="370,118,0,0" Name="groupBox4" VerticalAlignment="Top" Width="709" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="Loading Summary" Height="196" HorizontalAlignment="Left" Margin="444,118,0,0" Name="groupBox4" VerticalAlignment="Top" Width="828" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
-                <DataGrid AutoGenerateColumns="False" Name="dgLoadingSummary" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20" SelectionChanged="dgLoadingSummary_SelectionChanged">
+                <DataGrid AutoGenerateColumns="False" Name="dgLoadingSummary" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20" SelectionChanged="dgLoadingSummary_SelectionChanged">
                     <DataGrid.Columns>
                         <DataGridTextColumn MinWidth="190" Width="190"   Header="Items" Binding="{Binding Tank_Name}" FontFamily="Calibri" FontSize="11">
                             <DataGridTextColumn.HeaderStyle>
@@ -91,12 +91,12 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF"/>
                                     <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
@@ -106,8 +106,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -115,7 +115,7 @@
                 </DataGrid>
             </Grid>
         </GroupBox>
-        <!--<GroupBox Header="Equilibrium Output" Height="104" HorizontalAlignment="Left" Margin="6,3,0,0" Name="groupBox2" VerticalAlignment="Top" Width="1061" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <!--<GroupBox Header="Equilibrium Output"
             <Grid>
                 <DataGrid AutoGenerateColumns="False" Name="dgHydrostatics" ItemsSource="{Binding ElementName=dgHydrostatics}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" VerticalScrollBarVisibility="Disabled" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20" Margin="0,0,-6,0" DataContext="{Binding}">
                     <DataGrid.Columns>
@@ -230,7 +230,7 @@
             </Grid>
         </GroupBox>-->
 
-        <GroupBox Header="Hydrostatics" Height="96" HorizontalAlignment="Left" Margin="8,13,0,0" Name="groupBox2" VerticalAlignment="Top" Width="1066" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="Hydrostatics" Height="96" HorizontalAlignment="Left" Margin="8,13,0,0" Name="groupBox2" VerticalAlignment="Top" Width="1264" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120*" />
@@ -239,7 +239,7 @@
                     <ColumnDefinition Width="77*" />
                     <ColumnDefinition Width="663*" />
                 </Grid.ColumnDefinitions>
-                <DataGrid AutoGenerateColumns="False" Name="dgHydrostatics" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" VerticalScrollBarVisibility="Disabled" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="5">
+                <DataGrid AutoGenerateColumns="False" Name="dgHydrostatics" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" VerticalScrollBarVisibility="Disabled" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="5">
                     <DataGrid.Columns>
                         <DataGridTextColumn MinWidth="100" Width="110"  HeaderStyle="{StaticResource DataGridGen}"  Header="Displacement (T)" Binding="{Binding Displacement,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
                             <DataGridTextColumn.ElementStyle>
@@ -347,12 +347,12 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
                                     <Setter Property="Foreground" Value="White" />
                                 </Trigger>
                             </Style.Triggers>
@@ -362,8 +362,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -371,9 +371,9 @@
                 </DataGrid>
             </Grid>
         </GroupBox>
-        <GroupBox Header="GZ and heeling Arms" Height="196" HorizontalAlignment="Left" Margin="6,118,0,0" Name="groupBox5" VerticalAlignment="Top" Width="364" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="GZ and heeling Arms" Height="196" HorizontalAlignment="Left" Margin="8,118,0,0" Name="groupBox5" VerticalAlignment="Top" Width="428" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
-                <DataGrid AutoGenerateColumns="False"  Name="dgGZ" ItemsSource="{Binding}" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" CanUserSortColumns="False" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20">
+                <DataGrid AutoGenerateColumns="False"  Name="dgGZ" ItemsSource="{Binding}" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" CanUserSortColumns="False" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
                     <DataGrid.Columns>
                         <DataGridTextColumn MinWidth="50" HeaderStyle="{StaticResource DataGridGen}" Width="Auto" Header="Heel(Deg.)" Binding="{Binding HeelAngle,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
                             <DataGridTextColumn.ElementStyle>
@@ -426,12 +426,12 @@
 
                         </DataGridTextColumn>
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF"/>
                                     <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
@@ -441,8 +441,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -451,9 +451,9 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Header="NES 109 StabilityP15B Criteria" Height="185" HorizontalAlignment="Left" Margin="574,402,0,0" Name="groupBoxStability" VerticalAlignment="Top" Width="498" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="NES 109 StabilityP15B Criteria" Height="185" HorizontalAlignment="Left" Margin="644,402,0,0" Name="groupBoxStability" VerticalAlignment="Top" Width="628" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
-                <DataGrid AutoGenerateColumns="False" Name="dgStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20">
+                <DataGrid AutoGenerateColumns="False" Name="dgStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
                     <DataGrid.ItemBindingGroup>
                         <BindingGroup SharesProposedValues="False" />
                     </DataGrid.ItemBindingGroup>
@@ -498,12 +498,12 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF"/>
                                     <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
@@ -513,8 +513,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272"/>
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -522,9 +522,9 @@
                 </DataGrid>
             </Grid>
         </GroupBox>
-        <GroupBox Header="GZ Curve" Height="283" HorizontalAlignment="Left" Margin="6,439,0,0" Name="groupBox7" VerticalAlignment="Top" Width="559" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="GZ Curve" Height="283" HorizontalAlignment="Left" Margin="8,439,0,0" Name="groupBox7" VerticalAlignment="Top" Width="628" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
-                <DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="#FFBEBEBE" Padding="10,0,0,10" FontFamily="Calibri" FontSize="11">
+                <DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="#FFFFFFFF" Padding="10,0,0,10" FontFamily="Calibri" FontSize="11">
                     <DVC:Chart.Series>
                         <DVC:LineSeries Title="GZ" Name="GZSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
@@ -688,14 +688,14 @@
                 </DVC:Chart>
             </Grid>
         </GroupBox>
-        <GroupBox Header="Immersion particulars" Height="122" HorizontalAlignment="Left" Margin="6,316,0,0" Name="groupBox1" VerticalAlignment="Top" Width="558" Background="#FF727272" BorderBrush="#FF727272" Visibility="Visible">
+        <GroupBox Header="Immersion particulars" Height="122" HorizontalAlignment="Left" Margin="8,316,0,0" Name="groupBox1" VerticalAlignment="Top" Width="628" Background="#FF030032" BorderBrush="#FF030032" Visibility="Visible">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="7*" />
                     <ColumnDefinition Width="222*" />
                     <ColumnDefinition Width="7*" />
                 </Grid.ColumnDefinitions>
-                <DataGrid AutoGenerateColumns="False" Name="dgDraft" ItemsSource="{Binding}" VerticalScrollBarVisibility="Disabled" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="3">
+                <DataGrid AutoGenerateColumns="False" Name="dgDraft" ItemsSource="{Binding}" VerticalScrollBarVisibility="Disabled" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Disabled" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="3">
                     <DataGrid.Columns>
                         <DataGridTextColumn MinWidth="70" Width="150" Header="Name" Binding="{Binding openingName,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="openingName">
                             <DataGridTextColumn.ElementStyle>
@@ -748,12 +748,12 @@
                         </DataGridTextColumn>
 
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
                                     <Setter Property="Foreground" Value="White" />
                                 </Trigger>
                             </Style.Triggers>
@@ -763,8 +763,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -772,14 +772,14 @@
                 </DataGrid>
             </Grid>
         </GroupBox>
-        <GroupBox Background="#FF727272" BorderBrush="#FF727272" Header="Moulded Draft (m)" Height="84" HorizontalAlignment="Left" Margin="574,315,0,0" Name="groupBox3" VerticalAlignment="Top" Visibility="Visible" Width="498">
+        <GroupBox Background="#FF030032" BorderBrush="#FF030032" Header="Moulded Draft (m)" Height="84" HorizontalAlignment="Left" Margin="644,315,0,0" Name="groupBox3" VerticalAlignment="Top" Visibility="Visible" Width="628">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="7*" />
-                    <ColumnDefinition Width="457" />
+                    <ColumnDefinition Width="590" />
                     <ColumnDefinition Width="7*" />
                 </Grid.ColumnDefinitions>
-                <DataGrid AutoGenerateColumns="False" BorderBrush="#FF727272"  Name="dgMouldedDraft" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" Grid.ColumnSpan="3" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" RowBackground="#FFD8D8D8" RowHeight="20" VerticalScrollBarVisibility="Disabled">
+                <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032"  Name="dgMouldedDraft" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" Grid.ColumnSpan="3" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled">
                     <DataGrid.Columns>
                         <DataGridTextColumn Binding="{Binding Draft_AP, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="AP" MinWidth="55" SortMemberPath="openingName" Width="30">
                             <DataGridTextColumn.ElementStyle>
@@ -841,8 +841,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Control.Background" Value="#FF727272" />
-                                    <Setter Property="Control.BorderBrush" Value="#FF727272" />
+                                    <Setter Property="Control.Background" Value="#FF1F48FF" />
+                                    <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -851,7 +851,7 @@
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                    <Setter Property="Control.Background" Value="#FF727272" />
+                                    <Setter Property="Control.Background" Value="#FF1F48FF" />
                                     <Setter Property="Control.Foreground" Value="White" />
                                 </Trigger>
                             </Style.Triggers>
@@ -861,14 +861,14 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Header="DAMAGED TANKS AND COMPARTMENTS" Height="122" HorizontalAlignment="Left" Margin="574,0,0,179" Name="gbSoundingPer" VerticalAlignment="Bottom" Width="492" Background="#FF727272" BorderBrush="#FF727272" Visibility="Visible">
+        <GroupBox Header="DAMAGED TANKS AND COMPARTMENTS" Height="122" HorizontalAlignment="Left" Margin="644,0,0,179" Name="gbSoundingPer" VerticalAlignment="Bottom" Width="628" Background="#FF030032" BorderBrush="#FF030032" Visibility="Visible">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="7*" />
                     <ColumnDefinition Width="222*" />
                     <ColumnDefinition Width="7*" />
                 </Grid.ColumnDefinitions>
-                <DataGrid AutoGenerateColumns="False" Name="dgSoundingPer" ItemsSource="{Binding}" VerticalScrollBarVisibility="Visible" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" FontFamily="Calibri" BorderBrush="#FF727272" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="3">
+                <DataGrid AutoGenerateColumns="False" Name="dgSoundingPer" ItemsSource="{Binding}" VerticalScrollBarVisibility="Visible" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20" Grid.ColumnSpan="3">
                     <DataGrid.Columns>
                         <DataGridTextColumn MinWidth="70" Width="150" Header="Name" Binding="{Binding Tank_Name,StringFormat=n3}" FontFamily="Calibri" FontSize="11" >
                             <DataGridTextColumn.ElementStyle>
@@ -929,12 +929,12 @@
                         </DataGridTextColumn>
 
                     </DataGrid.Columns>
-                    <DataGrid.RowBackground>#FFD8D8D8</DataGrid.RowBackground>
+                    <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
                                     <Setter Property="Foreground" Value="White" />
                                 </Trigger>
                             </Style.Triggers>
@@ -944,8 +944,8 @@
                         <Style TargetType="{x:Type DataGridCell}">
                             <Style.Triggers>
                                 <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FF727272" />
-                                    <Setter Property="BorderBrush" Value="#FF727272" />
+                                    <Setter Property="Background" Value="#FF1F48FF" />
+                                    <Setter Property="BorderBrush" Value="#FF1F48FF" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>

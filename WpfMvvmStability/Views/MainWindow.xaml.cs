@@ -132,24 +132,24 @@ namespace WpfMvvmStability.Views
 
                     if ((frameRealMode.Template.FindName("lblRealStabilityStatus", frameRealMode) as Label).Content.ToString() == "OK")
                     {
-                        (frameRealMode.Template.FindName("lblRealStabilityStatus", frameRealMode) as Label).Background = new SolidColorBrush(Colors.LawnGreen);
+                        (frameRealMode.Template.FindName("borderRealStabilityStatus", frameRealMode) as Border).Background = new SolidColorBrush(Colors.LawnGreen);
                     }
                     else if ((frameRealMode.Template.FindName("lblRealStabilityStatus", frameRealMode) as Label).Content.ToString() == "NOT OK")
                     {
-                        (frameRealMode.Template.FindName("lblRealStabilityStatus", frameRealMode) as Label).Background = new SolidColorBrush(Colors.Red);
+                        (frameRealMode.Template.FindName("borderRealStabilityStatus", frameRealMode) as Border).Background = new SolidColorBrush(Colors.Red);
                     }
 
                     if (Convert.ToString((frameRealMode.Template.FindName("lblRealStabilityType", frameRealMode) as Label).Content) == "Intact".ToUpper())
                     {
                        // (frameRealMode.Template.FindName("btnRealModeLongitudinal", frameRealMode) as Button).IsEnabled = false;
                         (frameRealMode.Template.FindName("btnRealModeCorrectiveAction", frameRealMode) as Button).IsEnabled = false;
-                        (frameRealMode.Template.FindName("lblRealStabilityType", frameRealMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
+                        (frameRealMode.Template.FindName("borderRealStabilityType", frameRealMode) as Border).Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
                     }
                     else
                     {
                        // (frameRealMode.Template.FindName("btnRealModeLongitudinal", frameRealMode) as Button).IsEnabled = false;
                         (frameRealMode.Template.FindName("btnRealModeCorrectiveAction", frameRealMode) as Button).IsEnabled = true;
-                        (frameRealMode.Template.FindName("lblRealStabilityType", frameRealMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
+                        (frameRealMode.Template.FindName("borderRealStabilityType", frameRealMode) as Border).Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
                     }
                     flagStart = false;
                     Models.TableModel.Write_Log("After Background Worker");

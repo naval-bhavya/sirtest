@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -55,7 +55,7 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <ApplicationIcon>Lnt2.ico</ApplicationIcon>
+    <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>Views\app.manifest</ApplicationManifest>
@@ -413,7 +413,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="Views\RealModeReport.xaml">
-      <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SettingsWindow.xaml">
@@ -465,8 +464,6 @@
     </None>
     <EmbeddedResource Include="Images\PlanA.dwg" />
     <EmbeddedResource Include="Images\PlanC.dwg" />
-    <EmbeddedResource Include="Images\PlanL.dwg" />
-    <EmbeddedResource Include="Images\PlanD.dwg" />
     <EmbeddedResource Include="Images\PlanB.dwg" />
     <EmbeddedResource Include="Images\Profile.dwg" />
     <None Include="Properties\Settings.settings">
@@ -532,6 +529,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\backimg.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="logo.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
