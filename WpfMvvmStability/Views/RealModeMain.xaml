@@ -2531,6 +2531,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:helix="http://helix-toolkit.org/wpf"
+             xmlns:hx="http://helix-toolkit.org/wpf/SharpDX"
              xmlns:viewModels="clr-namespace:WpfMvvmStability.ViewModels"
              xmlns:Models="clr-namespace:WpfMvvmStability.Models.BO"
              xmlns:extbehaviour="clr-namespace:WPFExtensions.AttachedBehaviours;assembly=WPFExtensions"
@@ -3014,18 +3015,38 @@
                 </TabItem>
 
                 <!-- Graphics 3D -->
-                <TabItem Header="Graphics 3D" Name="tabItem6" Style="{StaticResource MainTabItemStyle}">
-                    <Grid Background="White">
-                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Name="border2" Margin="8" CornerRadius="8">
-                            <helix:HelixViewport3D x:Name="viewPort3d1" ZoomExtentsWhenLoaded="False" BorderBrush="Transparent" BorderThickness="0" RenderTransform="{Binding}" ShowCoordinateSystem="True" IsMoveEnabled="True" IsManipulationEnabled="True" IsTextSearchCaseSensitive="True" IsTextSearchEnabled="True" RotateAroundMouseDownPoint="False" ZoomAroundMouseDownPoint="True" Loaded="viewPort3d_Loaded" ViewCubeWidth="80" ShowCameraTarget="True">
-                                <helix:HelixViewport3D.Background>
-                                    <ImageBrush ImageSource="/Stability;component/Images/Background.jpg"/>
-                                </helix:HelixViewport3D.Background>
-                            </helix:HelixViewport3D>
-                        </Border>
-                        <Button Content="Zoom Extents" Height="34" HorizontalAlignment="Right" Margin="0,15,15,0" Name="btn3DZoomExtents" VerticalAlignment="Top" Width="140" Click="btn3DZoomExtents_Click" Style="{StaticResource ModernButtonStyle}"/>
-                    </Grid>
-                </TabItem>
+				<TabItem Header="Graphics 3D" Name="tabItem6" Style="{StaticResource MainTabItemStyle}">
+					<Border BorderBrush="#D1D9E6" BorderThickness="1" Name="border2"
+								Margin="12" CornerRadius="12" Background="White">
+						
+						<Grid>
+                            <hx:Viewport3DX x:Name="viewPort3d1"
+    ShowCoordinateSystem="True"
+    ZoomAroundMouseDownPoint="False"
+    RotateAroundMouseDownPoint="False"
+    CameraRotationMode="Trackball"
+    Loaded="viewPort3d_Loaded"
+    BackgroundColor="White">
+                                <hx:Viewport3DX.Camera>
+                                    <hx:PerspectiveCamera Position="80000,60000,40000"
+            LookDirection="-80000,-60000,-40000"
+            UpDirection="0,0,1"
+            FieldOfView="45"
+            NearPlaneDistance="1"
+            FarPlaneDistance="500000"/>
+                                </hx:Viewport3DX.Camera>
+                                <hx:DirectionalLight3D Direction="-1,-1,-1" Color="White"/>
+                                <hx:AmbientLight3D Color="#666666"/>
+                                <hx:GroupModel3D x:Name="scene3D"/>
+                            </hx:Viewport3DX>
+
+                            <Button Content="Zoom Extents" Height="32" Width="120"
+								Name="btn3DZoomExtents" Click="btn3DZoomExtents_Click"
+								Style="{StaticResource ModernButtonStyle}" Margin="1126,15,12,237"/>
+
+						</Grid>
+					</Border>
+				</TabItem>
             </TabControl>
         </Border>
 

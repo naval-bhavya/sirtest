@@ -54,16 +54,16 @@ namespace WpfMvvmStability
 
             //code for watermark.................
             PdfGState graphicsState = new PdfGState();
-            iTextSharp.text.Image watermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
-            PdfContentByte canvas = writer.DirectContentUnder;
-            Image image = Image.GetInstance(watermark);
-            image.SetAbsolutePosition(135, 230);
-            canvas.SaveState();
-            PdfGState state = new PdfGState();
-            state.FillOpacity = 0.2f;
-            canvas.SetGState(state);
-            canvas.AddImage(image);
-            canvas.RestoreState();
+            //iTextSharp.text.Image watermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
+            //PdfContentByte canvas = writer.DirectContentUnder;
+            //Image image = Image.GetInstance(watermark);
+            //image.SetAbsolutePosition(135, 230);
+            //canvas.SaveState();
+            //PdfGState state = new PdfGState();
+            //state.FillOpacity = 0.2f;
+            //canvas.SetGState(state);
+            //canvas.AddImage(image);
+            //canvas.RestoreState();
             //....................................
 
             Rectangle pageSize = doc.PageSize;

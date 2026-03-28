@@ -779,23 +779,23 @@ namespace WpfMvvmStability.Views
                 doc.Add(p2);
 
                 //...........StartOFLogo.........................................
-                iTextSharp.text.Image LogoWatermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
-                iTextSharp.text.Image pic = iTextSharp.text.Image.GetInstance(LogoWatermark);
-                pic.Alignment = Element.ALIGN_LEFT;
-                pic.ScaleToFit(70, 55);
-                doc.Add(pic);
-                iTextSharp.text.Image logoMdl = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\LOGOMDL.jpg");
-                iTextSharp.text.Image pic1 = iTextSharp.text.Image.GetInstance(logoMdl);
-                pic1.Alignment = Element.ALIGN_RIGHT;
-                pic1.ScaleToFit(40, 40);
-                pic1.SetAbsolutePosition(514, 730);
-                doc.Add(pic1);
-                iTextSharp.text.Image logoLnT = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\LOGOLnT.gif");
-                iTextSharp.text.Image pic2 = iTextSharp.text.Image.GetInstance(logoLnT);
-                pic2.Alignment = Element.ALIGN_RIGHT;
-                pic2.ScaleToFit(40, 40);
-                pic2.SetAbsolutePosition(470, 730);
-                doc.Add(pic2);
+                //iTextSharp.text.Image LogoWatermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
+                //iTextSharp.text.Image pic = iTextSharp.text.Image.GetInstance(LogoWatermark);
+                //pic.Alignment = Element.ALIGN_LEFT;
+                //pic.ScaleToFit(70, 55);
+                //doc.Add(pic);
+                //iTextSharp.text.Image logoMdl = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\LOGOMDL.jpg");
+                //iTextSharp.text.Image pic1 = iTextSharp.text.Image.GetInstance(logoMdl);
+                //pic1.Alignment = Element.ALIGN_RIGHT;
+                //pic1.ScaleToFit(40, 40);
+                //pic1.SetAbsolutePosition(514, 730);
+                //doc.Add(pic1);
+                //iTextSharp.text.Image logoLnT = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\LOGOLnT.gif");
+                //iTextSharp.text.Image pic2 = iTextSharp.text.Image.GetInstance(logoLnT);
+                //pic2.Alignment = Element.ALIGN_RIGHT;
+                //pic2.ScaleToFit(40, 40);
+                //pic2.SetAbsolutePosition(470, 730);
+                //doc.Add(pic2);
                 //...........EndOFLogo.........................................
 
 

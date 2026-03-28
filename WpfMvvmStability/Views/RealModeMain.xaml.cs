@@ -11,7 +11,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using HelixToolkit.Wpf;
+using HelixToolkit.Wpf.SharpDX;
+using HelixToolkit.SharpDX;
 using System.Windows.Media.Media3D;
 using System.IO;
 using System.Threading;
@@ -92,7 +93,7 @@ namespace WpfMvvmStability.Views
                 DV.RowFilter = "[GROUP] NOT LIKE 'Lightship'";
                 dtmaxVolume = DV.ToTable();
 
-                for (int i = 0; i < dtmaxVolume.Rows.Count - 1; i++)
+                for (int i = 0; i < dtmaxVolume.Rows.Count-3; i++)
                 {
                     maxVolume.Add(Convert.ToInt32(dtmaxVolume.Rows[i]["Tank_ID"]), Convert.ToDecimal(dtmaxVolume.Rows[i]["Max_Volume"]));
 
@@ -380,9 +381,8 @@ namespace WpfMvvmStability.Views
                 ////SimulationModeMain sww = new SimulationModeMain();
                 ////sww.Refresh3dNew();
 
-                //Thread.Sleep(5000);
-                Refresh3dNew();
-                //Thread.Sleep(5000);
+                // 3D models are loaded in viewPort3d_Loaded after EffectsManager is ready
+                //Refresh3dNew();
             }
             
             catch//(Exception ex)
@@ -2404,18 +2404,51 @@ namespace WpfMvvmStability.Views
             tb = e.Column.GetCellContent(e.Row) as TextBox;
         }
 
+        private bool _3dInitialized = false;
+
         private void viewPort3d_Loaded(object sender, RoutedEventArgs e)
         {
-            TimerGraphicsRefresh = new System.Windows.Threading.DispatcherTimer();
-            TimerGraphicsRefresh.Tick += new EventHandler(TimerGraphicsRefresh_Tick);
-            TimerGraphicsRefresh.Start();
-            TimerGraphicsRefresh.Interval = new TimeSpan(0, 0, 0);
+            if (viewPort3d1.EffectsManager == null)
+                viewPort3d1.EffectsManager = new DefaultEffectsManager();
+
+            System.Diagnostics.Debug.WriteLine($"Viewport size: {viewPort3d1.ActualWidth} x {viewPort3d1.ActualHeight}");
+
+            if (viewPort3d1.ActualWidth > 0 && viewPort3d1.ActualHeight > 0)
+            {
+                // Tab is already visible — load after short delay
+                var initTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                initTimer.Tick += (s, ev) => { initTimer.Stop(); Init3D(); };
+                initTimer.Start();
+            }
+            else
+            {
+                // Tab not yet visible (0 size) — wait until it gets a real size
+                viewPort3d1.SizeChanged += ViewPort3d1_SizeChanged;
+            }
+        }
+
+        private void ViewPort3d1_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.NewSize.Width > 0 && e.NewSize.Height > 0 && !_3dInitialized)
+            {
+                viewPort3d1.SizeChanged -= ViewPort3d1_SizeChanged;
+                System.Diagnostics.Debug.WriteLine($"Viewport got real size: {e.NewSize.Width} x {e.NewSize.Height}");
+                var initTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                initTimer.Tick += (s, ev) => { initTimer.Stop(); Init3D(); };
+                initTimer.Start();
+            }
+        }
+
+        private void Init3D()
+        {
+            if (_3dInitialized) return;
+            _3dInitialized = true;
+            Refresh3dNew();
         }
         private void TimerGraphicsRefresh_Tick(object sender, EventArgs e)
         {
-            viewPort3d1.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50000, -20000, -30000), new Size3D(40000, 40000, 40000)));
-           //viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(79, -20, -30), new Size3D(0, 0, 49)));
             TimerGraphicsRefresh.Stop();
+            Refresh3dNew();
         }
 
         private void dgVariableItems_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
@@ -2780,14 +2813,13 @@ namespace WpfMvvmStability.Views
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"Refresh3dNew START - scene3D null? {scene3D == null}, EffectsManager null? {viewPort3d1?.EffectsManager == null}");
+                if (scene3D == null || viewPort3d1.EffectsManager == null) { System.Diagnostics.Debug.WriteLine("Refresh3dNew: not ready, aborting"); return; }
 
+                // Clear previously loaded models
+                scene3D.Children.Clear();
 
-                viewPort3d1.Children.Clear();
-                DefaultLights light = new DefaultLights();
-                viewPort3d1.Children.Add(light);
-                viewPort3d1.RotateGesture = new MouseGesture(MouseAction.LeftClick);
-
-                for (int i = 0; i < 6; i++)//6
+                for (int i = 0; i < 2; i++)//6
                 {
                     try
                     {
@@ -2801,8 +2833,8 @@ namespace WpfMvvmStability.Views
 
                         foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
                         {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
+                            Element3D device3D = null;
+                            string str = System.IO.Path.GetFileName(file);
                             string str1 = str.Split('.')[0];
                             string TankName = str1.Replace("/", "");
                             if (Name == TankName)
@@ -2813,25 +2845,25 @@ namespace WpfMvvmStability.Views
                                 // {
                                 if (stats == "True")
                                 {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                    device3D = Display3d1(file, 255, 255, 0, 0);
                                 }
                                 else
                                 {
                                     if (PercentageFill == 0)
                                     {
-                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                        device3D = Display3d1(file, 200, 185, 185, 196);
                                     }
 
                                     else if (PercentageFill > 0 && PercentageFill <= 25)
                                     {
                                         foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank25\\", "*.stl"))
                                         {
-                                            string strfw25 = file1.Split('\\')[3];
+                                            string strfw25 = System.IO.Path.GetFileName(file1);
                                             string str1fw25 = strfw25.Split('.')[0];
                                             string TankName1 = str1fw25.Replace("/", "");
                                             if (Name == TankName1)
                                             {
-                                                device3D.Content = Display3d1(file1, 180, 0, 0, 100);
+                                                device3D = Display3d1(file1, 180, 0, 0, 100);
 
                                             }
 
@@ -2842,13 +2874,13 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank50\\", "*.stl"))
                                         {
-                                            string strfw50 = file2.Split('\\')[3];
+                                            string strfw50 = System.IO.Path.GetFileName(file2);
                                             string str1fw50 = strfw50.Split('.')[0];
                                             string TankName2 = str1fw50.Replace("/", "");
 
                                             if (Name == TankName2)
                                             {
-                                                device3D.Content = Display3d1(file2, 180, 0, 0, 100);
+                                                device3D = Display3d1(file2, 180, 0, 0, 100);
 
                                             }
 
@@ -2859,12 +2891,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank75\\", "*.stl"))
                                         {
-                                            string strfw75 = file3.Split('\\')[3];
+                                            string strfw75 = System.IO.Path.GetFileName(file3);
                                             string str1fw75 = strfw75.Split('.')[0];
                                             string TankName3 = str1fw75.Replace("/", "");
                                             if (Name == TankName3)
                                             {
-                                                device3D.Content = Display3d1(file3, 180, 0, 0, 100);
+                                                device3D = Display3d1(file3, 180, 0, 0, 100);
 
                                             }
                                         }
@@ -2872,11 +2904,10 @@ namespace WpfMvvmStability.Views
                                     }
                                     else
                                     {
-                                        device3D.Content = Display3d1(file, 180, 0, 0, 100);
+                                        device3D = Display3d1(file, 180, 0, 0, 100);
                                     }
                                 }
-                                device3D.SetName(TankName); ;
-                                viewPort3d1.Children.Add(device3D);
+                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
                                 //  }
                             }
 
@@ -2888,7 +2919,7 @@ namespace WpfMvvmStability.Views
                        // System.Windows.MessageBox.Show(ex.ToString());
                     }
                 }
-                for (int i = 0; i < 11; i++) //11
+                for (int i = 0; i < 51; i++) //11
                 {
                     try
                     {
@@ -2900,8 +2931,8 @@ namespace WpfMvvmStability.Views
 
                         foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
                         {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
+                            Element3D device3D = null;
+                            string str = System.IO.Path.GetFileName(file);
                             string str1 = str.Split('.')[0];
                             string TankName = str1.Replace("/", "");
                             if (Name == TankName)
@@ -2912,25 +2943,25 @@ namespace WpfMvvmStability.Views
                                 //{
                                 if (stats == "True")
                                 {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                    device3D = Display3d1(file, 255, 255, 0, 0);
                                 }
                                 else
                                 {
                                     if (PercentageFill == 0)
                                     {
-                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                        device3D = Display3d1(file, 200, 185, 185, 196);
                                     }
 
                                     else if (PercentageFill > 0 && PercentageFill <= 25)
                                     {
                                         foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\BallastTank25\\", "*.stl"))
                                         {
-                                            string strB25 = file1.Split('\\')[3];
+                                            string strB25 = System.IO.Path.GetFileName(file1);
                                             string str1B25 = strB25.Split('.')[0];
                                             string TankName1 = str1B25.Replace("/", "");
                                             if (Name == TankName1)
                                             {
-                                                device3D.Content = Display3d1(file1, 180, 0, 200, 0);
+                                                device3D = Display3d1(file1, 180, 0, 200, 0);
 
                                             }
                                         }
@@ -2939,12 +2970,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\BallastTank50\\", "*.stl"))
                                         {
-                                            string strB50 = file2.Split('\\')[3];
+                                            string strB50 = System.IO.Path.GetFileName(file2);
                                             string str1B50 = strB50.Split('.')[0];
                                             string TankName2 = str1B50.Replace("/", "");
                                             if (Name == TankName2)
                                             {
-                                                device3D.Content = Display3d1(file2, 180, 0, 200, 0);
+                                                device3D = Display3d1(file2, 180, 0, 200, 0);
 
                                             }
                                         }
@@ -2955,12 +2986,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\BallastTank75\\", "*.stl"))
                                         {
-                                            string strB75 = file3.Split('\\')[3];
+                                            string strB75 = System.IO.Path.GetFileName(file3);
                                             string str1B75 = strB75.Split('.')[0];
                                             string TankName3 = str1B75.Replace("/", "");
                                             if (Name == TankName3)
                                             {
-                                                device3D.Content = Display3d1(file3, 180, 0, 200, 0);
+                                                device3D = Display3d1(file3, 180, 0, 200, 0);
 
                                             }
                                         }
@@ -2968,21 +2999,21 @@ namespace WpfMvvmStability.Views
                                     }
                                     else
                                     {
-                                        device3D.Content = Display3d1(file, 180, 0, 200, 0);
+                                        device3D = Display3d1(file, 180, 0, 200, 0);
                                     }
                                 }
-                                device3D.SetName(TankName);
-                                viewPort3d1.Children.Add(device3D);
+                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
                                 // }
                             }
                         }
                     }
+
                     catch //(Exception ex)
                     {
                         //System.Windows.MessageBox.Show(ex.ToString());
                     }
                 }
-                for (int i = 0; i < 30; i++)//30
+                for (int i = 0; i < 13; i++)//30
                 {
                     try
                     {
@@ -2993,8 +3024,8 @@ namespace WpfMvvmStability.Views
                         string Name = splitName.Replace("/", "");
                         foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
                         {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
+                            Element3D device3D = null;
+                            string str = System.IO.Path.GetFileName(file);
                             string str1 = str.Split('.')[0];
                             string TankName = str1.Replace("/", "");
                             //string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
@@ -3006,25 +3037,25 @@ namespace WpfMvvmStability.Views
                                 // {
                                 if (stats == "True")
                                 {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                    device3D = Display3d1(file, 255, 255, 0, 0);
                                 }
                                 else
                                 {
                                     if (PercentageFill == 0)
                                     {
-                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                        device3D = Display3d1(file, 200, 185, 185, 196);
                                     }
 
                                     else if (PercentageFill > 0 && PercentageFill <= 25)
                                     {
                                         foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank25\\", "*.stl"))
                                         {
-                                            string strF25 = file1.Split('\\')[3];
+                                            string strF25 = System.IO.Path.GetFileName(file1);
                                             string str1F25 = strF25.Split('.')[0];
                                             string TankName1 = str1F25.Replace("/", "");
                                             if (Name == TankName1)
                                             {
-                                                device3D.Content = Display3d1(file1, 200, 185, 92, 0);
+                                                device3D = Display3d1(file1, 200, 185, 92, 0);
 
                                             }
                                         }
@@ -3034,12 +3065,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank50\\", "*.stl"))
                                         {
-                                            string strF50 = file2.Split('\\')[3];
+                                            string strF50 = System.IO.Path.GetFileName(file2);
                                             string str1F50 = strF50.Split('.')[0];
                                             string TankName2 = str1F50.Replace("/", "");
                                             if (Name == TankName2)
                                             {
-                                                device3D.Content = Display3d1(file2, 200, 185, 92, 0);
+                                                device3D = Display3d1(file2, 200, 185, 92, 0);
 
                                             }
                                         }
@@ -3049,12 +3080,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank75\\", "*.stl"))
                                         {
-                                            string strF75 = file3.Split('\\')[3];
+                                            string strF75 = System.IO.Path.GetFileName(file3);
                                             string str1F75 = strF75.Split('.')[0];
                                             string TankName3 = str1F75.Replace("/", "");
                                             if (Name == TankName3)
                                             {
-                                                device3D.Content = Display3d1(file3, 200, 185, 92, 0);
+                                                device3D = Display3d1(file3, 200, 185, 92, 0);
 
                                             }
                                         }
@@ -3062,12 +3093,10 @@ namespace WpfMvvmStability.Views
                                     }
                                     else
                                     {
-                                        device3D.Content = Display3d1(file, 200, 185, 92, 0);
+                                        device3D = Display3d1(file, 200, 185, 92, 0);
                                     }
                                 }
-                                device3D.SetName(TankName);
-
-                                viewPort3d1.Children.Add(device3D);
+                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
 
                             }
                         }
@@ -3077,7 +3106,179 @@ namespace WpfMvvmStability.Views
                         //System.Windows.MessageBox.Show(ex.ToString());
                     }
                 }
-                for (int i = 0; i < 8; i++)//8
+                for (int i = 0; i < 9; i++)
+                {
+                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+                    //bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
+                    string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
+                    string splitName = Nametxt.Split('.')[0];
+                    string Name = splitName.Replace("/", "");
+                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\CargoTank\\", "*.stl"))
+                    {
+                        Element3D device3D = null;
+                        string str = System.IO.Path.GetFileName(file);
+                        string str1 = str.Split('.')[0];
+                        string TankName = str1.Replace("/", "");
+                        string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+                        if (Name == TankName)
+                        {
+                            TankNameForPercentage = TankName;
+                            Getpercentage();
+                            //if (isvisible)
+                            //{
+                            if (stats == "True")
+                            {
+                                device3D = Display3d1(file, 255, 255, 0, 0);
+                            }
+                            else
+                            {
+                                if (PercentageFill == 0)
+                                {
+                                    device3D = Display3d1(file, 200, 185, 185, 196);
+                                }
+
+                                else if (PercentageFill > 0 && PercentageFill <= 25)
+                                {
+                                    foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\CargoTank25\\", "*.stl"))
+                                    {
+                                        string strF25 = System.IO.Path.GetFileName(file1);
+                                        string str1F25 = strF25.Split('.')[0];
+                                        string TankName1 = str1F25.Replace("/", "");
+                                        if (Name == TankName1)
+                                        {
+                                            device3D = Display3d1(file1, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else if (PercentageFill > 25 && PercentageFill <= 50)
+                                {
+                                    foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\CargoTank50\\", "*.stl"))
+                                    {
+                                        string strF50 = System.IO.Path.GetFileName(file2);
+                                        string str1F50 = strF50.Split('.')[0];
+                                        string TankName2 = str1F50.Replace("/", "");
+                                        if (Name == TankName2)
+                                        {
+                                            device3D = Display3d1(file2, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else if (PercentageFill > 50 && PercentageFill <= 75)
+                                {
+                                    foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\CargoTank75\\", "*.stl"))
+                                    {
+                                        string strF75 = System.IO.Path.GetFileName(file3);
+                                        string str1F75 = strF75.Split('.')[0];
+                                        string TankName3 = str1F75.Replace("/", "");
+                                        if (Name == TankName3)
+                                        {
+                                            device3D = Display3d1(file3, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else
+                                {
+                                    device3D = Display3d1(file, 200, 185, 92, 0);
+                                }
+                            }
+                            if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
+                            //}
+                        }
+                    }
+                }
+                for (int i = 0; i < 3; i++)
+                {
+                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+                    //bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
+                    string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
+                    string splitName = Nametxt.Split('.')[0];
+                    string Name = splitName.Replace("/", "");
+                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\DieselOilTank\\", "*.stl"))
+                    {
+                        Element3D device3D = null;
+                        string str = System.IO.Path.GetFileName(file);
+                        string str1 = str.Split('.')[0];
+                        string TankName = str1.Replace("/", "");
+                        string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
+                        if (Name == TankName)
+                        {
+                            TankNameForPercentage = TankName;
+                            Getpercentage();
+                            //if (isvisible)
+                            //{
+                            if (stats == "True")
+                            {
+                                device3D = Display3d1(file, 255, 255, 0, 0);
+                            }
+                            else
+                            {
+                                if (PercentageFill == 0)
+                                {
+                                    device3D = Display3d1(file, 200, 185, 185, 196);
+                                }
+
+                                else if (PercentageFill > 0 && PercentageFill <= 25)
+                                {
+                                    foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank25\\", "*.stl"))
+                                    {
+                                        string strF25 = System.IO.Path.GetFileName(file1);
+                                        string str1F25 = strF25.Split('.')[0];
+                                        string TankName1 = str1F25.Replace("/", "");
+                                        if (Name == TankName1)
+                                        {
+                                            device3D = Display3d1(file1, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else if (PercentageFill > 25 && PercentageFill <= 50)
+                                {
+                                    foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank50\\", "*.stl"))
+                                    {
+                                        string strF50 = System.IO.Path.GetFileName(file2);
+                                        string str1F50 = strF50.Split('.')[0];
+                                        string TankName2 = str1F50.Replace("/", "");
+                                        if (Name == TankName2)
+                                        {
+                                            device3D = Display3d1(file2, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else if (PercentageFill > 50 && PercentageFill <= 75)
+                                {
+                                    foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank75\\", "*.stl"))
+                                    {
+                                        string strF75 = System.IO.Path.GetFileName(file3);
+                                        string str1F75 = strF75.Split('.')[0];
+                                        string TankName3 = str1F75.Replace("/", "");
+                                        if (Name == TankName3)
+                                        {
+                                            device3D = Display3d1(file3, 200, 185, 92, 0);
+
+                                        }
+                                    }
+
+                                }
+                                else
+                                {
+                                    device3D = Display3d1(file, 200, 185, 92, 0);
+                                }
+                            }
+                            if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
+                            //}
+                        }
+                    }
+                }
+                for (int i = 0; i < 13; i++)//8
                 {
                     try
                     {
@@ -3089,8 +3290,8 @@ namespace WpfMvvmStability.Views
                         foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
                         {
 
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
+                            Element3D device3D = null;
+                            string str = System.IO.Path.GetFileName(file);
                             string str1 = str.Split('.')[0];
                             string TankName = str1.Replace("/", "");
                             if (Name == TankName)
@@ -3101,25 +3302,25 @@ namespace WpfMvvmStability.Views
                                 // {
                                 if (stats == "True")
                                 {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
+                                    device3D = Display3d1(file, 255, 255, 0, 0);
                                 }
                                 else
                                 {
                                     if (PercentageFill == 0)
                                     {
-                                        device3D.Content = Display3d1(file, 200, 185, 185, 196);
+                                        device3D = Display3d1(file, 200, 185, 185, 196);
                                     }
 
                                     else if (PercentageFill > 0 && PercentageFill <= 25)
                                     {
                                         foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\MiscTank25\\", "*.stl"))
                                         {
-                                            string strM25 = file1.Split('\\')[3];
+                                            string strM25 = System.IO.Path.GetFileName(file1);
                                             string str1M25 = strM25.Split('.')[0];
                                             string TankName1 = str1M25.Replace("/", "");
                                             if (Name == TankName1)
                                             {
-                                                device3D.Content = Display3d1(file1, 180, 255, 128, 192);
+                                                device3D = Display3d1(file1, 180, 255, 128, 192);
 
                                             }
                                         }
@@ -3130,12 +3331,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
                                         {
-                                            string strM50 = file2.Split('\\')[3];
+                                            string strM50 = System.IO.Path.GetFileName(file2);
                                             string str1M50 = strM50.Split('.')[0];
                                             string TankName2 = str1M50.Replace("/", "");
                                             if (Name == TankName2)
                                             {
-                                                device3D.Content = Display3d1(file2, 180, 255, 128, 192);
+                                                device3D = Display3d1(file2, 180, 255, 128, 192);
 
                                             }
                                         }
@@ -3145,12 +3346,12 @@ namespace WpfMvvmStability.Views
                                     {
                                         foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))//BY SACHIN
                                         {
-                                            string strM50 = file3.Split('\\')[3];
+                                            string strM50 = System.IO.Path.GetFileName(file3);
                                             string str1M50 = strM50.Split('.')[0];
                                             string TankName2 = str1M50.Replace("/", "");
                                             if (Name == TankName2)
                                             {
-                                                device3D.Content = Display3d1(file3, 180, 255, 128, 192);
+                                                device3D = Display3d1(file3, 180, 255, 128, 192);
 
                                             }
                                         }
@@ -3158,11 +3359,10 @@ namespace WpfMvvmStability.Views
                                     }
                                     else
                                     {
-                                        device3D.Content = Display3d1(file, 180, 255, 128, 192);
+                                        device3D = Display3d1(file, 180, 255, 128, 192);
                                     }
                                 }
-                                device3D.SetName(TankName);
-                                viewPort3d1.Children.Add(device3D);
+                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
                                 // }
                             }
                         }
@@ -3172,112 +3372,19 @@ namespace WpfMvvmStability.Views
                        // System.Windows.MessageBox.Show(ex.ToString());
                     }
                 }
-
-                for (int i = 0; i < 379; i++)//383
-                {
-                    try
-                    {
-                        
-                        string stats = Convert.ToString((dgCompartments.Items[i] as DataRowView)["IsDamaged"]);
-                        // bool isvisible = Convert.ToBoolean((dgCompartments.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgCompartments.Items[i] as DataRowView)["Tank_Name"]);
-                        string spliteName = Nametxt.Split('.')[0];
-                        string Name = spliteName.Replace("/", "");
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
-                        {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                            if (Name == TankName)
-                            {
-                                
-                                // if (isvisible)
-                                //{
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    device3D.Content = Display3d1(file, 120, 239, 228, 176);
-                                }
-                                device3D.SetName(TankName);
-
-                                viewPort3d1.Children.Add(device3D);
-                                // }
-                            }
-                        }
-                    }
-                    catch //(Exception ex)
-                    {
-                       // System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-
-                for (int i = 0; i < 68; i++)
-                {
-                    try
-                    {
-                        string stats = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["IsDamaged"]);
-                        //bool isvisible = Convert.ToBoolean((dgWaterTightRegion.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgWaterTightRegion.Items[i] as DataRowView)["Tank_Name"]);
-                        string spliteName = Nametxt.Split('.')[0];
-                        string Name = spliteName.Replace("/", "");
-
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
-                        {
-
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            if (Name == TankName)
-                            {
-                                //if (isvisible)
-                                // {
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    device3D.Content = Display3d1(file, 100, 255, 255, 255);
-                                }
-                                device3D.SetName(TankName);
-                                viewPort3d1.Children.Add(device3D);
-                                // }
-                            }
-                        }
-                    }
-                    catch //(Exception ex)
-                    {
-                       // System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-
-
-                ////foreach (string file in Directory.EnumerateFiles(folderPath, "*.stl"))
-                ////{
-                ////    string str = file.Split('\\')[1];
-                ////    string str1 = str.Split('.')[0];
-                ////    string TankName = str1.Replace("/", "");
-                ////    {
-                ////        ModelVisual3D device3D = new ModelVisual3D();
-                ////        device3D.Content = Display3d1(file, 70, 150, 150, 150);
-                ////        device3D.SetName(TankName);
-                ////        viewPort3d1.Children.Add(device3D);
-                ////    }
-                    //}
 
             }
             catch //(Exception ex)
             {
                // System.Windows.MessageBox.Show(ex.ToString());
-
             }
-
+            if (viewPort3d1.EffectsManager != null)
+            {
+                var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); viewPort3d1.ZoomExtents(animationTime: 300); };
+                zoomTimer.Start();
+            }
+            System.Diagnostics.Debug.WriteLine($"Refresh3dNew done - scene3D children: {scene3D?.Children.Count}");
         }
 
         //private Model3D Display3d(string model, byte A, byte R, byte G, byte B)
@@ -3305,30 +3412,60 @@ namespace WpfMvvmStability.Views
         //    }
         //    return device;
         //}
-        private Model3D Display3d1(string model, byte A, byte R, byte G, byte B)
+        //private Model3D Display3d1(string model, byte A, byte R, byte G, byte B)
+        //{
+        //    Model3D device1 = null;
+        //    Material material = MaterialHelper.CreateMaterial(new SolidColorBrush(System.Windows.Media.Color.FromArgb(A, R, G, B)));
+        //    try
+        //    {
+        //        //Adding a gesture here
+        //        //viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+        //        //Import 3D model file
+        //        ModelImporter import = new ModelImporter();
+        //        import.DefaultMaterial = material;
+
+        //        //Load the 3D model file
+        //        device1 = import.Load(model);
+
+
+        //    }
+        //    catch //(Exception e)
+        //    {
+        //        // Handle exception in case can not file 3D model
+        //       // System.Windows.MessageBox.Show(e.ToString());
+        //      //  MessageBox.Show("Exception Error : " + e.StackTrace);
+        //    }
+        //    return device1;
+        //}
+        private Element3D Display3d1(string modelPath, byte A, byte R, byte G, byte B)
         {
-            Model3D device1 = null;
-            Material material = MaterialHelper.CreateMaterial(new SolidColorBrush(System.Windows.Media.Color.FromArgb(A, R, G, B)));
             try
             {
-                //Adding a gesture here
-                //viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
-                //Import 3D model file
-                ModelImporter import = new ModelImporter();
-                import.DefaultMaterial = material;
-
-                //Load the 3D model file
-                device1 = import.Load(model);
-
-
+                var reader = new HelixToolkit.SharpDX.StLReader();
+                using (var stream = new System.IO.FileStream(modelPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                {
+                    reader.Read(stream, default(HelixToolkit.SharpDX.ModelInfo));
+                }
+                if (reader.Meshes != null && reader.Meshes.Count > 0)
+                {
+                    var material = new PhongMaterial
+                    {
+                        DiffuseColor = new HelixToolkit.Maths.Color4(R / 255f, G / 255f, B / 255f, A / 255f)
+                    };
+                    var model = new MeshGeometryModel3D
+                    {
+                        Geometry = reader.Meshes[0].ToMeshGeometry3D(),
+                        Material = material
+                    };
+                    System.Diagnostics.Debug.WriteLine($"3D Model loaded OK: {modelPath}");
+                    return model;
+                }
             }
-            catch //(Exception e)
+            catch (Exception e)
             {
-                // Handle exception in case can not file 3D model
-               // System.Windows.MessageBox.Show(e.ToString());
-              //  MessageBox.Show("Exception Error : " + e.StackTrace);
+                System.Diagnostics.Debug.WriteLine($"3D Model FAILED: {modelPath} - {e.Message}");
             }
-            return device1;
+            return null;
         }
         private string TankName;
 
@@ -3557,10 +3694,7 @@ namespace WpfMvvmStability.Views
 
         private void btn3DZoomExtents_Click(object sender, RoutedEventArgs e)
         {
-            viewPort3d1.IsZoomEnabled = true;
-           // viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(79, -20, -30), new Size3D(0, 0, 49)));
-            viewPort3d1.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50, -20, -30), new Size3D(0, 0, 49)));
-
+            viewPort3d1.ZoomExtents();
         }
         //public DataGridCell GetCell(int row, int column)
         //{

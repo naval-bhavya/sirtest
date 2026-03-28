@@ -11,7 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using HelixToolkit.Wpf;
+using HelixToolkit.Wpf.SharpDX;
 using System.Windows.Media.Media3D;
 using System.IO;
 using System.Threading;
@@ -40,6 +40,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Globalization;
 using System.Windows.Controls.Primitives;
 using System.Data.SqlClient;
+using HelixToolkit.SharpDX;
 #endregion 
 
 namespace WpfMvvmStability.Views
@@ -51,6 +52,7 @@ namespace WpfMvvmStability.Views
     {
         double x1 = 0, y1 = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0, x4 = 0, y4 = 0, x5 = 0, x6 = 0, y5 = 0, y6 = 0, x7 = 0, x8 = 0, y7 = 0, y8 = 0, x9=0, y9=0, x10=0, y10=0;
         private string folderPath = "3D\\";
+        private readonly Dictionary<string, HelixToolkit.SharpDX.MeshGeometry3D> _geometryCache = new Dictionary<string, HelixToolkit.SharpDX.MeshGeometry3D>();
         private int runningWorkers;
         int index3D;
         private HelixToolkit.Wpf.Plane3D ContourPlane;
@@ -101,8 +103,8 @@ namespace WpfMvvmStability.Views
                     Models.BO.clsGlobVar.DamageCase = "";
                     DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                     string Err = "";
-                    string cmd = "Update [tblSimulationMode_Tank_Status] set [IsDamaged]=0 where [User]='dbo' and [Tank_ID] between 1 and 515 ";
-                    cmd += "Update  [tblSimulationMode_Loading_Condition] set [IsDamaged]=0 ,[Status]=0 where [User]='dbo' and [Tank_ID] between 1 and 515 ";
+                    string cmd = "Update [tblSimulationMode_Tank_Status] set [IsDamaged]=0 where [User]='dbo' and [Tank_ID] between 1 and 97 ";
+                    cmd += "Update  [tblSimulationMode_Loading_Condition] set [IsDamaged]=0 ,[Status]=0 where [User]='dbo' and [Tank_ID] between 1 and 97 ";
                   
                     command.CommandText = cmd;
                     command.CommandType = CommandType.Text;
@@ -313,7 +315,7 @@ namespace WpfMvvmStability.Views
                 DV.RowFilter = "Group NOT LIKE 'Lightship'";
                 dtmaxVolume = DV.ToTable();
 
-                for (int i = 0; i < dtmaxVolume.Rows.Count - 1; i++)
+                for (int i = 0; i < dtmaxVolume.Rows.Count - 2; i++)
                 {
                     maxVolume.Add(Convert.ToInt32(dtmaxVolume.Rows[i]["Tank_ID"]), Convert.ToDecimal(dtmaxVolume.Rows[i]["Max_Volume"]));
 
@@ -358,9 +360,7 @@ namespace WpfMvvmStability.Views
 
         private void btn3DZoomExtents_Click(object sender, RoutedEventArgs e)
         {
-            viewPort3d.IsZoomEnabled = true;
-            viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50, -20, -30), new Size3D(0, 0, 49)));
-
+            viewPort3d.ZoomExtents();
         }
 
         public void Model(DxfModel model, Canvas canvas2D)
@@ -877,12 +877,12 @@ namespace WpfMvvmStability.Views
                     //    {
                     //        try
                     //        {
-                    //            Visual3D model = viewPort3d.Children[j + 2] as Visual3D;
+                    //            Visual3D model = scene3D.Children[j + 2] as Visual3D;
                     //            string modelname = model.GetName();
                     //            if (modelname == str1)
                     //            {
-                    //                //viewPort3d.Children.RemoveAt(j + 2);
-                    //                viewPort3d.Children.Remove(model);
+                    //                //scene3D.Children.RemoveAt(j + 2);
+                    //                scene3D.Children.Remove(model);
 
                     //            }
                     //        }
@@ -1618,7 +1618,7 @@ namespace WpfMvvmStability.Views
             AddHatchProfile();
             AddHatchDeckPlanA();
             AddHatchDeckPlanB();
-            AddHatchDeckPlanC();
+            //AddHatchDeckPlanC();
         }
 
 
@@ -1862,18 +1862,43 @@ namespace WpfMvvmStability.Views
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
-            viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(50000, -20000, -30000), new Size3D(40000, 40000, 40000)));
-            //viewPort3d.ZoomExtents(new Rect3D(new System.Windows.Media.Media3D.Point3D(79, -20, -30), new Size3D(0, 0, 49)));
-
             dispatcherTimer.Stop();
+            if (viewPort3d.ActualWidth > 0 && viewPort3d.ActualHeight > 0)
+            {
+                viewPort3d.ZoomExtents();
+                System.Diagnostics.Debug.WriteLine($"ZoomExtents called - viewport size: {viewPort3d.ActualWidth} x {viewPort3d.ActualHeight}");
+            }
         }
+
+        private bool _zoomOnFirstShow = false;
 
         private void viewPort3d_Loaded(object sender, RoutedEventArgs e)
         {
+            viewPort3d.EffectsManager = new DefaultEffectsManager();
+            System.Diagnostics.Debug.WriteLine($"Viewport size: {viewPort3d.ActualWidth} x {viewPort3d.ActualHeight}");
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 2);
             dispatcherTimer.Start();
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 0);
+
+            // If viewport has no size yet (3D tab not selected), wait for first real size to ZoomExtents
+            if (viewPort3d.ActualWidth == 0)
+            {
+                _zoomOnFirstShow = true;
+                viewPort3d.SizeChanged += ViewPort3d_SizeChanged;
+            }
+        }
+
+        private void ViewPort3d_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.NewSize.Width > 0 && e.NewSize.Height > 0 && _zoomOnFirstShow)
+            {
+                _zoomOnFirstShow = false;
+                viewPort3d.SizeChanged -= ViewPort3d_SizeChanged;
+                var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+                t.Tick += (s, ev) => { t.Stop(); viewPort3d.ZoomExtents(animationTime: 300); };
+                t.Start();
+            }
         }
 
         private void dgVariableItems_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
@@ -2572,113 +2597,113 @@ namespace WpfMvvmStability.Views
                 canvas2DProfile.Children.RemoveRange(1, canvas2DProfile.Children.Count - 1);
 
                 object num ;
-               System.Windows.Media.Color flag = (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[0]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(180, 141, 180, 227) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
+                System.Windows.Media.Color flag = (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[0]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(180, 141, 180, 227) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203));
                 //int flag = (((num = Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[0]["IsDamaged"]).ToString() == Boolean.TrueString) ? 1 : 0);
 
-                DrawHatchProfile(canvas2DProfile, 1, clsGlobVar.Tank1_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank1x, clsGlobVar.ProfileCoordinate.Tank1y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[0]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
-                DrawHatchProfile(canvas2DProfile, 2, clsGlobVar.Tank2_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank2x, clsGlobVar.ProfileCoordinate.Tank2y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[1]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
-                DrawHatchProfile(canvas2DProfile, 4, clsGlobVar.Tank4_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank4x, clsGlobVar.ProfileCoordinate.Tank4y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[3]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)));
-                DrawHatchProfile(canvas2DProfile, 6, clsGlobVar.Tank6_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank6x, clsGlobVar.ProfileCoordinate.Tank6y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[5]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) ) ;
-                DrawHatchProfile(canvas2DProfile, 9, clsGlobVar.Tank9_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank9x, clsGlobVar.ProfileCoordinate.Tank9y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[8]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
-                DrawHatchProfile(canvas2DProfile, 10, clsGlobVar.Tank10_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank10x, clsGlobVar.ProfileCoordinate.Tank10y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[9]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)));
-                DrawHatchProfile(canvas2DProfile, 12, clsGlobVar.Tank12_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank12x, clsGlobVar.ProfileCoordinate.Tank12y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[11]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
-                DrawHatchProfile(canvas2DProfile, 13, clsGlobVar.Tank13_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank13x, clsGlobVar.ProfileCoordinate.Tank13y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[12]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
-                DrawHatchProfile(canvas2DProfile, 17, clsGlobVar.Tank17_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank17x, clsGlobVar.ProfileCoordinate.Tank17y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[16]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 18, clsGlobVar.Tank18_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank18x, clsGlobVar.ProfileCoordinate.Tank18y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[17]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 20, clsGlobVar.Tank20_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank20x, clsGlobVar.ProfileCoordinate.Tank20y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[19]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 21, clsGlobVar.Tank21_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank21x, clsGlobVar.ProfileCoordinate.Tank21y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[20]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 22, clsGlobVar.Tank22_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank22x, clsGlobVar.ProfileCoordinate.Tank22y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[21]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 26, clsGlobVar.Tank26_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank26x, clsGlobVar.ProfileCoordinate.Tank26y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[25]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 28, clsGlobVar.Tank28_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank28x, clsGlobVar.ProfileCoordinate.Tank28y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[27]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 33, clsGlobVar.Tank33_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank33x, clsGlobVar.ProfileCoordinate.Tank33y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[32]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 34, clsGlobVar.Tank34_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank34x, clsGlobVar.ProfileCoordinate.Tank34y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[33]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 39, clsGlobVar.Tank39_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank39x, clsGlobVar.ProfileCoordinate.Tank39y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[38]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 40, clsGlobVar.Tank40_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank40x, clsGlobVar.ProfileCoordinate.Tank40y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[39]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 42, clsGlobVar.Tank42_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank42x, clsGlobVar.ProfileCoordinate.Tank42y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[41]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 44, clsGlobVar.Tank44_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank44x, clsGlobVar.ProfileCoordinate.Tank44y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[43]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
-                DrawHatchProfile(canvas2DProfile, 46, clsGlobVar.Tank46_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank46x, clsGlobVar.ProfileCoordinate.Tank46y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[45]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 203, 150, 69)));
-                DrawHatchProfile(canvas2DProfile, 49, clsGlobVar.Tank49_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank49x, clsGlobVar.ProfileCoordinate.Tank49y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[48]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
-                DrawHatchProfile(canvas2DProfile, 50, clsGlobVar.Tank50_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank50x, clsGlobVar.ProfileCoordinate.Tank50y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[49]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
-                DrawHatchProfile(canvas2DProfile, 53, clsGlobVar.Tank53_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank53x, clsGlobVar.ProfileCoordinate.Tank53y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[52]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
-                DrawHatchProfile(canvas2DProfile, 54, clsGlobVar.Tank54_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank54x, clsGlobVar.ProfileCoordinate.Tank54y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[53]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
-                DrawHatchProfile(canvas2DProfile, 55, clsGlobVar.Tank55_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank55x, clsGlobVar.ProfileCoordinate.Tank55y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[54]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
-                DrawHatchProfile(canvas2DProfile, 56, clsGlobVar.Tank56_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank56x, clsGlobVar.ProfileCoordinate.Tank56y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 57, clsGlobVar.Tank57_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank57x, clsGlobVar.ProfileCoordinate.Tank57y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 65, clsGlobVar.Tank65_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank65x, clsGlobVar.ProfileCoordinate.Tank65y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 66, clsGlobVar.Tank66_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank66x, clsGlobVar.ProfileCoordinate.Tank66y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[65]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(255, 218, 97, 78)));
-                DrawHatchProfile(canvas2DProfile, 67, clsGlobVar.Tank67_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank67x, clsGlobVar.ProfileCoordinate.Tank67y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                DrawHatchProfile(canvas2DProfile, 10, 100, clsGlobVar.ProfileCoordinate.Tank1x, clsGlobVar.ProfileCoordinate.Tank1y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[10]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
+                //DrawHatchProfile(canvas2DProfile, 2, clsGlobVar.Tank2_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank2x, clsGlobVar.ProfileCoordinate.Tank2y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[1]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
+                //DrawHatchProfile(canvas2DProfile, 3, clsGlobVar.Tank4_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank4x, clsGlobVar.ProfileCoordinate.Tank4y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[3]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)));
+                //DrawHatchProfile(canvas2DProfile, 4, clsGlobVar.Tank6_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank6x, clsGlobVar.ProfileCoordinate.Tank6y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[5]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) ) ;
+                //DrawHatchProfile(canvas2DProfile, 5, clsGlobVar.Tank9_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank9x, clsGlobVar.ProfileCoordinate.Tank9y,  (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[8]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)) );
+                //DrawHatchProfile(canvas2DProfile, 6, clsGlobVar.Tank10_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank10x, clsGlobVar.ProfileCoordinate.Tank10y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[9]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154)));
+                //DrawHatchProfile(canvas2DProfile, 7, clsGlobVar.Tank12_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank12x, clsGlobVar.ProfileCoordinate.Tank12y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[11]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
+                //DrawHatchProfile(canvas2DProfile, 8, clsGlobVar.Tank13_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank13x, clsGlobVar.ProfileCoordinate.Tank13y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[12]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
+                //DrawHatchProfile(canvas2DProfile, 9, clsGlobVar.Tank17_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank17x, clsGlobVar.ProfileCoordinate.Tank17y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[16]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 10, clsGlobVar.Tank18_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank18x, clsGlobVar.ProfileCoordinate.Tank18y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[17]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 11, clsGlobVar.Tank20_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank20x, clsGlobVar.ProfileCoordinate.Tank20y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[19]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 12, clsGlobVar.Tank21_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank21x, clsGlobVar.ProfileCoordinate.Tank21y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[20]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 12, clsGlobVar.Tank22_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank22x, clsGlobVar.ProfileCoordinate.Tank22y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[21]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 13, clsGlobVar.Tank26_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank26x, clsGlobVar.ProfileCoordinate.Tank26y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[25]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 14, clsGlobVar.Tank28_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank28x, clsGlobVar.ProfileCoordinate.Tank28y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[27]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 15, clsGlobVar.Tank33_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank33x, clsGlobVar.ProfileCoordinate.Tank33y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[32]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 16, clsGlobVar.Tank34_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank34x, clsGlobVar.ProfileCoordinate.Tank34y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[33]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 17, clsGlobVar.Tank39_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank39x, clsGlobVar.ProfileCoordinate.Tank39y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[38]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 18, clsGlobVar.Tank40_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank40x, clsGlobVar.ProfileCoordinate.Tank40y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[39]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 19, clsGlobVar.Tank42_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank42x, clsGlobVar.ProfileCoordinate.Tank42y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[41]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 20, clsGlobVar.Tank44_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank44x, clsGlobVar.ProfileCoordinate.Tank44y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[43]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 151, 72, 7)));
+                //DrawHatchProfile(canvas2DProfile, 21, clsGlobVar.Tank46_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank46x, clsGlobVar.ProfileCoordinate.Tank46y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[45]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 203, 150, 69)));
+                //DrawHatchProfile(canvas2DProfile, 22, clsGlobVar.Tank49_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank49x, clsGlobVar.ProfileCoordinate.Tank49y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[48]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
+                //DrawHatchProfile(canvas2DProfile, 23, clsGlobVar.Tank50_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank50x, clsGlobVar.ProfileCoordinate.Tank50y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[49]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
+                //DrawHatchProfile(canvas2DProfile, 24, clsGlobVar.Tank53_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank53x, clsGlobVar.ProfileCoordinate.Tank53y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[52]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
+                //DrawHatchProfile(canvas2DProfile, 25, clsGlobVar.Tank54_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank54x, clsGlobVar.ProfileCoordinate.Tank54y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[53]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 255, 192, 203)));
+                //DrawHatchProfile(canvas2DProfile, 26, clsGlobVar.Tank55_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank55x, clsGlobVar.ProfileCoordinate.Tank55y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[54]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255,218,97,78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
+                //DrawHatchProfile(canvas2DProfile, 27, clsGlobVar.Tank56_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank56x, clsGlobVar.ProfileCoordinate.Tank56y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 28, clsGlobVar.Tank57_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank57x, clsGlobVar.ProfileCoordinate.Tank57y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 29, clsGlobVar.Tank65_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank65x, clsGlobVar.ProfileCoordinate.Tank65y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+                //DrawHatchProfile(canvas2DProfile, 30, clsGlobVar.Tank66_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank66x, clsGlobVar.ProfileCoordinate.Tank66y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[65]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(255, 218, 97, 78)));
+                //DrawHatchProfile(canvas2DProfile, 31, clsGlobVar.Tank67_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank67x, clsGlobVar.ProfileCoordinate.Tank67y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
                // DrawHatchProfile(canvas2DProfile, 68, clsGlobVar.Tank68_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank68x, clsGlobVar.ProfileCoordinate.Tank68y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 69, clsGlobVar.Tank69_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank69x, clsGlobVar.ProfileCoordinate.Tank69y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 70, clsGlobVar.Tank70_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank70x, clsGlobVar.ProfileCoordinate.Tank70y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 76, clsGlobVar.Tank76_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank76x, clsGlobVar.ProfileCoordinate.Tank76y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 79, clsGlobVar.Tank79_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank79x, clsGlobVar.ProfileCoordinate.Tank79y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 80, clsGlobVar.Tank80_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank80x, clsGlobVar.ProfileCoordinate.Tank80y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 82, clsGlobVar.Tank82_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank82x, clsGlobVar.ProfileCoordinate.Tank82y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 84, clsGlobVar.Tank84_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank84x, clsGlobVar.ProfileCoordinate.Tank84y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 90, clsGlobVar.Tank90_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank90x, clsGlobVar.ProfileCoordinate.Tank90y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 92, clsGlobVar.Tank92_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank92x, clsGlobVar.ProfileCoordinate.Tank92y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 96, clsGlobVar.Tank96_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank96x, clsGlobVar.ProfileCoordinate.Tank96y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 101, clsGlobVar.Tank101_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank101x, clsGlobVar.ProfileCoordinate.Tank101y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               //DrawHatchProfile(canvas2DProfile, 147, clsGlobVar.Tank147_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank147x, clsGlobVar.ProfileCoordinate.Tank147y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 150, clsGlobVar.Tank150_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank150x, clsGlobVar.ProfileCoordinate.Tank150y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               //DrawHatchProfile(canvas2DProfile, 151, clsGlobVar.Tank151_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank151x, clsGlobVar.ProfileCoordinate.Tank151y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               //DrawHatchProfile(canvas2DProfile, 177, clsGlobVar.Tank177_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank177x, clsGlobVar.ProfileCoordinate.Tank177y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 184, clsGlobVar.Tank184_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank184x, clsGlobVar.ProfileCoordinate.Tank184y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 185, clsGlobVar.Tank185_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank185x, clsGlobVar.ProfileCoordinate.Tank185y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 187, clsGlobVar.Tank187_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank187x, clsGlobVar.ProfileCoordinate.Tank187y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 192, clsGlobVar.Tank192_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank192x, clsGlobVar.ProfileCoordinate.Tank192y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 195, clsGlobVar.Tank195_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank195x, clsGlobVar.ProfileCoordinate.Tank195y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 227, clsGlobVar.Tank227_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank227x, clsGlobVar.ProfileCoordinate.Tank227y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 234, clsGlobVar.Tank234_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank234x, clsGlobVar.ProfileCoordinate.Tank234y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 236, clsGlobVar.Tank236_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank236x, clsGlobVar.ProfileCoordinate.Tank236y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 244, clsGlobVar.Tank244_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank244x, clsGlobVar.ProfileCoordinate.Tank244y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 250, clsGlobVar.Tank250_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank250x, clsGlobVar.ProfileCoordinate.Tank250y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 253, clsGlobVar.Tank253_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank253x, clsGlobVar.ProfileCoordinate.Tank253y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 254, clsGlobVar.Tank254_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank254x, clsGlobVar.ProfileCoordinate.Tank254y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 260, clsGlobVar.Tank260_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank260x, clsGlobVar.ProfileCoordinate.Tank260y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 261, clsGlobVar.Tank261_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank261x, clsGlobVar.ProfileCoordinate.Tank261y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 263, clsGlobVar.Tank263_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank263x, clsGlobVar.ProfileCoordinate.Tank263y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 264, clsGlobVar.Tank264_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank264x, clsGlobVar.ProfileCoordinate.Tank264y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 267, clsGlobVar.Tank267_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank267x, clsGlobVar.ProfileCoordinate.Tank267y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 273, clsGlobVar.Tank273_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank273x, clsGlobVar.ProfileCoordinate.Tank273y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 275, clsGlobVar.Tank275_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank275x, clsGlobVar.ProfileCoordinate.Tank275y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 276, clsGlobVar.Tank276_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank276x, clsGlobVar.ProfileCoordinate.Tank276y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 280, clsGlobVar.Tank280_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank280x, clsGlobVar.ProfileCoordinate.Tank280y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 281, clsGlobVar.Tank281_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank281x, clsGlobVar.ProfileCoordinate.Tank281y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 284, clsGlobVar.Tank284_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank284x, clsGlobVar.ProfileCoordinate.Tank284y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 285, clsGlobVar.Tank285_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank285x, clsGlobVar.ProfileCoordinate.Tank285y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 292, clsGlobVar.Tank292_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank292x, clsGlobVar.ProfileCoordinate.Tank292y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 293, clsGlobVar.Tank293_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank293x, clsGlobVar.ProfileCoordinate.Tank293y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 297, clsGlobVar.Tank297_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank297x, clsGlobVar.ProfileCoordinate.Tank297y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 298, clsGlobVar.Tank298_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank298x, clsGlobVar.ProfileCoordinate.Tank298y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 299, clsGlobVar.Tank299_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank299x, clsGlobVar.ProfileCoordinate.Tank299y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 301, clsGlobVar.Tank301_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank301x, clsGlobVar.ProfileCoordinate.Tank301y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 303, clsGlobVar.Tank303_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank303x, clsGlobVar.ProfileCoordinate.Tank303y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               //DrawHatchProfile(canvas2DProfile, 304, clsGlobVar.Tank304_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank304x, clsGlobVar.ProfileCoordinate.Tank304y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 311, clsGlobVar.Tank311_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank311x, clsGlobVar.ProfileCoordinate.Tank311y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 312, clsGlobVar.Tank312_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank312x, clsGlobVar.ProfileCoordinate.Tank312y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 325, clsGlobVar.Tank325_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank325x, clsGlobVar.ProfileCoordinate.Tank325y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 326, clsGlobVar.Tank326_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank326x, clsGlobVar.ProfileCoordinate.Tank326y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 336, clsGlobVar.Tank336_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank336x, clsGlobVar.ProfileCoordinate.Tank336y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 356, clsGlobVar.Tank356_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank356x, clsGlobVar.ProfileCoordinate.Tank356y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 360, clsGlobVar.Tank360_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank360x, clsGlobVar.ProfileCoordinate.Tank360y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 380, clsGlobVar.Tank380_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank380x, clsGlobVar.ProfileCoordinate.Tank380y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 392, clsGlobVar.Tank392_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank392x, clsGlobVar.ProfileCoordinate.Tank392y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 411, clsGlobVar.Tank411_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank411x, clsGlobVar.ProfileCoordinate.Tank411y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               //DrawHatchProfile(canvas2DProfile, 424, clsGlobVar.Tank424_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank424x, clsGlobVar.ProfileCoordinate.Tank424y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 427, clsGlobVar.Tank427_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank427x, clsGlobVar.ProfileCoordinate.Tank427y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                //DrawHatchProfile(canvas2DProfile, 428, clsGlobVar.Tank428_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank428x, clsGlobVar.ProfileCoordinate.Tank428y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 430, clsGlobVar.Tank430_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank430x, clsGlobVar.ProfileCoordinate.Tank430y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               // DrawHatchProfile(canvas2DProfile, 432, clsGlobVar.Tank432_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank432x, clsGlobVar.ProfileCoordinate.Tank432y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 69, clsGlobVar.Tank69_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank69x, clsGlobVar.ProfileCoordinate.Tank69y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 70, clsGlobVar.Tank70_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank70x, clsGlobVar.ProfileCoordinate.Tank70y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 76, clsGlobVar.Tank76_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank76x, clsGlobVar.ProfileCoordinate.Tank76y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 79, clsGlobVar.Tank79_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank79x, clsGlobVar.ProfileCoordinate.Tank79y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 80, clsGlobVar.Tank80_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank80x, clsGlobVar.ProfileCoordinate.Tank80y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 82, clsGlobVar.Tank82_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank82x, clsGlobVar.ProfileCoordinate.Tank82y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 84, clsGlobVar.Tank84_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank84x, clsGlobVar.ProfileCoordinate.Tank84y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 90, clsGlobVar.Tank90_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank90x, clsGlobVar.ProfileCoordinate.Tank90y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 92, clsGlobVar.Tank92_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank92x, clsGlobVar.ProfileCoordinate.Tank92y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 96, clsGlobVar.Tank96_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank96x, clsGlobVar.ProfileCoordinate.Tank96y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 101, clsGlobVar.Tank101_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank101x, clsGlobVar.ProfileCoordinate.Tank101y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               ////DrawHatchProfile(canvas2DProfile, 147, clsGlobVar.Tank147_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank147x, clsGlobVar.ProfileCoordinate.Tank147y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 150, clsGlobVar.Tank150_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank150x, clsGlobVar.ProfileCoordinate.Tank150y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               ////DrawHatchProfile(canvas2DProfile, 151, clsGlobVar.Tank151_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank151x, clsGlobVar.ProfileCoordinate.Tank151y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               ////DrawHatchProfile(canvas2DProfile, 177, clsGlobVar.Tank177_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank177x, clsGlobVar.ProfileCoordinate.Tank177y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 184, clsGlobVar.Tank184_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank184x, clsGlobVar.ProfileCoordinate.Tank184y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 185, clsGlobVar.Tank185_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank185x, clsGlobVar.ProfileCoordinate.Tank185y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 187, clsGlobVar.Tank187_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank187x, clsGlobVar.ProfileCoordinate.Tank187y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 192, clsGlobVar.Tank192_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank192x, clsGlobVar.ProfileCoordinate.Tank192y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 195, clsGlobVar.Tank195_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank195x, clsGlobVar.ProfileCoordinate.Tank195y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 227, clsGlobVar.Tank227_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank227x, clsGlobVar.ProfileCoordinate.Tank227y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 234, clsGlobVar.Tank234_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank234x, clsGlobVar.ProfileCoordinate.Tank234y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 236, clsGlobVar.Tank236_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank236x, clsGlobVar.ProfileCoordinate.Tank236y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 244, clsGlobVar.Tank244_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank244x, clsGlobVar.ProfileCoordinate.Tank244y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 250, clsGlobVar.Tank250_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank250x, clsGlobVar.ProfileCoordinate.Tank250y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 253, clsGlobVar.Tank253_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank253x, clsGlobVar.ProfileCoordinate.Tank253y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 254, clsGlobVar.Tank254_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank254x, clsGlobVar.ProfileCoordinate.Tank254y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 260, clsGlobVar.Tank260_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank260x, clsGlobVar.ProfileCoordinate.Tank260y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 261, clsGlobVar.Tank261_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank261x, clsGlobVar.ProfileCoordinate.Tank261y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 263, clsGlobVar.Tank263_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank263x, clsGlobVar.ProfileCoordinate.Tank263y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 264, clsGlobVar.Tank264_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank264x, clsGlobVar.ProfileCoordinate.Tank264y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 267, clsGlobVar.Tank267_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank267x, clsGlobVar.ProfileCoordinate.Tank267y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 273, clsGlobVar.Tank273_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank273x, clsGlobVar.ProfileCoordinate.Tank273y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 275, clsGlobVar.Tank275_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank275x, clsGlobVar.ProfileCoordinate.Tank275y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 276, clsGlobVar.Tank276_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank276x, clsGlobVar.ProfileCoordinate.Tank276y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 280, clsGlobVar.Tank280_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank280x, clsGlobVar.ProfileCoordinate.Tank280y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 281, clsGlobVar.Tank281_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank281x, clsGlobVar.ProfileCoordinate.Tank281y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 284, clsGlobVar.Tank284_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank284x, clsGlobVar.ProfileCoordinate.Tank284y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 285, clsGlobVar.Tank285_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank285x, clsGlobVar.ProfileCoordinate.Tank285y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 292, clsGlobVar.Tank292_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank292x, clsGlobVar.ProfileCoordinate.Tank292y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 293, clsGlobVar.Tank293_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank293x, clsGlobVar.ProfileCoordinate.Tank293y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 297, clsGlobVar.Tank297_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank297x, clsGlobVar.ProfileCoordinate.Tank297y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 298, clsGlobVar.Tank298_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank298x, clsGlobVar.ProfileCoordinate.Tank298y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 299, clsGlobVar.Tank299_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank299x, clsGlobVar.ProfileCoordinate.Tank299y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 301, clsGlobVar.Tank301_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank301x, clsGlobVar.ProfileCoordinate.Tank301y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 303, clsGlobVar.Tank303_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank303x, clsGlobVar.ProfileCoordinate.Tank303y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               ////DrawHatchProfile(canvas2DProfile, 304, clsGlobVar.Tank304_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank304x, clsGlobVar.ProfileCoordinate.Tank304y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 311, clsGlobVar.Tank311_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank311x, clsGlobVar.ProfileCoordinate.Tank311y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 312, clsGlobVar.Tank312_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank312x, clsGlobVar.ProfileCoordinate.Tank312y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 325, clsGlobVar.Tank325_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank325x, clsGlobVar.ProfileCoordinate.Tank325y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 326, clsGlobVar.Tank326_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank326x, clsGlobVar.ProfileCoordinate.Tank326y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 336, clsGlobVar.Tank336_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank336x, clsGlobVar.ProfileCoordinate.Tank336y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 356, clsGlobVar.Tank356_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank356x, clsGlobVar.ProfileCoordinate.Tank356y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 360, clsGlobVar.Tank360_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank360x, clsGlobVar.ProfileCoordinate.Tank360y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 380, clsGlobVar.Tank380_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank380x, clsGlobVar.ProfileCoordinate.Tank380y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 392, clsGlobVar.Tank392_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank392x, clsGlobVar.ProfileCoordinate.Tank392y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 411, clsGlobVar.Tank411_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank411x, clsGlobVar.ProfileCoordinate.Tank411y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               ////DrawHatchProfile(canvas2DProfile, 424, clsGlobVar.Tank424_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank424x, clsGlobVar.ProfileCoordinate.Tank424y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 427, clsGlobVar.Tank427_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank427x, clsGlobVar.ProfileCoordinate.Tank427y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // //DrawHatchProfile(canvas2DProfile, 428, clsGlobVar.Tank428_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank428x, clsGlobVar.ProfileCoordinate.Tank428y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 430, clsGlobVar.Tank430_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank430x, clsGlobVar.ProfileCoordinate.Tank430y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               //// DrawHatchProfile(canvas2DProfile, 432, clsGlobVar.Tank432_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank432x, clsGlobVar.ProfileCoordinate.Tank432y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
 
-                DrawHatchProfile(canvas2DProfile, 433, clsGlobVar.Tank433_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank433x, clsGlobVar.ProfileCoordinate.Tank433y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 434, clsGlobVar.Tank434_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank434x, clsGlobVar.ProfileCoordinate.Tank434y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[102]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(255, 218, 97, 78)));
-                DrawHatchProfile(canvas2DProfile, 494, clsGlobVar.Tank494_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank494x, clsGlobVar.ProfileCoordinate.Tank494y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 497, clsGlobVar.Tank497_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank497x, clsGlobVar.ProfileCoordinate.Tank497y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
-                DrawHatchProfile(canvas2DProfile, 498, clsGlobVar.Tank498_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank498x, clsGlobVar.ProfileCoordinate.Tank498y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
-                //below line is for no id box 503//
-                DrawHatchProfile(canvas2DProfile, 503, clsGlobVar.Tank503_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank503x, clsGlobVar.ProfileCoordinate.Tank503y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[103]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 141, 180, 227) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
-                DrawHatchProfile(canvas2DProfile, 504, clsGlobVar.Tank504_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank504x, clsGlobVar.ProfileCoordinate.Tank504y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 433, clsGlobVar.Tank433_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank433x, clsGlobVar.ProfileCoordinate.Tank433y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 434, clsGlobVar.Tank434_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank434x, clsGlobVar.ProfileCoordinate.Tank434y,(((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[102]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(255, 218, 97, 78)));
+               // DrawHatchProfile(canvas2DProfile, 494, clsGlobVar.Tank494_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank494x, clsGlobVar.ProfileCoordinate.Tank494y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 497, clsGlobVar.Tank497_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank497x, clsGlobVar.ProfileCoordinate.Tank497y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
+               // DrawHatchProfile(canvas2DProfile, 498, clsGlobVar.Tank498_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank498x, clsGlobVar.ProfileCoordinate.Tank498y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
+               // //below line is for no id box 503//
+               // DrawHatchProfile(canvas2DProfile, 503, clsGlobVar.Tank503_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank503x, clsGlobVar.ProfileCoordinate.Tank503y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[103]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 141, 180, 227) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
+               // DrawHatchProfile(canvas2DProfile, 504, clsGlobVar.Tank504_SimulationPercentFill, clsGlobVar.ProfileCoordinate.Tank504x, clsGlobVar.ProfileCoordinate.Tank504y, System.Windows.Media.Color.FromArgb(220, 255, 0, 0));
 
                 UpdateRenderTransform(canvas2DProfile);
                 DrawTrimLine();
@@ -3692,20 +3717,20 @@ namespace WpfMvvmStability.Views
                     #endregion
 
                 }
-                else if (Tank_ID == 4 && percent != 0)
+                else if (Tank_ID == 10 && percent != 0)
                 {
-                    x1 = 34506.7765;
-                    y1 = 8163.7309;
-                    x2 = 34506.7765;
-                    y2 = 8651.8266;
-                    x3 = 34506.7765;
-                    y3 = 11774.7089;
-                    x4 = 34506.7765;
-                    y4 = 11774.7089;
-                    x5 = 32256.1412;
-                    y5 = 8451.4532;
-                    x6 = 33056.3671;
-                    y6 = 8163.7309;
+                    x1 = 283401.3595;
+                    y1 = 85.2742;
+                    x2 = 285226.5459;
+                    y2 = 498.5256;
+                    x3 = 287154.7309;
+                    y3 = 1342.0888;
+                    x4 = 288360.3763;
+                    y4 = 2151.5312;
+                    x5 = 289462.3684;
+                    y5 = 3529.0256;
+                    x6 = 289944.5096;
+                    y6 = 4872.097;
                     if (percent > 0 && percent <= 10)
                     {
                         #region profile
@@ -3759,8 +3784,8 @@ namespace WpfMvvmStability.Views
                             SolidColorBrush mySolidColorBrush = new SolidColorBrush();
                             mySolidColorBrush.Color = color;
                             p.Fill = mySolidColorBrush;
-                            double d = y3 - y2;
-                            double Fill = Convert.ToInt32(percent) * (d / 100);
+                            //double d = y3 - y2;
+                            double Fill = Convert.ToInt32(percent) * (10000 / 100);
                             System.Windows.Point[] point = new System.Windows.Point[25];
                             PointCollection pointCollection = new PointCollection();
                             pointCollection.Add(new System.Windows.Point(x1, y1));
@@ -5569,465 +5594,139 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                viewPort3d.Children.Clear();
-                DefaultLights light = new DefaultLights();
-                viewPort3d.Children.Add(light);
-                viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
+                System.Diagnostics.Debug.WriteLine($"Refresh3dNew START - scene3D null? {scene3D == null}, viewport null? {viewPort3d == null}, EffectsManager null? {viewPort3d?.EffectsManager == null}");
+                if (scene3D == null) { System.Diagnostics.Debug.WriteLine("scene3D is NULL - aborting"); return; }
+                scene3D.Children.Clear();
 
-                for (int i = 0; i < 6; i++)
+                // Build name→path dictionaries once per folder (avoids O(tanks×files) inner loops)
+                var freshWaterFiles   = BuildTankFileDictionary(folderPath + "\\FreshWaterTank\\");
+                var freshWater25Files = BuildTankFileDictionary(folderPath + "\\FreshWaterTank25\\");
+                var freshWater50Files = BuildTankFileDictionary(folderPath + "\\FreshWaterTank50\\");
+                var freshWater75Files = BuildTankFileDictionary(folderPath + "\\FreshWaterTank75\\");
+
+                var ballastFiles   = BuildTankFileDictionary(folderPath + "\\BallastTank\\");
+                var ballast25Files = BuildTankFileDictionary(folderPath + "\\BallastTank25\\");
+                var ballast50Files = BuildTankFileDictionary(folderPath + "\\BallastTank50\\");
+                var ballast75Files = BuildTankFileDictionary(folderPath + "\\BallastTank75\\");
+
+                var fuelOilFiles   = BuildTankFileDictionary(folderPath + "\\FuelOilTank\\");
+                var fuelOil25Files = BuildTankFileDictionary(folderPath + "\\FuelOilTank25\\");
+                var fuelOil50Files = BuildTankFileDictionary(folderPath + "\\FuelOilTank50\\");
+                var fuelOil75Files = BuildTankFileDictionary(folderPath + "\\FuelOilTank75\\");
+
+                var cargoFiles   = BuildTankFileDictionary(folderPath + "\\CargoTank\\");
+                var cargo25Files = BuildTankFileDictionary(folderPath + "\\CargoTank25\\");
+                var cargo50Files = BuildTankFileDictionary(folderPath + "\\CargoTank50\\");
+                var cargo75Files = BuildTankFileDictionary(folderPath + "\\CargoTank75\\");
+
+                var dieselFiles   = BuildTankFileDictionary(folderPath + "\\DieselOilTank\\");
+                var diesel25Files = BuildTankFileDictionary(folderPath + "\\DieselOilTank25\\");
+                var diesel50Files = BuildTankFileDictionary(folderPath + "\\DieselOilTank50\\");
+                var diesel75Files = BuildTankFileDictionary(folderPath + "\\DieselOilTank75\\");
+
+                var miscFiles   = BuildTankFileDictionary(folderPath + "\\MiscTank\\");
+                var misc25Files = BuildTankFileDictionary(folderPath + "\\MiscTank25\\");
+                var misc50Files = BuildTankFileDictionary(folderPath + "\\MiscTank50\\");
+
+                // Fresh water tanks
+                for (int i = 0; i < 2; i++)
                 {
                     try
                     {
                         string stats = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["IsDamaged"]);
-                        // bool isvisible = Convert.ToBoolean((dgFreshWaterTanks.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["Tank_Name"]);
-                        string NameSplit = Nametxt.Split('.')[0];
-                        string Name = NameSplit.Replace("/", "");
-                        //string Name = Nametxt.Replace("/", "");
-                        //string Name = Nametxt;
-
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
-                        {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            if (Name == TankName)
-                            {
-                                TankNameForPercentage = TankName;
-                                Getpercentage();
-                                // if (isvisible)
-                                //{
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D.Content = Display3d(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank25\\", "*.stl"))
-                                        {
-                                            string strfw25 = file1.Split('\\')[3];
-                                            string str1fw25 = strfw25.Split('.')[0];
-                                            string TankName1 = str1fw25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D.Content = Display3d(file1, 180, 0, 0, 100);
-
-                                            }
-
-
-                                        }
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank50\\", "*.stl"))
-                                        {
-                                            string strfw50 = file2.Split('\\')[3];
-                                            string str1fw50 = strfw50.Split('.')[0];
-                                            string TankName2 = str1fw50.Replace("/", "");
-
-                                            if (Name == TankName2)
-                                            {
-                                                device3D.Content = Display3d(file2, 180, 0, 0, 100);
-
-                                            }
-
-                                        }
-
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank75\\", "*.stl"))
-                                        {
-                                            string strfw75 = file3.Split('\\')[3];
-                                            string str1fw75 = strfw75.Split('.')[0];
-                                            string TankName3 = str1fw75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D.Content = Display3d(file3, 180, 0, 0, 100);
-
-                                            }
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        device3D.Content = Display3d(file, 180, 0, 0, 100);
-                                    }
-                                }
-                                device3D.SetName(TankName); ;
-                                viewPort3d.Children.Add(device3D);
-                                //}
-                            }
-
-                        }
+                        string Name = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                        if (!freshWaterFiles.TryGetValue(Name, out string baseFile)) continue;
+                        TankNameForPercentage = Name;
+                        Getpercentage();
+                        Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                            freshWater25Files, freshWater50Files, freshWater75Files, 180, 0, 0, 100);
+                        if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
                     }
-                    catch //(Exception ex)
-                    {
-                       // System.Windows.MessageBox.Show(ex.ToString());
-                    }
+                    catch { }
                 }
-                for (int i = 0; i < 11; i++)
+
+                // Ballast tanks
+                for (int i = 0; i < 51; i++)
                 {
-
                     string stats = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["IsDamaged"]);
-                   // bool isvisible = Convert.ToBoolean((dgBallastTanks.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["Tank_Name"]);
-                    string Name = Nametxt.Replace("/", "");
-
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
-                    {
-                        ModelVisual3D device3D = new ModelVisual3D();
-                        string str = file.Split('\\')[3];
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        if (Name == TankName)
-                        {
-                            TankNameForPercentage = TankName;
-                            Getpercentage();
-                           // if (isvisible)
-                           // {
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D.Content = Display3d(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\BallastTank25\\", "*.stl"))
-                                        {
-                                            string strB25 = file1.Split('\\')[3];
-                                            string str1B25 = strB25.Split('.')[0];
-                                            string TankName1 = str1B25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D.Content = Display3d(file1, 180, 0, 200, 0);
-                                                
-                                            }
-                                        }
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\BallastTank50\\", "*.stl"))
-                                        {
-                                            string strB50 = file2.Split('\\')[3];
-                                            string str1B50 = strB50.Split('.')[0];
-                                            string TankName2 = str1B50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D.Content = Display3d(file2, 180, 0, 200, 0);
-                                                
-                                            }
-                                        }
-
-                                       
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\BallastTank75\\", "*.stl"))
-                                        {
-                                            string strB75 = file3.Split('\\')[3];
-                                            string str1B75 = strB75.Split('.')[0];
-                                            string TankName3 = str1B75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D.Content = Display3d(file3, 180, 0, 200, 0);
-                                                
-                                            }
-                                        }
-                                        
-                                    }
-                                    else
-                                    {
-                                        device3D.Content = Display3d(file, 180, 0, 200, 0);
-                                    }
-                                }
-                                device3D.SetName(TankName);
-                                viewPort3d.Children.Add(device3D);
-                            //}
-                        }
-                    }
-
+                    string Name = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["Tank_Name"]).Replace("/", "");
+                    if (!ballastFiles.TryGetValue(Name, out string baseFile)) continue;
+                    TankNameForPercentage = Name;
+                    Getpercentage();
+                    Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                        ballast25Files, ballast50Files, ballast75Files, 180, 0, 200, 0);
+                    if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
                 }
-                for (int i = 0; i < 30; i++)
+
+                // Fuel oil tanks
+                for (int i = 0; i < 13; i++)
                 {
                     string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
-                    //bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
-                    string splitName = Nametxt.Split('.')[0];
-                    string Name = splitName.Replace("/", "");
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
-                    {
-                        ModelVisual3D device3D = new ModelVisual3D();
-                        string str = file.Split('\\')[3];
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                        if (Name == TankName)
-                        {
-                            TankNameForPercentage = TankName;
-                            Getpercentage();
-                            //if (isvisible)
-                            //{
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D.Content = Display3d(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank25\\", "*.stl"))
-                                        {
-                                            string strF25 = file1.Split('\\')[3];
-                                            string str1F25 = strF25.Split('.')[0];
-                                            string TankName1 = str1F25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D.Content = Display3d(file1, 200, 185, 92, 0);
-                                                
-                                            }
-                                        }
-                                        
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank50\\", "*.stl"))
-                                        {
-                                            string strF50 = file2.Split('\\')[3];
-                                            string str1F50 = strF50.Split('.')[0];
-                                            string TankName2 = str1F50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D.Content = Display3d(file2, 200, 185, 92, 0);
-                                                
-                                            }
-                                        }
-                                        
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank75\\", "*.stl"))
-                                        {
-                                            string strF75 = file3.Split('\\')[3];
-                                            string str1F75 = strF75.Split('.')[0];
-                                            string TankName3 = str1F75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D.Content = Display3d(file3, 200, 185, 92, 0);
-                                                
-                                            }
-                                        }
-                                        
-                                    }
-                                    else
-                                    {
-                                        device3D.Content = Display3d(file, 200, 185, 92, 0);
-                                    }
-                                }
-                                device3D.SetName(TankName);
-
-                                viewPort3d.Children.Add(device3D);
-                            //}
-                        }
-                    }
+                    string Name = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                    if (!fuelOilFiles.TryGetValue(Name, out string baseFile)) continue;
+                    TankNameForPercentage = Name;
+                    Getpercentage();
+                    Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                        fuelOil25Files, fuelOil50Files, fuelOil75Files, 200, 185, 92, 0);
+                    if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
                 }
-                for (int i = 0; i < 8; i++)
+
+                // Cargo tanks
+                for (int i = 0; i < 9; i++)
+                {
+                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+                    string Name = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                    if (!cargoFiles.TryGetValue(Name, out string baseFile)) continue;
+                    TankNameForPercentage = Name;
+                    Getpercentage();
+                    Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                        cargo25Files, cargo50Files, cargo75Files, 200, 185, 92, 0);
+                    if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
+                }
+
+                // Diesel oil tanks
+                for (int i = 0; i < 3; i++)
+                {
+                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
+                    string Name = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                    if (!dieselFiles.TryGetValue(Name, out string baseFile)) continue;
+                    TankNameForPercentage = Name;
+                    Getpercentage();
+                    Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                        diesel25Files, diesel50Files, diesel75Files, 200, 185, 92, 0);
+                    if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
+                }
+
+                // Misc tanks (51-75% uses MiscTank50 folder — preserved from original)
+                for (int i = 0; i <13; i++)
                 {
                     string stats = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["IsDamaged"]);
-                   // bool isvisible = Convert.ToBoolean((dgMiscTanks.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]);
-                    string spliteName = Nametxt.Split('.')[0];
-                    string Name = spliteName.Replace("/", "");
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
-                    {
-
-                        ModelVisual3D device3D = new ModelVisual3D();
-                        string str = file.Split('\\')[3];
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        if (Name == TankName)
-                        {
-                            TankNameForPercentage = TankName;
-                            Getpercentage();
-                           // if (isvisible)
-                           // {
-                                if (stats == "True")
-                                {
-                                    device3D.Content = Display3d(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D.Content = Display3d(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\MiscTank25\\", "*.stl"))
-                                        {
-                                            string strM25 = file1.Split('\\')[3];
-                                            string str1M25 = strM25.Split('.')[0];
-                                            string TankName1 = str1M25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D.Content = Display3d(file1, 180, 255, 128, 192);
-
-                                            }
-                                        }
-
-                                      
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
-                                        {
-                                            string strM50 = file2.Split('\\')[3];
-                                            string str1M50 = strM50.Split('.')[0];
-                                            string TankName2 = str1M50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D.Content = Display3d(file2, 180, 255, 128, 192);
-
-                                            }
-                                        }
-                 
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))//BY SACHIN
-                                        {
-                                            string strM50 = file3.Split('\\')[3];
-                                            string str1M50 = strM50.Split('.')[0];
-                                            string TankName2 = str1M50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D.Content = Display3d(file3, 180, 255, 128, 192);
-
-                                            }
-                                        }
-                                    
-                                    }
-                                    else
-                                    {
-                                        device3D.Content = Display3d(file, 180, 255, 128, 192);
-                                    }
-                                }
-                                device3D.SetName(TankName);
-                                viewPort3d.Children.Add(device3D);
-                           // }
-                        }
-                    }
-                }
-                for (int i = 0; i < 380; i++)
-                {
-                    try
-                    {
-                        string stats = Convert.ToString((dgCompartments.Items[i] as DataRowView)["IsDamaged"]);
-                       // bool isvisible = Convert.ToBoolean((dgCompartments.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgCompartments.Items[i] as DataRowView)["Tank_Name"]);
-                        string spliteName = Nametxt.Split('.')[0];
-                        string Name = spliteName.Replace("/", "");
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
-                        {
-                            ModelVisual3D device3D = new ModelVisual3D();
-                            string str = file.Split('\\')[3];
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                            if (Name == TankName)
-                            {
-                               // if (isvisible)
-                                //{
-                                    if (stats == "True")
-                                    {
-                                        device3D.Content = Display3d(file, 255, 255, 0, 0);
-                                    }
-                                    else
-                                    {
-                                        device3D.Content = Display3d(file, 120, 239, 228, 176);
-                                    }
-                                    device3D.SetName(TankName);
-
-                                    viewPort3d.Children.Add(device3D);
-                                //}
-                            }
-                        }
-                    }
-                    catch
-                    {
-                    }
+                    string Name = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                    if (!miscFiles.TryGetValue(Name, out string baseFile)) continue;
+                    TankNameForPercentage = Name;
+                    Getpercentage();
+                    Element3D device3D = ResolveTankModel(Name, baseFile, stats == "True", PercentageFill,
+                        misc25Files, misc50Files, misc50Files, 180, 255, 128, 192);
+                    if (device3D != null) { device3D.Tag = Name; scene3D.Children.Add(device3D); }
                 }
 
-                for (int i = 0; i < 68; i++) //68
-                {
-                    string stats = Convert.ToString((dgWTRegion.Items[i] as DataRowView)["IsDamaged"]);
-                    //bool isvisible = Convert.ToBoolean((dgWTRegion.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgWTRegion.Items[i] as DataRowView)["Tank_Name"]);
-                    string spliteName = Nametxt.Split('.')[0];
-                    string Name = spliteName.Replace("/", "");
-
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
-                    {
-
-                        ModelVisual3D device3D = new ModelVisual3D();
-                        string str = file.Split('\\')[3];
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        if (Name == TankName)
-                        {
-                            //if (isvisible)
-                            //{
-                            if (stats == "True")
-                            {
-                                device3D.Content = Display3d(file, 255, 255, 0, 0);
-                            }
-                            else
-                            {
-                                device3D.Content = Display3d(file, 100, 255, 255, 255);
-                            }
-                            device3D.SetName(TankName);
-                            viewPort3d.Children.Add(device3D);
-                            // }
-                        }
-                    }
-                }
-
-
+                // Ship hull and structural models in root 3D folder
                 foreach (string file in Directory.EnumerateFiles(folderPath, "*.stl"))
                 {
-                    string str = file.Split('\\')[1];
-                    string str1 = str.Split('.')[0];
-                    string TankName = str1.Replace("/", "");
-                    {
-                        ModelVisual3D device3D = new ModelVisual3D();
-                        device3D.Content = Display3d(file, 70, 150, 150, 150);
-                        device3D.SetName(TankName);
-                        viewPort3d.Children.Add(device3D);
-                    }
+                    string TankName = System.IO.Path.GetFileNameWithoutExtension(file).Replace("/", "");
+                    Element3D device3D = Display3d(file, 70, 150, 150, 150);
+                    if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
                 }
             }
             catch
             {
+            }
+            System.Diagnostics.Debug.WriteLine($"Refresh3dNew done - scene3D children count: {scene3D.Children.Count}");
+            if (viewPort3d.EffectsManager != null)
+            {
+                var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); viewPort3d.ZoomExtents(animationTime: 300); };
+                zoomTimer.Start();
             }
             Models.TableModel.Write_Log(" END : Refresh3dNew");
         }
@@ -6083,9 +5782,9 @@ namespace WpfMvvmStability.Views
         //{
         //    try
         //    {
-        //        viewPort3d.Children.Clear();
+        //        scene3D.Children.Clear();
         //        DefaultLights light = new DefaultLights();
-        //        viewPort3d.Children.Add(light);
+        //        scene3D.Children.Add(light);
         //        viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
 
         //        for (int i = 0; i < 6; i++)
@@ -6098,8 +5797,8 @@ namespace WpfMvvmStability.Views
 
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6108,14 +5807,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 0, 0, 100);
+        //                            device3D = Display3d(file, 180, 0, 0, 100);
         //                        }
-        //                        device3D.SetName(TankName); ;
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName; ;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6129,8 +5828,8 @@ namespace WpfMvvmStability.Views
 
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6139,14 +5838,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 0, 200, 0);
+        //                            device3D = Display3d(file, 180, 0, 200, 0);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6161,8 +5860,8 @@ namespace WpfMvvmStability.Views
         //            string Name = splitName.Replace("/", "");
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
@@ -6172,15 +5871,15 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 200, 185, 92, 0);
+        //                            device3D = Display3d(file, 200, 185, 92, 0);
         //                        }
-        //                        device3D.SetName(TankName);
+        //                        if (device3D != null) device3D.Tag = TankName;
 
-        //                        viewPort3d.Children.Add(device3D);
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6195,8 +5894,8 @@ namespace WpfMvvmStability.Views
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
         //            {
 
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6205,14 +5904,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 255, 128, 192);
+        //                            device3D = Display3d(file, 180, 255, 128, 192);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6228,8 +5927,8 @@ namespace WpfMvvmStability.Views
         //                string Name = spliteName.Replace("/", "");
         //                foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
         //                {
-        //                    ModelVisual3D device3D = new ModelVisual3D();
-        //                    string str = file.Split('\\')[3];
+        //                    Element3D device3D = null;
+        //                    string str = System.IO.Path.GetFileName(file);
         //                    string str1 = str.Split('.')[0];
         //                    string TankName = str1.Replace("/", "");
         //                    string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
@@ -6239,15 +5938,15 @@ namespace WpfMvvmStability.Views
         //                        {
         //                            if (stats == "True")
         //                            {
-        //                                device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                                device3D = Display3d(file, 255, 255, 0, 0);
         //                            }
         //                            else
         //                            {
-        //                                device3D.Content = Display3d(file, 120, 239, 228, 176);
+        //                                device3D = Display3d(file, 120, 239, 228, 176);
         //                            }
-        //                            device3D.SetName(TankName);
+        //                            if (device3D != null) device3D.Tag = TankName;
 
-        //                            viewPort3d.Children.Add(device3D);
+        //                            scene3D.Children.Add(device3D);
         //                        }
         //                    }
         //                }
@@ -6268,8 +5967,8 @@ namespace WpfMvvmStability.Views
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
         //            {
 
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6278,14 +5977,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 100, 255, 255, 255);
+        //                            device3D = Display3d(file, 100, 255, 255, 255);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6298,10 +5997,10 @@ namespace WpfMvvmStability.Views
         //            string str1 = str.Split('.')[0];
         //            string TankName = str1.Replace("/", "");
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                device3D.Content = Display3d(file, 70, 150, 150, 150);
-        //                device3D.SetName(TankName);
-        //                viewPort3d.Children.Add(device3D);
+        //                Element3D device3D = null;
+        //                device3D = Display3d(file, 70, 150, 150, 150);
+        //                if (device3D != null) device3D.Tag = TankName;
+        //                scene3D.Children.Add(device3D);
         //            }
         //        }
         //    }
@@ -6314,9 +6013,9 @@ namespace WpfMvvmStability.Views
         //{
         //    try
         //    {
-        //        viewPort3d.Children.Clear();
+        //        scene3D.Children.Clear();
         //        DefaultLights light = new DefaultLights();
-        //        viewPort3d.Children.Add(light);
+        //        scene3D.Children.Add(light);
         //        viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
 
         //        for (int i = 0; i < 6; i++)
@@ -6329,8 +6028,8 @@ namespace WpfMvvmStability.Views
 
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6339,14 +6038,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 0, 0, 100);
+        //                            device3D = Display3d(file, 180, 0, 0, 100);
         //                        }
-        //                        device3D.SetName(TankName); ;
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName; ;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6360,8 +6059,8 @@ namespace WpfMvvmStability.Views
 
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6370,14 +6069,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 0, 200, 0);
+        //                            device3D = Display3d(file, 180, 0, 200, 0);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6392,8 +6091,8 @@ namespace WpfMvvmStability.Views
         //            string Name = splitName.Replace("/", "");
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
@@ -6403,15 +6102,15 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 200, 185, 92, 0);
+        //                            device3D = Display3d(file, 200, 185, 92, 0);
         //                        }
-        //                        device3D.SetName(TankName);
+        //                        if (device3D != null) device3D.Tag = TankName;
 
-        //                        viewPort3d.Children.Add(device3D);
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6426,8 +6125,8 @@ namespace WpfMvvmStability.Views
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
         //            {
 
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6436,14 +6135,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 180, 255, 128, 192);
+        //                            device3D = Display3d(file, 180, 255, 128, 192);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6459,8 +6158,8 @@ namespace WpfMvvmStability.Views
         //                string Name = spliteName.Replace("/", "");
         //                foreach (string file in Directory.EnumerateFiles(folderPath + "\\Compartment\\", "*.stl"))
         //                {
-        //                    ModelVisual3D device3D = new ModelVisual3D();
-        //                    string str = file.Split('\\')[3];
+        //                    Element3D device3D = null;
+        //                    string str = System.IO.Path.GetFileName(file);
         //                    string str1 = str.Split('.')[0];
         //                    string TankName = str1.Replace("/", "");
         //                    string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
@@ -6470,15 +6169,15 @@ namespace WpfMvvmStability.Views
         //                        {
         //                            if (stats == "True")
         //                            {
-        //                                device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                                device3D = Display3d(file, 255, 255, 0, 0);
         //                            }
         //                            else
         //                            {
-        //                                device3D.Content = Display3d(file, 120, 239, 228, 176);
+        //                                device3D = Display3d(file, 120, 239, 228, 176);
         //                            }
-        //                            device3D.SetName(TankName);
+        //                            if (device3D != null) device3D.Tag = TankName;
 
-        //                            viewPort3d.Children.Add(device3D);
+        //                            scene3D.Children.Add(device3D);
         //                        }
         //                    }
         //                }
@@ -6499,8 +6198,8 @@ namespace WpfMvvmStability.Views
         //            foreach (string file in Directory.EnumerateFiles(folderPath + "\\WT_REGION\\", "*.stl"))
         //            {
 
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                string str = file.Split('\\')[3];
+        //                Element3D device3D = null;
+        //                string str = System.IO.Path.GetFileName(file);
         //                string str1 = str.Split('.')[0];
         //                string TankName = str1.Replace("/", "");
         //                if (Name == TankName)
@@ -6509,14 +6208,14 @@ namespace WpfMvvmStability.Views
         //                    {
         //                        if (stats == "True")
         //                        {
-        //                            device3D.Content = Display3d(file, 255, 255, 0, 0);
+        //                            device3D = Display3d(file, 255, 255, 0, 0);
         //                        }
         //                        else
         //                        {
-        //                            device3D.Content = Display3d(file, 100, 255, 255, 255);
+        //                            device3D = Display3d(file, 100, 255, 255, 255);
         //                        }
-        //                        device3D.SetName(TankName);
-        //                        viewPort3d.Children.Add(device3D);
+        //                        if (device3D != null) device3D.Tag = TankName;
+        //                        scene3D.Children.Add(device3D);
         //                    }
         //                }
         //            }
@@ -6529,10 +6228,10 @@ namespace WpfMvvmStability.Views
         //            string str1 = str.Split('.')[0];
         //            string TankName = str1.Replace("/", "");
         //            {
-        //                ModelVisual3D device3D = new ModelVisual3D();
-        //                device3D.Content = Display3d(file, 70, 150, 150, 150);
-        //                device3D.SetName(TankName);
-        //                viewPort3d.Children.Add(device3D);
+        //                Element3D device3D = null;
+        //                device3D = Display3d(file, 70, 150, 150, 150);
+        //                if (device3D != null) device3D.Tag = TankName;
+        //                scene3D.Children.Add(device3D);
         //            }
         //        }
         //    }
@@ -6541,28 +6240,56 @@ namespace WpfMvvmStability.Views
         //    }
         //    Models.TableModel.Write_Log(" END : Refresh3dNew");
         //}
-        private Model3D Display3d(string model, byte A, byte R, byte G, byte B)
+        private Element3D Display3d(string modelPath, byte A, byte R, byte G, byte B)
         {
-            Model3D device = null;
-            Material material = MaterialHelper.CreateMaterial(new SolidColorBrush(System.Windows.Media.Color.FromArgb(A, R, G, B)));
             try
             {
-                //Adding a gesture here
-                //viewPort3d.RotateGesture = new MouseGesture(MouseAction.LeftClick);
-                //Import 3D model file
-                ModelImporter import = new ModelImporter();
-                import.DefaultMaterial = material;
-
-                //Load the 3D model file
-                device = import.Load(model);
-
+                if (!_geometryCache.TryGetValue(modelPath, out HelixToolkit.SharpDX.MeshGeometry3D geometry))
+                {
+                    var reader = new HelixToolkit.SharpDX.StLReader();
+                    using (var stream = new System.IO.FileStream(modelPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                        reader.Read(stream, default(HelixToolkit.SharpDX.ModelInfo));
+                    if (reader.Meshes == null || reader.Meshes.Count == 0) return null;
+                    geometry = reader.Meshes[0].ToMeshGeometry3D();
+                    _geometryCache[modelPath] = geometry;
+                }
+                var model = new MeshGeometryModel3D
+                {
+                    Geometry = geometry,
+                    Material = new PhongMaterial
+                    {
+                        DiffuseColor = new HelixToolkit.Maths.Color4(R / 255f, G / 255f, B / 255f, A / 255f)
+                    }
+                };
+                System.Diagnostics.Debug.WriteLine($"3D Model loaded OK: {modelPath}");
+                return model;
             }
-            catch //(Exception e)
+            catch (Exception e)
             {
-                // Handle exception in case can not file 3D model
-                //MessageBox.Show("Exception Error : " + e.StackTrace);
+                System.Diagnostics.Debug.WriteLine($"3D Model FAILED: {modelPath} - {e.Message}");
+                return null;
             }
-            return device;
+        }
+
+        private Dictionary<string, string> BuildTankFileDictionary(string folder)
+        {
+            var dict = new Dictionary<string, string>();
+            if (!System.IO.Directory.Exists(folder)) return dict;
+            foreach (string file in System.IO.Directory.EnumerateFiles(folder, "*.stl"))
+                dict[System.IO.Path.GetFileNameWithoutExtension(file).Replace("/", "")] = file;
+            return dict;
+        }
+
+        private Element3D ResolveTankModel(string name, string baseFile, bool isDamaged, decimal fill,
+            Dictionary<string, string> files25, Dictionary<string, string> files50, Dictionary<string, string> files75,
+            byte A, byte R, byte G, byte B)
+        {
+            if (isDamaged) return Display3d(baseFile, 255, 255, 0, 0);
+            if (fill == 0m) return Display3d(baseFile, 200, 185, 185, 196);
+            if (fill <= 25m && files25.TryGetValue(name, out string f25)) return Display3d(f25, A, R, G, B);
+            if (fill <= 50m && files50.TryGetValue(name, out string f50)) return Display3d(f50, A, R, G, B);
+            if (fill <= 75m && files75.TryGetValue(name, out string f75)) return Display3d(f75, A, R, G, B);
+            return Display3d(baseFile, A, R, G, B);
         }
         private string TankName;
 
@@ -6718,11 +6445,11 @@ namespace WpfMvvmStability.Views
                         {
                             try
                             {
-                                Visual3D model = viewPort3d.Children[j + 2] as Visual3D;
-                                string modelname = model.GetName();
+                                var model = scene3D.Children[j] as Element3D;
+                                string modelname = model?.Tag as string;
                                 if (modelname == str1)
                                 {
-                                    viewPort3d.Children.Remove(model);
+                                    scene3D.Children.Remove(model);
                                 }
                             }
                             catch
@@ -6732,13 +6459,11 @@ namespace WpfMvvmStability.Views
                     }
                     else
                     {
-                        viewPort3d.Children.RemoveAt(viewPort3d.Children.Count - 1);
-                        viewPort3d.Children.RemoveAt(viewPort3d.Children.Count - 1);
-                        ModelVisual3D device3D = new ModelVisual3D();
+                        scene3D.Children.RemoveAt(scene3D.Children.Count - 1);
+                        scene3D.Children.RemoveAt(scene3D.Children.Count - 1);
                         string file = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + folderPath + "\\" + subfolder + "\\" + TankName + ".stl";
-                        device3D.Content = Display3d(file, A, R, G, B);
-                        device3D.SetName(TankName);
-                        viewPort3d.Children.Add(device3D);
+                        Element3D device3D = Display3d(file, A, R, G, B);
+                        if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
 
                         foreach (string file1 in Directory.EnumerateFiles(folderPath, "*.stl"))
                         {
@@ -6747,10 +6472,8 @@ namespace WpfMvvmStability.Views
                             TankName = str1.Replace("/", "");
                             //if (Name == str1)
                             {
-                                device3D = new ModelVisual3D();
-                                device3D.Content = Display3d(file1, 70, 150, 150, 150);
-                                device3D.SetName(TankName);
-                                viewPort3d.Children.Add(device3D);
+                                device3D = Display3d(file1, 70, 150, 150, 150);
+                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
                             }
                         }
                     }
@@ -7126,7 +6849,7 @@ namespace WpfMvvmStability.Views
                                     if ((yy <= clsGlobVar.ProfileCoordinate.mul[p, n + 2]) && (yy >= clsGlobVar.ProfileCoordinate.mul[p, n + 3]) && (clsGlobVar.ProfileCoordinate.mul[p, n - 1] == IDSelect))
                                     {
                                         IDSelect = clsGlobVar.ProfileCoordinate.mul[i, j - 1];
-                                        string sCmd = "Select * from tbl_GA_Profile where Tank_ID='" + IDSelect + "'";
+                                        string sCmd = "Select * from tbl_GA_Plan_Profile where Tank_ID='" + IDSelect + "'";
                                         DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                                         command.CommandText = sCmd;
                                         command.CommandType = CommandType.Text;

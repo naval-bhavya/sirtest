@@ -2629,7 +2629,7 @@ namespace WpfMvvmStability.Models.BO
 
 
 
-            public static double[] Tank1y = new double[5];
+            public static double[] Tank1y = new double[30];
             public static double[] Tank2y = new double[5];
             public static double[] Tank4y = new double[5];
             public static double[] Tank6y = new double[5];
@@ -2734,7 +2734,7 @@ namespace WpfMvvmStability.Models.BO
 
 
             public static double[,] mul = new double[92, 6];
-            public static int[] Tank_ID = new int[92];
+            public static int[] Tank_ID = new int[96];
             public static double[] TankX_max = new double[92];
             public static double[] TankX_min = new double[92];
             public static double[] TankY_max = new double[92];
