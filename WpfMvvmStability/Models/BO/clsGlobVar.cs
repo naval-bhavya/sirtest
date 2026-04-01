@@ -1318,6 +1318,17 @@ namespace WpfMvvmStability.Models.BO
             //public static double[] Tank50y = new double[25];
             //public static double[] Tank51y = new double[25];
             #endregion planA
+
+            public class TankData
+            {
+                public int Tank_ID;
+                public double[] X = new double[11];
+                public double[] Y = new double[11];
+            }
+
+            // Keyed by row index (0-based); replaces the individual Tank{n}x / Tank{n}y arrays.
+            public static Dictionary<int, TankData> Tanks = new Dictionary<int, TankData>();
+
                  // X region started //
             public static double[] Tank1x = new double[25];
             public static double[] Tank2x = new double[25];
@@ -1667,6 +1678,15 @@ namespace WpfMvvmStability.Models.BO
 
         public class CoordinatePlanB
         {
+            public class TankData
+            {
+                public int Tank_ID;
+                public double[] X = new double[15];
+                public double[] Y = new double[15];
+            }
+
+            // Keyed by row index (0-based); replaces the individual Tank{n}x / Tank{n}y arrays.
+            public static Dictionary<int, TankData> Tanks = new Dictionary<int, TankData>();
 
             public static double[] Tank80ax = new double[15];
             public static double[] Tank80bx = new double[15];
@@ -2521,6 +2541,16 @@ namespace WpfMvvmStability.Models.BO
         }
         public class ProfileCoordinate
         {
+            public class TankProfile
+            {
+                public double[] X = new double[5];
+                public double[] Y = new double[5];
+            }
+
+            // Keyed by Tank_ID; replaces the individual Tank{n}x / Tank{n}y arrays.
+            public static Dictionary<int, TankProfile> Profiles = new Dictionary<int, TankProfile>();
+
+            // ---- legacy fields kept for any code still referencing them directly ----
             public static double[] Tank1x = new double[5];
             public static double[] Tank2x = new double[5];
             public static double[] Tank4x = new double[5];

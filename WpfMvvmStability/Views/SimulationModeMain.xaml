@@ -1146,9 +1146,11 @@
                     <Border BorderBrush="Silver" BorderThickness="1" Name="border2">
                         <hx:Viewport3DX x:Name="viewPort3d"
                             ShowCoordinateSystem="True"
-                            ZoomAroundMouseDownPoint="False"
-                            RotateAroundMouseDownPoint="False"
+                            CameraMode="Inspect"
                             CameraRotationMode="Trackball"
+                            RotateAroundMouseDownPoint="False"
+                            ZoomAroundMouseDownPoint="False"
+                            IsPanEnabled="False"
                             Loaded="viewPort3d_Loaded"
                             BackgroundColor="White">
                             <hx:Viewport3DX.Camera>
