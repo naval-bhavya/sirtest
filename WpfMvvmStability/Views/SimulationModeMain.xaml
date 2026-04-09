@@ -346,17 +346,17 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Progress Section -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <TextBlock Text="Calculation Progress" FontWeight="SemiBold" FontSize="12" 
+                    <DockPanel Grid.Column="0" VerticalAlignment="Center" Margin="8,0,8,0" LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Left" Text="Calculation Progress" FontWeight="SemiBold" FontSize="12"
                            Foreground="#030032" VerticalAlignment="Center"/>
-                        <TextBlock Text="Ready" FontSize="12" Foreground="{StaticResource TextDisabledBrush}"
+                        <TextBlock DockPanel.Dock="Left" Text="Ready" FontSize="12" Foreground="{StaticResource TextDisabledBrush}"
                            Name="txtProgressStatus" VerticalAlignment="Center" Margin="12,0,12,0"/>
                         <Border Background="#F0F1F5" CornerRadius="4" Padding="0" VerticalAlignment="Center">
-                            <ProgressBar Width="220" Height="8" Name="pRGSCalculation" 
+                            <ProgressBar Height="8" Name="pRGSCalculation"
                                  Foreground="#1F48FF" Background="#F0F1F5"
-                                 Value="0" Maximum="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                 Value="0" Maximum="100" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         </Border>
-                    </StackPanel>
+                    </DockPanel>
 
                     <!-- Calculate Button -->
                     <Button Grid.Column="1" Content="CALCULATE" Name="btnCalculate" 
@@ -411,21 +411,28 @@
                         </Grid.RowDefinitions>
 
                         <!-- Action Buttons Header -->
-                        <Border Grid.Row="0" Background="#030032" Padding="8,6" CornerRadius="0">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                <Button Content="Import Real Data" Name="btnImportRealModeData" 
-                                        Click="btnImportRealModeData_Click" 
+                        <Border Grid.Row="0" Padding="8,6" CornerRadius="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="Import" Name="btnImportRealModeData"
+                                        Click="btnImportRealModeData_Click"
                                         Style="{StaticResource SmallActionButton}"
-                                        Background="#1F48FF" Foreground="White" Margin="0,0,6,0"/>
-                                <Button Content="Save" Name="btnSaveLoadingCondition"
-                                        Click="btnSaveLoadingCondition_Click" 
+                                        Background="#1F48FF" Foreground="White"/>
+                                <Button Grid.Column="2" Content="Save" Name="btnSaveLoadingCondition"
+                                        Click="btnSaveLoadingCondition_Click"
                                         Style="{StaticResource SmallActionButton}"
-                                        Background="#10B981" Foreground="White" Margin="0,0,6,0"/>
-                                <Button Content="Clear" Name="btnclear" 
-                                        Click="btnclear_Click" 
+                                        Background="#10B981" Foreground="White"/>
+                                <Button Grid.Column="4" Content="Clear" Name="btnclear"
+                                        Click="btnclear_Click"
                                         Style="{StaticResource SmallActionButton}"
                                         Background="#EF4444" Foreground="White"/>
-                            </StackPanel>
+                            </Grid>
                         </Border>
 
                         <!-- Outputs Content -->
@@ -573,6 +580,77 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,5,0">
 
+                            <Expander Header="Cargo Tanks" Name="expanderCargo1" IsExpanded="{Binding IsExpanded}" BorderBrush="{StaticResource PrimaryBrush}">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+                                    <DataGrid Name="dgCargoTanks" ItemsSource="{Binding dtSimulationCargoTanks}" 
+                  Style="{StaticResource ModernDataGrid}" 
+                  ColumnHeaderStyle="{StaticResource ModernDataGridHeader}"
+                  AutoGenerateColumns="False" CanUserResizeRows="False"
+                  PreviewTextInput="dgTankCompartment_PreviewTextInput" 
+                  BeginningEdit="dgTankCompartment_BeginningEdit"  
+                  PreparingCellForEdit="dgTankCompartment_PreparingCellForEdit" 
+                  CurrentCellChanged="dgTankCompartment_CurrentCellChanged" 
+                  LoadingRow="dgCargoTanks_LoadingRow" 
+                  SelectionChanged="dgCargoTanks_SelectionChanged" 
+                  SelectionUnit="FullRow"
+                  HorizontalScrollBarVisibility="Disabled">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridComboBoxColumn x:Name="StatusCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="80" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValueBinding="{Binding Path=Status}">
+                    <DataGridComboBoxColumn.EditingElementStyle>
+                        <Style TargetType="{x:Type ComboBox}">
+                            <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
+                        </Style>
+                    </DataGridComboBoxColumn.EditingElementStyle>
+                </DataGridComboBoxColumn>
+                <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
+                <DataGridTextColumn Header=" Mass(T) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
+                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                <DataGridTextColumn Header=" S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                    <DataGridComboBoxColumn.EditingElementStyle>
+                        <Style TargetType="{x:Type ComboBox}">
+                            <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
+                        </Style>
+                    </DataGridComboBoxColumn.EditingElementStyle>
+                </DataGridComboBoxColumn>
+                <DataGridTextColumn Header="  FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
+                <DataGridTextColumn Header=" Flood Rate(TPH) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+            </DataGrid.Columns>
+            <DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=Status}" Value="1">
+                            <Setter Property="Background" Value="#FEF2F2"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=Status}" Value="2">
+                            <Setter Property="Background" Value="#FEF2F2"/>
+                        </DataTrigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{StaticResource PrimaryBgBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
+        <DockPanel Grid.Row="1" Margin="0,5,0,0" HorizontalAlignment="Right">
+            <Button Content="Clear" Name="btnclearCargo" Width="60" Style="{StaticResource ClearButton}" Click="btnclearCargo_Click"/>
+        </DockPanel>
+    </Grid>
+</Expander>
+                            
                             <!-- Ballast Tanks -->
                             <Expander Header="Ballast Tanks" Name="expander1" IsExpanded="{Binding IsExpanded}" BorderBrush="{StaticResource PrimaryBrush}">
                                 <Grid Margin="5">
@@ -821,7 +899,7 @@
                 </TabItem>
 
                 <!-- Compartments Tab -->
-                <TabItem Header="Compartments" Name="tabItem10">
+                <TabItem Header="Non Tight" Name="tabItem10">
                     <Grid Margin="0,0,5,0">
                         <DataGrid Name="dgCompartments" Style="{StaticResource ModernDataGrid}" ColumnHeaderStyle="{StaticResource ModernDataGridHeader}"
                                   CanUserAddRows="False" CanUserReorderColumns="False" CanUserSortColumns="False" 
@@ -872,7 +950,7 @@
                 </TabItem>
 
                 <!-- WT Region Tab -->
-                <TabItem Header="WT Region" Name="tabItem111">
+                <TabItem Header="Water Tight" Name="tabItem111">
                     <Grid Margin="0,0,5,0">
                         <DataGrid Name="dgWTRegion" Style="{StaticResource ModernDataGrid}" ColumnHeaderStyle="{StaticResource ModernDataGridHeader}"
                                   CanUserAddRows="False" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserSortColumns="False" 
@@ -921,7 +999,7 @@
                 </TabItem>
 
                 <!-- Fixed Load Tab -->
-                <TabItem Header="Fixed Load" Name="tabItem11">
+                <TabItem Header="DWT Constant" Name="tabItem11">
                     <DockPanel Margin="0,0,5,0" LastChildFill="True">
                         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,5,10">
                             <Button Content="ADD" Name="btnAdd" Width="70" Style="{StaticResource PrimaryButton}" Click="btnAdd_Click" Margin="0,0,5,0" Padding="10,4"/>
@@ -974,17 +1052,17 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <TextBlock Text="Calculation Progress" FontWeight="SemiBold" FontSize="12" 
+                    <DockPanel Grid.Column="0" VerticalAlignment="Center" Margin="8,0,8,0" LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Left" Text="Calculation Progress" FontWeight="SemiBold" FontSize="12"
                                    Foreground="#030032" VerticalAlignment="Center"/>
-                        <TextBlock Text="Ready" FontSize="12" Foreground="{StaticResource TextDisabledBrush}"
+                        <TextBlock DockPanel.Dock="Left" Text="Ready" FontSize="12" Foreground="{StaticResource TextDisabledBrush}"
                                    Name="txtProgressStatus" VerticalAlignment="Center" Margin="12,0,12,0"/>
                         <Border Background="#F0F1F5" CornerRadius="4" Padding="0" VerticalAlignment="Center">
-                            <ProgressBar Width="220" Height="8" Name="pRGSCalculation" 
+                            <ProgressBar Height="8" Name="pRGSCalculation"
                                          Foreground="#1F48FF" Background="#F0F1F5"
-                                         Value="0" Maximum="100" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                         Value="0" Maximum="100" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         </Border>
-                    </StackPanel>
+                    </DockPanel>
                 </Grid>
             </Border>
         </Border>-->
@@ -1007,7 +1085,7 @@
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="TabItem">
-                                                <Border Name="Border" Background="Transparent" Margin="3,2" Padding="6" CornerRadius="4">
+                                                <Border Name="Border" Background="Transparent" Margin="3,2" Padding="6" CornerRadius="4" SnapsToDevicePixels="True">
                                                     <ContentPresenter ContentSource="Header">
                                                         <ContentPresenter.LayoutTransform>
                                                             <RotateTransform Angle="90"/>
@@ -1020,9 +1098,13 @@
                                                         <Setter Property="Foreground" Value="White"/>
                                                         <Setter Property="FontWeight" Value="Bold"/>
                                                     </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsMouseOver" Value="True"/>
+                                                            <Condition Property="IsSelected" Value="False"/>
+                                                        </MultiTrigger.Conditions>
                                                         <Setter TargetName="Border" Property="Background" Value="#EEF1FF"/>
-                                                    </Trigger>
+                                                    </MultiTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -1077,65 +1159,117 @@
 
                             </TabControl.Resources>
 
-                            <TabItem Header="PROFILE" Name="tabItem7">
+
+
+                            <TabItem Height="100">
+                                <TabItem.Header>
+                                    <TextBlock Text="PROFILE" HorizontalAlignment="Center" />
+                                </TabItem.Header>
+
+                                <Grid Background="#F8F9FC">
+                                    <DockPanel Name="dockPanelProfile" LastChildFill="True">
+                                        <Grid Background="#FFFFFF" Margin="5" ClipToBounds="True">
+                                            <Canvas Background="#FFFFFF"
+                        Name="canvas2DProfile"
+                        MouseRightButtonDown="canvas2DProfile_MouseRightButtonDown_1"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+
+                            <TabItem Height="100">
+                                <TabItem.Header>
+                                    <TextBlock Text="MAIN DECK" HorizontalAlignment="Center" />
+                                </TabItem.Header>
+
+                                <Grid Background="#F8F9FC">
+                                    <DockPanel Name="dockPanelBottom" LastChildFill="True">
+                                        <Grid Background="#FFFFFF" Margin="5" ClipToBounds="True">
+                                            <Canvas Background="#FFFFFF"
+                        Name="canvas2DPlanA"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+
+                            <TabItem Height="100">
+                                <TabItem.Header>
+                                    <TextBlock Text="TANK TOP" HorizontalAlignment="Center" />
+                                </TabItem.Header>
+
+                                <Grid Background="#F8F9FC">
+                                    <DockPanel Name="dockPanelDeck" LastChildFill="True">
+                                        <Grid Background="#FFFFFF" Margin="5" ClipToBounds="True">
+                                            <Canvas Background="#FFFFFF"
+                        Name="canvas2DPlanB"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </Grid>
+                            </TabItem>
+                            <!--<TabItem Header="PROFILE" Name="tabItem7">
                                 <Grid Background="#F8F9FC">
                                     <DockPanel Name="dockPanelProfile">
-                                        <Controls:ZoomControl x:Name="zoomControlProfile" Mode="Fill" ModifierMode="ZoomIn" MinZoom="10" Zoom="5" Background="#F8F9FC">
-                                            <Grid Background="#FFFFFF" Width="185" Height="60" Margin="5">
-                                                <Canvas Background="#FFFFFF" Name="canvas2DProfile" MouseRightButtonDown="canvas2DProfile_MouseRightButtonDown_1" Margin="0,0,-14,0"/>
-                                            </Grid>
-                                        </Controls:ZoomControl>
+                                        --><!--<Controls:ZoomControl  x:Name="zoomControlProfile" Mode="Fill" ModifierMode="ZoomIn" MinZoom="10" Zoom="5" Background="#F8F9FC">
+                                           
+                                        </Controls:ZoomControl>--><!--
+                                        <Grid Background="#FFFFFF" Width="185" Height="60" Margin="5">
+                                            <Canvas Background="#FFFFFF" Name="canvas2DProfile" MouseRightButtonDown="canvas2DProfile_MouseRightButtonDown_1" Margin="0,0,-14,0"/>
+                                        </Grid>
                                     </DockPanel>
                                 </Grid>
-                            </TabItem>
+                            </TabItem>-->
 
-                            <TabItem Header="D50|40" Name="tabItem8">
+                            <!--<TabItem Header="D50|40" Name="tabItem8">
                                 <Grid Background="#F8F9FC">
                                     <DockPanel Name="dockPanelBottom">
-                                        <Controls:ZoomControl x:Name="zoomControlBottom" MinZoom="3" Background="#F8F9FC">
-                                            <Grid Background="#FFFFFF" Width="176.25" Height="52.5" Margin="5">
-                                                <Canvas Background="#FFFFFF" Name="canvas2DPlanA" Opacity="90"/>
-                                            </Grid>
-                                        </Controls:ZoomControl>
+                                        --><!--<Controls:ZoomControl x:Name="zoomControlBottom" MinZoom="3" Background="#F8F9FC">
+                                          
+                                        </Controls:ZoomControl>--><!--
+                                        <Grid Background="#FFFFFF" Width="176.25" Height="52.5" Margin="5">
+                                            <Canvas Background="#FFFFFF" Name="canvas2DPlanA" Opacity="90"/>
+                                        </Grid>
                                     </DockPanel>
                                 </Grid>
-                            </TabItem>
+                            </TabItem>-->
 
-                            <TabItem Header="D30|20" Name="tabItem9">
+                            <!--<TabItem Header="D30|20" Name="tabItem9">
                                 <Grid Background="#F8F9FC">
                                     <DockPanel Name="dockPanelDeck">
-                                        <Controls:ZoomControl x:Name="zoomControlDeck" MinZoom="3" Background="#F8F9FC">
-                                            <Grid Background="#FFFFFF" Width="176.25" Height="52.5" Margin="5">
-                                                <Canvas Background="#FFFFFF" Name="canvas2DPlanB"/>
-                                            </Grid>
-                                        </Controls:ZoomControl>
+                                        --><!--<Controls:ZoomControl x:Name="zoomControlDeck" MinZoom="3" Background="#F8F9FC">
+                                           
+                                        </Controls:ZoomControl>--><!--
+                                        <Grid Background="#FFFFFF" Width="176.25" Height="52.5" Margin="5">
+                                            <Canvas Background="#FFFFFF" Name="canvas2DPlanB"/>
+                                        </Grid>
                                     </DockPanel>
                                 </Grid>
-                            </TabItem>
+                            </TabItem>-->
 
-                            <TabItem Header="D10|0" Name="tabItem12">
+                            <!--<TabItem Header="D10|0" Name="tabItem12">
                                 <Grid Background="#F8F9FC">
                                     <DockPanel Background="#F8F9FC" Name="dockPanel1">
-                                        <Controls:ZoomControl Name="zoomControl1" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" Background="#F8F9FC">
-                                            <Grid Background="#FFFFFF" Height="52.5" Width="180" Margin="5">
-                                                <Canvas Background="#FFFFFF" Name="canvas2DPlanC"/>
-                                            </Grid>
-                                        </Controls:ZoomControl>
+                                        --><!--<Controls:ZoomControl Name="zoomControl1" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" Background="#F8F9FC">
+                                           
+                                        </Controls:ZoomControl>--><!--
+                                        <Grid Background="#FFFFFF" Height="52.5" Width="180" Margin="5">
+                                            <Canvas Background="#FFFFFF" Name="canvas2DPlanC"/>
+                                        </Grid>
                                     </DockPanel>
                                 </Grid>
-                            </TabItem>
+                            </TabItem>-->
 
-                            <TabItem Header="ALL" Name="tabItem15">
+                            <!--<TabItem Header="ALL" Name="tabItem15">
                                 <Grid Background="#F8F9FC">
                                     <DockPanel Name="dockPanelAll">
-                                        <Controls:ZoomControl x:Name="zoomControlAll" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" Background="#F8F9FC">
-                                            <Grid Background="#FFFFFF" Width="177.5" Height="52.5" Margin="5">
-                                                <Canvas Background="#FFFFFF" Name="canvas2DAll"/>
-                                            </Grid>
-                                        </Controls:ZoomControl>
+                                        --><!--<Controls:ZoomControl x:Name="zoomControlAll" Mode="Fill" ModifierMode="ZoomIn" MinZoom="3" Background="#F8F9FC">
+                                            
+                                        </Controls:ZoomControl>--><!--
+                                        <Grid Background="#FFFFFF" Width="177.5" Height="52.5" Margin="5">
+                                            <Canvas Background="#FFFFFF" Name="canvas2DAll"/>
+                                        </Grid>
                                     </DockPanel>
                                 </Grid>
-                            </TabItem>
+                            </TabItem>-->
                         </TabControl>
                     </Grid>
                 </TabItem>

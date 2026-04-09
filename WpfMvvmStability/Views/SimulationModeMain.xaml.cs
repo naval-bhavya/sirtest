@@ -70,6 +70,9 @@ namespace WpfMvvmStability.Views
         public static Dictionary<int, decimal> maxVolume;
 
         private Bounds3D bounds;
+        private Bounds3D boundsProfile;
+        private Bounds3D boundsPlanA;
+        private Bounds3D boundsPlanB;
         private WpfWireframeGraphics3DUsingDrawingVisual wpfGraphics;
         private WireframeGraphics2Cache graphicsCache;
         private GraphicsConfig graphicsConfig;
@@ -143,6 +146,7 @@ namespace WpfMvvmStability.Views
                 FSMList.Add("MAX", "1");
                 FSMList.Add("UserInput", "2");
                 FSMType.ItemsSource = FSMList;
+                FSMTypeCargo.ItemsSource = FSMList;
                 FSMTypeBallast.ItemsSource = FSMList;
                 FSMTypeFresh.ItemsSource = FSMList;
                 FSMTypeFuel.ItemsSource = FSMList;
@@ -160,6 +164,7 @@ namespace WpfMvvmStability.Views
                 statusListCmp.Add("Flood", "2");
 
                 Status.ItemsSource = statusListCmp;
+                StatusCargo.ItemsSource = statusList;
                 StatusBallast.ItemsSource = statusList;
                 StatusFresh.ItemsSource = statusList;
                 StatusFuel.ItemsSource = statusList;
@@ -167,6 +172,7 @@ namespace WpfMvvmStability.Views
                 StatusWTRegion.ItemsSource = statusList;
 
                 //var x=Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
+                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
                 dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
                 dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
                 dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
@@ -181,8 +187,8 @@ namespace WpfMvvmStability.Views
                 Model(Models.BO.clsGlobVar.Profile, canvas2DProfile);
                 Model(Models.BO.clsGlobVar.PlanA, canvas2DPlanA);
                 Model(Models.BO.clsGlobVar.PlanB, canvas2DPlanB);
-                Model(Models.BO.clsGlobVar.PlanC, canvas2DPlanC);
-                ModelNew(Models.BO.clsGlobVar.PlanALL, canvas2DAll);
+                //Model(Models.BO.clsGlobVar.PlanC, canvas2DPlanC);
+                //ModelNew(Models.BO.clsGlobVar.PlanALL, canvas2DAll);
 
 
                 //lblDeadWeight.Content = Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Lightship_Weight"]), 1).ToString();
@@ -389,6 +395,9 @@ namespace WpfMvvmStability.Views
                     boundsCalculator.GetBounds(model, model.ActiveLayout);
                 }
                 bounds = boundsCalculator.Bounds;
+                if (canvas2D == canvas2DProfile) boundsProfile = bounds;
+                else if (canvas2D == canvas2DPlanA) boundsPlanA = bounds;
+                else if (canvas2D == canvas2DPlanB) boundsPlanB = bounds;
                 WW.Math.Vector3D delta = bounds.Delta;
                 System.Windows.Size estimatedCanvasSize = new System.Windows.Size(200d, 200d);
                 double estimatedScale = Math.Min(estimatedCanvasSize.Width / delta.X, estimatedCanvasSize.Height / delta.Y);
@@ -450,10 +459,7 @@ namespace WpfMvvmStability.Views
             {
                 UpdateRenderTransform(canvas2DPlanB);
             }
-            else if (sender == canvas2DPlanC)
-            {
-                UpdateRenderTransform(canvas2DPlanC);
-            }
+           
         }
 
         private void UpdateRenderTransform(Canvas canvas2D)
@@ -466,12 +472,30 @@ namespace WpfMvvmStability.Views
             double angle = ((FP - AP) / 151.5) * (180 / Math.PI);
             //@MT Code added for Ship Profile Image Rotate :END
 
+            Bounds3D activeBounds;
+            if (canvas2D == canvas2DProfile && boundsProfile != null) activeBounds = boundsProfile;
+            else if (canvas2D == canvas2DPlanA && boundsPlanA != null) activeBounds = boundsPlanA;
+            else if (canvas2D == canvas2DPlanB && boundsPlanB != null) activeBounds = boundsPlanB;
+            else activeBounds = bounds;
+
             double canvasWidth = canvas2D.ActualWidth;
             double canvasHeight = canvas2D.ActualHeight;
+
+            // The DXF has a fixed reference datum at Y≈-120000 far below the ship.
+            // All views: ship content spans Y≈0 to Y=Corner2.Y, so center at Corner2.Y*0.5.
+            // Profile gets tighter zoom (0.60) to show hull larger; plan views use 0.75.
+            double yCenter = activeBounds.Corner2.Y * 0.45;
+            double yHalf = (canvas2D == canvas2DProfile)
+                ? activeBounds.Corner2.Y * 0.65
+                : (canvas2D == canvas2DPlanB) ? activeBounds.Corner2.Y * 0.55 : activeBounds.Corner2.Y * 0.75;
+            Point2D effectiveCorner1 = new Point2D(activeBounds.Corner1.X, yCenter - yHalf);
+            Point2D effectiveCorner2 = new Point2D(activeBounds.Corner2.X, yCenter + yHalf);
+            Point2D effectiveCenter  = new Point2D(activeBounds.Center.X,  yCenter);
+
             MatrixTransform baseTransform = DxfUtil.GetScaleWMMatrixTransform(
-                (Point2D)bounds.Corner1,
-                (Point2D)bounds.Corner2,
-                (Point2D)bounds.Center,
+                effectiveCorner1,
+                effectiveCorner2,
+                effectiveCenter,
                 new Point2D(1d, canvasHeight),
                 new Point2D(canvasWidth, 1d),
                 new Point2D(0.5d * (canvasWidth + 1d), 0.5d * (canvasHeight + 1d))
@@ -514,63 +538,7 @@ namespace WpfMvvmStability.Views
 
         }
         /****************************************************************************************************/
-        public void ModelNew(DxfModel model, Canvas canvas2D)
-        {
-            if (model != null)
-            {
-
-                DxfLayout paperSpaceLayout = model.ActiveLayout;
-                if (model.Header.ShowModelSpace)
-                {
-                    paperSpaceLayout = null;
-
-                }
-
-                #region calculate the model's bounds to determine a proper dots per inch
-
-                // The dots per inch value is important because it determines the eventual pen thickness.
-                graphicsConfigNew = (GraphicsConfig)GraphicsConfig.WhiteBackgroundCorrectForBackColor.Clone();
-                BoundsCalculator boundsCalculator = new BoundsCalculator();
-                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
-                {
-                    boundsCalculator.GetBounds(model);
-                }
-                else
-                {
-                    boundsCalculator.GetBounds(model, model.ActiveLayout);
-                }
-                boundsNew = boundsCalculator.Bounds;
-                WW.Math.Vector3D delta = boundsNew.Delta;
-                System.Windows.Size estimatedCanvasSize = new System.Windows.Size(200d, 200d);
-                double estimatedScale = Math.Min(estimatedCanvasSize.Width / delta.X, estimatedCanvasSize.Height / delta.Y);
-                graphicsConfigNew.DotsPerInch = 20d / estimatedScale;
-                BoundsCalculator boundsCalculator1 = new BoundsCalculator();
-                boundsCalculator1.GetBounds(model, model.Entities[20]);
-                #endregion
-
-                graphicsCacheNew = new WireframeGraphics2Cache(false, false);
-                graphicsCacheNew.Config = graphicsConfigNew;
-                if (model.ActiveLayout == null || model.Header.ShowModelSpace)
-                {
-                    graphicsCacheNew.CreateDrawables(model, Matrix4D.Identity);
-
-                }
-                else
-                {
-                    graphicsCacheNew.CreateDrawables(model, model.ActiveLayout);
-                }
-
-                wpfGraphicsNew = new WpfWireframeGraphics3DUsingDrawingVisual();
-                wpfGraphicsNew.Config = graphicsConfigNew;
-
-                canvas2D.Children.Add(wpfGraphicsNew.Canvas);
-
-                UpdateWpfGraphicsNew();
-
-                canvas2D.SizeChanged += canvas_SizeChangedNew;
-
-            }
-        }
+       
         private void UpdateWpfGraphicsNew()
         {
 
@@ -586,10 +554,7 @@ namespace WpfMvvmStability.Views
         /// <summary>
         /// Update the canvas RenderTransform.
         /// </summary>
-        private void canvas_SizeChangedNew(object sender, SizeChangedEventArgs e)
-        {
-            UpdateRenderTransformNew(canvas2DAll);
-        }
+       
 
         private void UpdateRenderTransformNew(Canvas canvas2D)
         {
@@ -998,7 +963,7 @@ namespace WpfMvvmStability.Views
                 return;
             }
 
-            if (dgBallastTanks.IsLoaded==true || dgFreshWaterTanks.IsLoaded==true|| dgFuelOilTanks.IsLoaded==true ||dgMiscTanks.IsLoaded==true || dgCompartments.IsLoaded==true || dgWTRegion.IsLoaded==true )
+            if (dgCargoTanks.IsLoaded == true || dgBallastTanks.IsLoaded==true || dgFreshWaterTanks.IsLoaded==true|| dgFuelOilTanks.IsLoaded==true ||dgMiscTanks.IsLoaded==true || dgCompartments.IsLoaded==true || dgWTRegion.IsLoaded==true )
             {
                 try
                 {
@@ -1433,6 +1398,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
             }
+            dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
             dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
             dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
             dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
@@ -1614,7 +1580,6 @@ namespace WpfMvvmStability.Views
 
 
             Refresh3dNew();
-            canvas2DAll.Children.RemoveRange(1, canvas2DAll.Children.Count - 1);
             AddHatchProfile();
             AddHatchDeckPlanA();
             AddHatchDeckPlanB();
@@ -1657,7 +1622,7 @@ namespace WpfMvvmStability.Views
                 {
                     Models.TableModel.SimulationModeData();
                     Models.TableModel.SimulationModePercentFill();
-                   // Models.TableModel.simulationmodeCorrectiveFill();
+                   //Models.TableModel.simulationmodeCorrectiveFill();
 
                 }
             }
@@ -1844,6 +1809,7 @@ namespace WpfMvvmStability.Views
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
 
                 Models.TableModel.SimulationModeData();
+                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
                 dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
                 dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
                 dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
@@ -2021,13 +1987,13 @@ namespace WpfMvvmStability.Views
 
                     DataRow tankRow = clsGlobVar.dtSimulationModeAllTanks.Rows[tankId - 1];
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
-                    bool isDamaged = tankRow["IsDamaged"].ToString() == Boolean.TrueString
-                                     && Convert.ToInt64(tankRow["Status"]) == 1;
+                    bool isDamaged = tankRow["IsDamaged"].ToString() == Boolean.TrueString ?  true :false;
                  
                     DrawHatchDeckPlan(canvas2DPlanB, tankId, percent, kvp.Value.X, kvp.Value.Y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                    UpdateRenderTransform(canvas2DPlanB);
                 }
 
-                UpdateRenderTransform(canvas2DPlanB);
+               
             }
             catch //(Exception ex)
             {
@@ -2047,20 +2013,22 @@ namespace WpfMvvmStability.Views
                 foreach (var kvp in clsGlobVar.CoordinatePlanA.Tanks)
                 {
                     int tankId = kvp.Value.Tank_ID;
-                    if (tankId <= 0 || tankId > clsGlobVar.dtSimulationModeAllTanks.Rows.Count) continue;
-
-                    DataRow tankRow = clsGlobVar.SimulationFilling.Rows[tankId - 1];
+                    DataRow tankRow = clsGlobVar.SimulationFilling
+                                           .AsEnumerable()
+                                           .FirstOrDefault(r => Convert.ToInt32(r["Tank_ID"]) == tankId);
+                    if (tankRow == null) continue;
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
                     DataRow tankDamageRow = clsGlobVar.dtSimulationLoadingSummary.Rows[tankId - 1];
                    
                     bool isDamaged = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString
-                                     && Convert.ToInt64(tankDamageRow["Status"]) == 1;
+                                    ? true : false;
                     System.Windows.Media.Color tankColor = isDamaged
                        ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154);
                     DrawHatchDeckPlan(canvas2DPlanA, tankId, percent, kvp.Value.X, kvp.Value.Y, tankColor);
+                    UpdateRenderTransform(canvas2DPlanA);
                 }
 
-                UpdateRenderTransform(canvas2DPlanA);
+               
             }
             catch //(Exception ex)
             {
@@ -2074,175 +2042,7 @@ namespace WpfMvvmStability.Views
         /// <summary>
         /// Add Hatch Filling of Tanks/Compartments to DeckPlans Canvas as per TankID 
         /// </summary>
-        public void AddHatchDeckPlanC()
-        {
-            try
-            {
-                canvas2DPlanC.Children.RemoveRange(1, canvas2DPlanC.Children.Count - 1);
-                System.Windows.Media.Color flag = (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[0]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227));
-                DrawHatchDeckPlan(canvas2DPlanC, 142, clsGlobVar.Tank142_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank142x, clsGlobVar.CoordinatePlanC.Tank142y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 143, clsGlobVar.Tank143_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank143x, clsGlobVar.CoordinatePlanC.Tank143y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 144, clsGlobVar.Tank144_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank144x, clsGlobVar.CoordinatePlanC.Tank144y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 148, clsGlobVar.Tank148_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank148x, clsGlobVar.CoordinatePlanC.Tank148y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-               DrawHatchDeckPlan(canvas2DPlanC, 149, clsGlobVar.Tank149_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank149ax, clsGlobVar.CoordinatePlanC.Tank149ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 149, clsGlobVar.Tank149_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank149bx, clsGlobVar.CoordinatePlanC.Tank149by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 178, clsGlobVar.Tank178_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank178x, clsGlobVar.CoordinatePlanC.Tank178y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 188, clsGlobVar.Tank188_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank188x, clsGlobVar.CoordinatePlanC.Tank188y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 302, clsGlobVar.Tank302_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank302x, clsGlobVar.CoordinatePlanC.Tank302y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 303, clsGlobVar.Tank303_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank303x, clsGlobVar.CoordinatePlanC.Tank303y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 304, clsGlobVar.Tank304_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank304x, clsGlobVar.CoordinatePlanC.Tank304y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 305, clsGlobVar.Tank305_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank305x, clsGlobVar.CoordinatePlanC.Tank305y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 306, clsGlobVar.Tank306_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank306x, clsGlobVar.CoordinatePlanC.Tank306y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 307, clsGlobVar.Tank307_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank307x, clsGlobVar.CoordinatePlanC.Tank307y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 308, clsGlobVar.Tank308_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank308x, clsGlobVar.CoordinatePlanC.Tank308y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 309, clsGlobVar.Tank309_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank309x, clsGlobVar.CoordinatePlanC.Tank309y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 310, clsGlobVar.Tank310_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank310x, clsGlobVar.CoordinatePlanC.Tank310y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 311, clsGlobVar.Tank311_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank311x, clsGlobVar.CoordinatePlanC.Tank311y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 312, clsGlobVar.Tank312_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank312x, clsGlobVar.CoordinatePlanC.Tank312y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 313, clsGlobVar.Tank313_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank313x, clsGlobVar.CoordinatePlanC.Tank313y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 314, clsGlobVar.Tank314_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank314x, clsGlobVar.CoordinatePlanC.Tank314y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 315, clsGlobVar.Tank315_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank315x, clsGlobVar.CoordinatePlanC.Tank315y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 316, clsGlobVar.Tank316_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank316x, clsGlobVar.CoordinatePlanC.Tank316y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 318, clsGlobVar.Tank318_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank318x, clsGlobVar.CoordinatePlanC.Tank318y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 319, clsGlobVar.Tank319_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank319x, clsGlobVar.CoordinatePlanC.Tank319y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 320, clsGlobVar.Tank320_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank320x, clsGlobVar.CoordinatePlanC.Tank320y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 321, clsGlobVar.Tank321_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank321x, clsGlobVar.CoordinatePlanC.Tank321y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 322, clsGlobVar.Tank322_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank322x, clsGlobVar.CoordinatePlanC.Tank322y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 323, clsGlobVar.Tank323_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank323x, clsGlobVar.CoordinatePlanC.Tank323y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 324, clsGlobVar.Tank324_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank324x, clsGlobVar.CoordinatePlanC.Tank324y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 325, clsGlobVar.Tank325_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank325x, clsGlobVar.CoordinatePlanC.Tank325y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 326, clsGlobVar.Tank326_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank326x, clsGlobVar.CoordinatePlanC.Tank326y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 327, clsGlobVar.Tank327_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank327x, clsGlobVar.CoordinatePlanC.Tank327y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 328, clsGlobVar.Tank328_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank328x, clsGlobVar.CoordinatePlanC.Tank328y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 329, clsGlobVar.Tank329_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank329x, clsGlobVar.CoordinatePlanC.Tank329y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 330, clsGlobVar.Tank330_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank330x, clsGlobVar.CoordinatePlanC.Tank330y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 331, clsGlobVar.Tank331_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank331x, clsGlobVar.CoordinatePlanC.Tank331y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 332, clsGlobVar.Tank332_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank332x, clsGlobVar.CoordinatePlanC.Tank332y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 333, clsGlobVar.Tank333_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank333x, clsGlobVar.CoordinatePlanC.Tank333y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 334, clsGlobVar.Tank334_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank334x, clsGlobVar.CoordinatePlanC.Tank334y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 335, clsGlobVar.Tank335_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank335x, clsGlobVar.CoordinatePlanC.Tank335y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 336, clsGlobVar.Tank336_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank336x, clsGlobVar.CoordinatePlanC.Tank336y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 337, clsGlobVar.Tank337_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank337x, clsGlobVar.CoordinatePlanC.Tank337y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 338, clsGlobVar.Tank338_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank338x, clsGlobVar.CoordinatePlanC.Tank338y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 339, clsGlobVar.Tank339_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank339x, clsGlobVar.CoordinatePlanC.Tank339y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 340, clsGlobVar.Tank340_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank340x, clsGlobVar.CoordinatePlanC.Tank340y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 341, clsGlobVar.Tank341_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank341x, clsGlobVar.CoordinatePlanC.Tank341y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 342, clsGlobVar.Tank342_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank342x, clsGlobVar.CoordinatePlanC.Tank342y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 343, clsGlobVar.Tank343_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank343x, clsGlobVar.CoordinatePlanC.Tank343y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 344, clsGlobVar.Tank344_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank344x, clsGlobVar.CoordinatePlanC.Tank344y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 345, clsGlobVar.Tank345_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank345x, clsGlobVar.CoordinatePlanC.Tank345y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 346, clsGlobVar.Tank346_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank346x, clsGlobVar.CoordinatePlanC.Tank346y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 347, clsGlobVar.Tank347_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank347x, clsGlobVar.CoordinatePlanC.Tank347y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 348, clsGlobVar.Tank348_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank348x, clsGlobVar.CoordinatePlanC.Tank348y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 349, clsGlobVar.Tank349_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank349x, clsGlobVar.CoordinatePlanC.Tank349y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 350, clsGlobVar.Tank350_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank350x, clsGlobVar.CoordinatePlanC.Tank350y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 351, clsGlobVar.Tank351_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank351x, clsGlobVar.CoordinatePlanC.Tank351y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 352, clsGlobVar.Tank352_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank352x, clsGlobVar.CoordinatePlanC.Tank352y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 353, clsGlobVar.Tank353_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank353x, clsGlobVar.CoordinatePlanC.Tank353y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 354, clsGlobVar.Tank354_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank354x, clsGlobVar.CoordinatePlanC.Tank354y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 355, clsGlobVar.Tank355_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank355x, clsGlobVar.CoordinatePlanC.Tank355y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 356, clsGlobVar.Tank356_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank356x, clsGlobVar.CoordinatePlanC.Tank356y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 357, clsGlobVar.Tank357_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank357x, clsGlobVar.CoordinatePlanC.Tank357y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 358, clsGlobVar.Tank358_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank358x, clsGlobVar.CoordinatePlanC.Tank358y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 359, clsGlobVar.Tank359_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank359x, clsGlobVar.CoordinatePlanC.Tank359y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 360, clsGlobVar.Tank360_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank360x, clsGlobVar.CoordinatePlanC.Tank360y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 362, clsGlobVar.Tank362_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank362x, clsGlobVar.CoordinatePlanC.Tank362y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 363, clsGlobVar.Tank363_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank363x, clsGlobVar.CoordinatePlanC.Tank363y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 364, clsGlobVar.Tank364_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank364x, clsGlobVar.CoordinatePlanC.Tank364y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 365, clsGlobVar.Tank365_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank365x, clsGlobVar.CoordinatePlanC.Tank365y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 366, clsGlobVar.Tank366_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank366x, clsGlobVar.CoordinatePlanC.Tank366y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 367, clsGlobVar.Tank367_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank367x, clsGlobVar.CoordinatePlanC.Tank367y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 368, clsGlobVar.Tank368_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank368x, clsGlobVar.CoordinatePlanC.Tank368y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 369, clsGlobVar.Tank369_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank369x, clsGlobVar.CoordinatePlanC.Tank369y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 370, clsGlobVar.Tank370_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank370x, clsGlobVar.CoordinatePlanC.Tank370y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 371, clsGlobVar.Tank371_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank371x, clsGlobVar.CoordinatePlanC.Tank371y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 372, clsGlobVar.Tank372_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank372x, clsGlobVar.CoordinatePlanC.Tank372y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 373, clsGlobVar.Tank373_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank373x, clsGlobVar.CoordinatePlanC.Tank373y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 374, clsGlobVar.Tank374_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank374x, clsGlobVar.CoordinatePlanC.Tank374y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 375, clsGlobVar.Tank375_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank375x, clsGlobVar.CoordinatePlanC.Tank375y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 376, clsGlobVar.Tank376_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank376x, clsGlobVar.CoordinatePlanC.Tank376y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 377, clsGlobVar.Tank377_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank377x, clsGlobVar.CoordinatePlanC.Tank377y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 378, clsGlobVar.Tank378_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank378x, clsGlobVar.CoordinatePlanC.Tank378y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 379, clsGlobVar.Tank379_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank379x, clsGlobVar.CoordinatePlanC.Tank379y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 380, clsGlobVar.Tank380_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank380x, clsGlobVar.CoordinatePlanC.Tank380y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 381, clsGlobVar.Tank381_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank381x, clsGlobVar.CoordinatePlanC.Tank381y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 382, clsGlobVar.Tank382_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank382x, clsGlobVar.CoordinatePlanC.Tank382y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 383, clsGlobVar.Tank383_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank383x, clsGlobVar.CoordinatePlanC.Tank383y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 384, clsGlobVar.Tank384_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank384x, clsGlobVar.CoordinatePlanC.Tank384y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 385, clsGlobVar.Tank385_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank385x, clsGlobVar.CoordinatePlanC.Tank385y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 386, clsGlobVar.Tank386_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank386x, clsGlobVar.CoordinatePlanC.Tank386y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 387, clsGlobVar.Tank387_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank387x, clsGlobVar.CoordinatePlanC.Tank387y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 388, clsGlobVar.Tank388_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank388x, clsGlobVar.CoordinatePlanC.Tank388y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 389, clsGlobVar.Tank389_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank389x, clsGlobVar.CoordinatePlanC.Tank389y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 390, clsGlobVar.Tank390_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank390x, clsGlobVar.CoordinatePlanC.Tank390y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 391, clsGlobVar.Tank391_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank391x, clsGlobVar.CoordinatePlanC.Tank391y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 392, clsGlobVar.Tank392_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank392x, clsGlobVar.CoordinatePlanC.Tank392y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 393, clsGlobVar.Tank393_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank393x, clsGlobVar.CoordinatePlanC.Tank393y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 394, clsGlobVar.Tank394_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank394x, clsGlobVar.CoordinatePlanC.Tank394y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 395, clsGlobVar.Tank395_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank395x, clsGlobVar.CoordinatePlanC.Tank395y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 396, clsGlobVar.Tank396_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank396x, clsGlobVar.CoordinatePlanC.Tank396y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 397, clsGlobVar.Tank397_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank397x, clsGlobVar.CoordinatePlanC.Tank397y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 399, clsGlobVar.Tank399_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank399x, clsGlobVar.CoordinatePlanC.Tank399y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 400, clsGlobVar.Tank400_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank400x, clsGlobVar.CoordinatePlanC.Tank400y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 401, clsGlobVar.Tank401_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank401x, clsGlobVar.CoordinatePlanC.Tank401y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 402, clsGlobVar.Tank402_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank402x, clsGlobVar.CoordinatePlanC.Tank402y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 403, clsGlobVar.Tank403_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank403x, clsGlobVar.CoordinatePlanC.Tank403y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 404, clsGlobVar.Tank404_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank404x, clsGlobVar.CoordinatePlanC.Tank404y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 405, clsGlobVar.Tank405_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank405x, clsGlobVar.CoordinatePlanC.Tank405y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 406, clsGlobVar.Tank406_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank406x, clsGlobVar.CoordinatePlanC.Tank406y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 407, clsGlobVar.Tank407_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank407x, clsGlobVar.CoordinatePlanC.Tank407y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 408, clsGlobVar.Tank408_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank408x, clsGlobVar.CoordinatePlanC.Tank408y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 409, clsGlobVar.Tank409_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank409x, clsGlobVar.CoordinatePlanC.Tank409y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 410, clsGlobVar.Tank410_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank410x, clsGlobVar.CoordinatePlanC.Tank410y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 411, clsGlobVar.Tank411_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank411x, clsGlobVar.CoordinatePlanC.Tank411y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 412, clsGlobVar.Tank412_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank412x, clsGlobVar.CoordinatePlanC.Tank412y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 413, clsGlobVar.Tank413_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank413x, clsGlobVar.CoordinatePlanC.Tank413y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 414, clsGlobVar.Tank414_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank414x, clsGlobVar.CoordinatePlanC.Tank414y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 415, clsGlobVar.Tank415_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank415x, clsGlobVar.CoordinatePlanC.Tank415y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 416, clsGlobVar.Tank416_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank416ax, clsGlobVar.CoordinatePlanC.Tank416ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 416, clsGlobVar.Tank416_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank416bx, clsGlobVar.CoordinatePlanC.Tank416by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 417, clsGlobVar.Tank417_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank417x, clsGlobVar.CoordinatePlanC.Tank417y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 418, clsGlobVar.Tank418_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank418x, clsGlobVar.CoordinatePlanC.Tank418y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 419, clsGlobVar.Tank419_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank419x, clsGlobVar.CoordinatePlanC.Tank419y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 420, clsGlobVar.Tank420_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank420x, clsGlobVar.CoordinatePlanC.Tank420y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 421, clsGlobVar.Tank421_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank421x, clsGlobVar.CoordinatePlanC.Tank421y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 423, clsGlobVar.Tank423_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank423x, clsGlobVar.CoordinatePlanC.Tank423y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 424, clsGlobVar.Tank424_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank424x, clsGlobVar.CoordinatePlanC.Tank424y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 425, clsGlobVar.Tank425_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank425x, clsGlobVar.CoordinatePlanC.Tank425y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 426, clsGlobVar.Tank426_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank426x, clsGlobVar.CoordinatePlanC.Tank426y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 427, clsGlobVar.Tank427_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank427x, clsGlobVar.CoordinatePlanC.Tank427y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 428, clsGlobVar.Tank428_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank428x, clsGlobVar.CoordinatePlanC.Tank428y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 429, clsGlobVar.Tank429_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank429x, clsGlobVar.CoordinatePlanC.Tank429y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 430, clsGlobVar.Tank430_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank430x, clsGlobVar.CoordinatePlanC.Tank430y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 431, clsGlobVar.Tank431_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank431x, clsGlobVar.CoordinatePlanC.Tank431y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 432, clsGlobVar.Tank432_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank432x, clsGlobVar.CoordinatePlanC.Tank432y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 433, clsGlobVar.Tank433_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank433x, clsGlobVar.CoordinatePlanC.Tank433y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 434, clsGlobVar.Tank434_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank434x, clsGlobVar.CoordinatePlanC.Tank434y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 435, clsGlobVar.Tank435_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank435x, clsGlobVar.CoordinatePlanC.Tank435y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 439, clsGlobVar.Tank439_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank439x, clsGlobVar.CoordinatePlanC.Tank439y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 443, clsGlobVar.Tank443_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank443x, clsGlobVar.CoordinatePlanC.Tank443y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 448, clsGlobVar.Tank448_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank448x, clsGlobVar.CoordinatePlanC.Tank448y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 449, clsGlobVar.Tank449_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank449x, clsGlobVar.CoordinatePlanC.Tank449y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 452, clsGlobVar.Tank452_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank452x, clsGlobVar.CoordinatePlanC.Tank452y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 453, clsGlobVar.Tank453_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank453x, clsGlobVar.CoordinatePlanC.Tank453y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 457, clsGlobVar.Tank457_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank457x, clsGlobVar.CoordinatePlanC.Tank457y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 461, clsGlobVar.Tank461_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank461x, clsGlobVar.CoordinatePlanC.Tank461y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 466, clsGlobVar.Tank466_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank466x, clsGlobVar.CoordinatePlanC.Tank466y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 467, clsGlobVar.Tank467_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank467x, clsGlobVar.CoordinatePlanC.Tank467y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 470, clsGlobVar.Tank470_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank470x, clsGlobVar.CoordinatePlanC.Tank470y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank475ax, clsGlobVar.CoordinatePlanC.Tank475ay, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 475, clsGlobVar.Tank475_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank475bx, clsGlobVar.CoordinatePlanC.Tank475by, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 476, clsGlobVar.Tank476_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank476x, clsGlobVar.CoordinatePlanC.Tank476y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-                DrawHatchDeckPlan(canvas2DPlanC, 478, clsGlobVar.Tank478_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank478x, clsGlobVar.CoordinatePlanC.Tank478y, (((Models.BO.clsGlobVar.dtSimulationLoadingSummary.Rows[477]["IsDamaged"]).ToString() == Boolean.TrueString) ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(180, 141, 180, 227)));
-                DrawHatchDeckPlan(canvas2DPlanC, 494, clsGlobVar.Tank494_SimulationPercentFill, clsGlobVar.CoordinatePlanC.Tank494x, clsGlobVar.CoordinatePlanC.Tank494y, System.Windows.Media.Color.FromArgb(180, 255, 0, 0));
-
-
-            }
-            catch //(Exception ex)
-            {
-               // System.Windows.MessageBox.Show(ex.Message);
-            }
-        }
+       
 
         /// <summary>
         /// Add Hatch Filling of Tanks/Compartments to Profile Canvas as per TankID 
@@ -2266,15 +2066,16 @@ namespace WpfMvvmStability.Views
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
                     DataRow tankDamageRow = clsGlobVar.dtSimulationLoadingSummary.Rows[tankId - 1];
                     bool isDamaged  = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString
-                                      && Convert.ToInt64(tankDamageRow["Status"]) == 1;
+                                    ? true : false;
                     System.Windows.Media.Color tankColor = isDamaged
                         ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78)
                         : System.Windows.Media.Color.FromArgb(180, 194, 214, 154);
                     DrawHatchProfile(canvas2DProfile, tankId, percent, kvp.Value.X, kvp.Value.Y, tankColor);
+                    UpdateRenderTransform(canvas2DProfile);
+                    DrawTrimLine();
                 }
                 
-                UpdateRenderTransform(canvas2DProfile);
-                DrawTrimLine();
+                
             }
             catch //(Exception ex)
             {
@@ -2294,28 +2095,28 @@ namespace WpfMvvmStability.Views
             DraftFP = Convert.ToDouble(lblDraftFP.Content);
             angle = (DraftFP - DraftAP) / 2;
             yAvg = (DraftFP + DraftAP) / 2;
-            xAP = 5000;
+            xAP = -15000;
             yAP = 6250 + 1157.40 + ((yAvg - angle) * 1000);
-            xFP = 172045;
+            xFP = 350000;
             yFP = 6250 + 1157.40 + ((yAvg + angle) * 1000);
 
             //@MT Code changed for Ship Profile Trim Line Should be Steady :END
 
-            System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
-            p.Stroke = System.Windows.Media.Brushes.Black;
+            // Remove any previously drawn trim line before adding a new one
+            var existing = canvas2DProfile.Children.OfType<System.Windows.Shapes.Line>()
+                .FirstOrDefault(l => l.Tag as string == "TrimLine");
+            if (existing != null)
+                canvas2DProfile.Children.Remove(existing);
 
-            SolidColorBrush mySolidColorBrush = new SolidColorBrush();
-            mySolidColorBrush.Color = System.Windows.Media.Color.FromArgb(255, 0, 0, 255);
-            p.Fill = mySolidColorBrush;
-
-            System.Windows.Point[] point = new System.Windows.Point[5];
-            PointCollection pointCollection = new PointCollection();
-            pointCollection.Add(new System.Windows.Point(xAP, yAP - 200));
-            pointCollection.Add(new System.Windows.Point(xFP, yFP - 200));
-            pointCollection.Add(new System.Windows.Point(xFP, yFP));
-            pointCollection.Add(new System.Windows.Point(xAP, yAP));
-            p.Points = pointCollection;
-            canvas2DProfile.Children.Add(p);
+            System.Windows.Shapes.Line trimLine = new System.Windows.Shapes.Line();
+            trimLine.Tag = "TrimLine";
+            trimLine.X1 = xAP;
+            trimLine.Y1 = yAP;
+            trimLine.X2 = xFP;
+            trimLine.Y2 = yFP;
+            trimLine.Stroke = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 0, 0, 255));
+            trimLine.StrokeThickness = 200;
+            canvas2DProfile.Children.Add(trimLine);
 
         }
 
@@ -2351,22 +2152,6 @@ namespace WpfMvvmStability.Views
                         pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
                         p.Points = pointCollection;
                         canvasTwoD.Children.Add(p);
-                    }
-
-                    // All canvas
-                    {
-                        System.Windows.Shapes.Polygon p = new System.Windows.Shapes.Polygon();
-                        p.Stroke = System.Windows.Media.Brushes.Black;
-                        SolidColorBrush mySolidColorBrush = new SolidColorBrush();
-                        mySolidColorBrush.Color = color;
-                        p.Fill = mySolidColorBrush;
-                        PointCollection pointCollection = new PointCollection();
-                        pointCollection.Add(new System.Windows.Point(xx[1], yy[1]));
-                        pointCollection.Add(new System.Windows.Point(xx[2], yy[2]));
-                        pointCollection.Add(new System.Windows.Point(xx[2], yy[2] + Fill));
-                        pointCollection.Add(new System.Windows.Point(xx[1], yy[2] + Fill));
-                        p.Points = pointCollection;
-                        canvas2DAll.Children.Add(p);
                     }
                 }
             }
@@ -2459,17 +2244,8 @@ namespace WpfMvvmStability.Views
                                 }
                             }
 
-                            else if (canvasTwoD == canvas2DPlanC)
-                            {
-                                for (int index = 1; index <= 13; index++)
-                                {
-
-                                    pointCollection.Add(new System.Windows.Point(xx[index] - 950, yy[index] - 49850));
-
-                                }
-                            }
-                            p.Points = pointCollection;
-                            canvas2DAll.Children.Add(p);
+                          
+                          
                         }
                     }
                     #endregion
@@ -2549,18 +2325,7 @@ namespace WpfMvvmStability.Views
 
                                 }
                             }
-
-                            else if(canvasTwoD == canvas2DPlanC)
-                            {
-                                for (int index = 1; index <= 13; index++)
-                                {
-
-                                    pointCollection.Add(new System.Windows.Point(xx[index]-950, yy[index]-49850));
-
-                                }
-                            }
-                             p.Points = pointCollection;
-                             canvas2DAll.Children.Add(p);
+                            
                             }
                         }
                         #endregion
@@ -2676,8 +2441,8 @@ namespace WpfMvvmStability.Views
                 // Cargo tanks
                 for (int i = 0; i < 9; i++)
                 {
-                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
-                    string Name = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
+                    string stats = Convert.ToString((dgCargoTanks.Items[i] as DataRowView)["IsDamaged"]);
+                    string Name = Convert.ToString((dgCargoTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
                     if (!cargoFiles.TryGetValue(Name, out string baseFile)) continue;
                     TankNameForPercentage = Name;
                     Getpercentage();
@@ -2700,7 +2465,7 @@ namespace WpfMvvmStability.Views
                 }
 
                 // Misc tanks (51-75% uses MiscTank50 folder — preserved from original)
-                for (int i = 0; i <13; i++)
+                for (int i = 0; i <17; i++)
                 {
                     string stats = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["IsDamaged"]);
                     string Name = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]).Split('.')[0].Replace("/", "");
@@ -3810,11 +3575,142 @@ namespace WpfMvvmStability.Views
             //}
             //Models.TableModel.Write_Log(" END : dgCompartments_LoadingRow");
         }
-    
-    #endregion
-    
 
-       private void canvas2DProfile_MouseRightButtonDown_1(object sender, MouseButtonEventArgs e)
+
+        #endregion
+
+        private void btnclearBallast_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void dgCargoTanks_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            selectionchangecount = 0;
+            Models.TableModel.Write_Log(" START WHR SELECTION = 1 : dgCargoTanks_SelectionChanged");
+            try
+            {
+                int TankId, CellCnt;
+
+                string Err = string.Empty;
+                string status = string.Empty;
+                if (dgCargoTanks.IsLoaded == true)
+                {
+                    DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+
+                    var RowsCnt = dgCargoTanks.SelectedItems;
+
+                    if (RowsCnt.Count > 1)
+                    {
+                        Models.TableModel.Write_Log(" START : dgCargoTanks_SelectionChanged");
+                        PK = 1;
+                        DataRowView row = (DataRowView)dgCargoTanks.SelectedItems[0];
+                        // DataGridCell ThirdColumnInFirstRow = dgBallastTanks.Columns[2].GetCellContent(row).Parent as DataGridCell;
+
+                        //ThirdColumnInFirstRow.Background = Brushes.LightPink;
+                        string selectedStatus = row["status"].ToString();
+
+                        TankId = Convert.ToInt16(row["Tank_Id"]);
+                        string query = " ";
+                        for (int i = 1; i < RowsCnt.Count; i++)
+                        {
+                            DataRowView mulRow = (DataRowView)RowsCnt[i];
+                            mulRow["Status"] = selectedStatus;
+                            //DataGridCell SelectedColumnInSelectedRow = dgBallastTanks.Columns[2].GetCellContent(mulRow).Parent as DataGridCell;
+                            //SelectedColumnInSelectedRow.Background = Brushes.LightPink;
+
+                            int TankIdMul = Convert.ToInt16(mulRow["tank_Id"]);
+                            query += "update  tblSimulationMode_Loading_Condition set Status=" + selectedStatus.ToString() + " where Tank_ID=" + TankIdMul;
+                            if (selectedStatus == "0")
+                            {
+                                query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankIdMul;
+                                query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankIdMul;
+                            }
+                            else
+                            {
+                                query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=1 where Tank_ID=" + TankIdMul;
+                                query += "  update  tblSimulationMode_Tank_Status set IsDamaged=1 where Tank_ID=" + TankIdMul;
+                            }
+                            command.CommandText = query;
+                            command.CommandType = CommandType.Text;
+                            Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                        }
+                        query = "update  tblSimulationMode_Loading_Condition set Status=" + selectedStatus.ToString() + " where Tank_ID=" + TankId;
+                        if (selectedStatus == "0")
+                        {
+                            query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankId;
+                            query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankId;
+                        }
+                        else
+                        {
+                            query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=1 where Tank_ID=" + TankId;
+                            query += "  update  tblSimulationMode_Tank_Status set IsDamaged=1 where Tank_ID=" + TankId;
+
+                        }
+                        command.CommandText = query;
+                        command.CommandType = CommandType.Text;
+                        Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                    }
+                    Models.TableModel.Write_Log(" END : dgCargoTanks_SelectionChanged");
+                }
+            }
+            catch { }
+        }
+
+        private void dgCargoTanks_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+
+        }
+
+        private void btnclearCargo_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                #region Cargo
+                {
+                    DataTable cargotank = Models.BO.clsGlobVar.dtSimulationCargoTanks;
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    cargotank.Columns.Remove("Volume");
+                    cargotank.Columns.Remove("Status");
+                    cargotank.Columns.Add(dc);
+                    cargotank.Columns.Add(dcStatus);
+                    dgBallastTanks.ItemsSource = cargotank.DefaultView;
+                }
+                #endregion
+                DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                string Err = "";
+
+                for (int i = 0; i < Models.BO.clsGlobVar.dtSimulationCargoTanks.Rows.Count; i++)
+                {
+
+                    ((dgBallastTanks.Items[i] as DataRowView)["Volume"]) = 0;
+                    ((dgBallastTanks.Items[i] as DataRowView)["Percent_Full"]) = 0;
+                    ((dgBallastTanks.Items[i] as DataRowView)["Sounding_Level"]) = 0;
+                    ((dgBallastTanks.Items[i] as DataRowView)["Weight"]) = 0;
+
+                }
+
+                string query = "update tblSimulationMode_Tank_Status SET Volume =0 , IsDamaged =0 where Tank_ID in(select Tank_ID  from tblmaster_tank where [group]='CARGO');" +
+                                " update [tblSimulationMode_Loading_Condition] SET Volume =0,IsDamaged = 0,Status=0 where Tank_ID in(select Tank_ID  from tblmaster_tank where [group]='CARGO')";
+                command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                command.CommandText = query;
+                command.CommandType = CommandType.Text;
+                Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                MessageBox.Show("CARGO Tanks Cleared ");
+            }
+            catch //(Exception)
+            {
+
+                // throw;
+            }
+        }
+
+        private void canvas2DProfile_MouseRightButtonDown_1(object sender, MouseButtonEventArgs e)
         {
            
             double IDSelect = 0;
@@ -3959,7 +3855,7 @@ namespace WpfMvvmStability.Views
                                 IDSelect = clsGlobVar.CoordinatePlanA.mulPlanA[p, n - 1];
 
 
-                                string sCmd = "Select * from tbl_GA_Plan_A where Tank_ID='" + IDSelect + "' and [Group]='" + SelectedGroup + "'";
+                                string sCmd = "Select * from tbl_GA_Plan_A where Tank_ID='" + IDSelect + "'";
                                 DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                                 command.CommandText = sCmd;
                                 command.CommandType = CommandType.Text;
@@ -4075,84 +3971,84 @@ namespace WpfMvvmStability.Views
            }
             #endregion
 
-            #region PLANC
-            if ( canvas2DPlanC.IsLoaded == true)
-           {
-               Point tp = e.GetPosition(this.canvas2DPlanC);
-               double xx = tp.X;
-               double yy = tp.Y;
-               AddHatchDeckPlanC();
-               ShadeX = new double[14];
-               ShadeY = new double[14];
-               for (int i = 0; i <= 154; i++)
-               {
-                   for (int j = 1; j < 2; j++)
+           // #region PLANC
+           // if ( canvas2DPlanC.IsLoaded == true)
+           //{
+           //    Point tp = e.GetPosition(this.canvas2DPlanC);
+           //    double xx = tp.X;
+           //    double yy = tp.Y;
+           //    AddHatchDeckPlanC();
+           //    ShadeX = new double[14];
+           //    ShadeY = new double[14];
+           //    for (int i = 0; i <= 154; i++)
+           //    {
+           //        for (int j = 1; j < 2; j++)
 
-                       if ((xx <= clsGlobVar.CoordinatePlanC.mulPlanC[i, j]) && (xx >= clsGlobVar.CoordinatePlanC.mulPlanC[i, j + 1]))
-                       {
-                           IDSelect = clsGlobVar.CoordinatePlanC.mulPlanC[i, j - 1];
-                           SelectionProcess obj = new SelectionProcess();
-                           obj.ID = IDSelect;
-                           obj.MaxValue = clsGlobVar.CoordinatePlanC.mulPlanC[i, j];
-                           obj.MinValue = clsGlobVar.CoordinatePlanC.mulPlanC[i, j + 1];
-                           obj.SmallValue = obj.MaxValue - obj.MinValue;
-                           _objSelection.Add(obj);
-                       }
-               }
-                 {
-                    _objSelection.Sort();
-                    _InumSelection = _objSelection;
-                }
+           //            if ((xx <= clsGlobVar.CoordinatePlanC.mulPlanC[i, j]) && (xx >= clsGlobVar.CoordinatePlanC.mulPlanC[i, j + 1]))
+           //            {
+           //                IDSelect = clsGlobVar.CoordinatePlanC.mulPlanC[i, j - 1];
+           //                SelectionProcess obj = new SelectionProcess();
+           //                obj.ID = IDSelect;
+           //                obj.MaxValue = clsGlobVar.CoordinatePlanC.mulPlanC[i, j];
+           //                obj.MinValue = clsGlobVar.CoordinatePlanC.mulPlanC[i, j + 1];
+           //                obj.SmallValue = obj.MaxValue - obj.MinValue;
+           //                _objSelection.Add(obj);
+           //            }
+           //    }
+           //      {
+           //         _objSelection.Sort();
+           //         _InumSelection = _objSelection;
+           //     }
 
-                foreach (SelectionProcess f in _InumSelection)
-                {
+           //     foreach (SelectionProcess f in _InumSelection)
+           //     {
 
-                           for (int p = 0; p <= 154; p++)
-                           {
-                               for (int n = 1; n < 2; n++)
-                               {
-                                   if ((yy <= clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 2]) && (yy >= clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 3]) && (clsGlobVar.CoordinatePlanC.mulPlanC[p, n - 1] == f.ID))
-                                   {
-                                       Group_Name = Convert.ToInt16(clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 4]);
-                                       if (Group_Name == 1) { SelectedGroup = "A"; } else { SelectedGroup = "B"; }
-                                       IDSelect = clsGlobVar.CoordinatePlanC.mulPlanC[p, n - 1];
+           //                for (int p = 0; p <= 154; p++)
+           //                {
+           //                    for (int n = 1; n < 2; n++)
+           //                    {
+           //                        if ((yy <= clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 2]) && (yy >= clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 3]) && (clsGlobVar.CoordinatePlanC.mulPlanC[p, n - 1] == f.ID))
+           //                        {
+           //                            Group_Name = Convert.ToInt16(clsGlobVar.CoordinatePlanC.mulPlanC[p, n + 4]);
+           //                            if (Group_Name == 1) { SelectedGroup = "A"; } else { SelectedGroup = "B"; }
+           //                            IDSelect = clsGlobVar.CoordinatePlanC.mulPlanC[p, n - 1];
 
 
-                                       string sCmd = "Select * from [tbl_GA_Plan_C] where Tank_ID='" + IDSelect + "' and [Group]='" + SelectedGroup + "'";
-                                       DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
-                                       command.CommandText = sCmd;
-                                       command.CommandType = CommandType.Text;
-                                       string Err = "";
-                                       DataTable dtcoordinateC = new DataTable();
-                                       dtcoordinateC = Models.DAL.clsDBUtilityMethods.GetTable(command, Err);
-                                       for (int o = 1; o <= 13; o++)
-                                       {
-                                           string sc = Convert.ToString("X" + o);
-                                           string sr = Convert.ToString("Y" + o);
-                                           ShadeX[o] = Convert.ToDouble(dtcoordinateC.Rows[0][sc]);
-                                           ShadeY[o] = Convert.ToDouble(dtcoordinateC.Rows[0][sr]);
-                                       }
-                                       TankID = Convert.ToInt16(IDSelect);
-                                       DrawHatchDeckPlan(canvas2DPlanC, Convert.ToInt32(IDSelect), 101, ShadeX, ShadeY, System.Windows.Media.Color.FromArgb(180, 255, 255, 128));
-                                       Propertyset();
-                                       Selection();
-                                       p = 154;
-                                       found = true;
-                                       break;
-                                   }
-                               }
-                           }
+           //                            string sCmd = "Select * from [tbl_GA_Plan_C] where Tank_ID='" + IDSelect + "' and [Group]='" + SelectedGroup + "'";
+           //                            DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+           //                            command.CommandText = sCmd;
+           //                            command.CommandType = CommandType.Text;
+           //                            string Err = "";
+           //                            DataTable dtcoordinateC = new DataTable();
+           //                            dtcoordinateC = Models.DAL.clsDBUtilityMethods.GetTable(command, Err);
+           //                            for (int o = 1; o <= 13; o++)
+           //                            {
+           //                                string sc = Convert.ToString("X" + o);
+           //                                string sr = Convert.ToString("Y" + o);
+           //                                ShadeX[o] = Convert.ToDouble(dtcoordinateC.Rows[0][sc]);
+           //                                ShadeY[o] = Convert.ToDouble(dtcoordinateC.Rows[0][sr]);
+           //                            }
+           //                            TankID = Convert.ToInt16(IDSelect);
+           //                            DrawHatchDeckPlan(canvas2DPlanC, Convert.ToInt32(IDSelect), 101, ShadeX, ShadeY, System.Windows.Media.Color.FromArgb(180, 255, 255, 128));
+           //                            Propertyset();
+           //                            Selection();
+           //                            p = 154;
+           //                            found = true;
+           //                            break;
+           //                        }
+           //                    }
+           //                }
 
-                   if (found==true)
-                    {           
-                        break;
-                    } 
-                }
-                _objSelection.Clear();
-                found = false;
+           //        if (found==true)
+           //         {           
+           //             break;
+           //         } 
+           //     }
+           //     _objSelection.Clear();
+           //     found = false;
                
-           }
-            #endregion
+           //}
+           // #endregion
     
         }
         public void Selection()
@@ -4313,6 +4209,22 @@ namespace WpfMvvmStability.Views
 
         private void btnclear_Click(object sender, RoutedEventArgs e)
         {
+            #region Cargo
+            {
+                DataTable ballasttank = Models.BO.clsGlobVar.dtSimulationCargoTanks;
+                DataColumn dc = new DataColumn("Volume");
+                DataColumn dcStatus = new DataColumn("Status");
+                dc.DataType = typeof(int);
+                dcStatus.DataType = typeof(int);
+                dcStatus.DefaultValue = 0;
+                dc.DefaultValue = 0;
+                ballasttank.Columns.Remove("Volume");
+                ballasttank.Columns.Remove("Status");
+                ballasttank.Columns.Add(dc);
+                ballasttank.Columns.Add(dcStatus);
+                dgCargoTanks.ItemsSource = ballasttank.DefaultView;
+            }
+            #endregion
 
             #region Ballast
             {
@@ -4689,6 +4601,7 @@ namespace WpfMvvmStability.Views
 
         public void LoadingFixedSave()
         {
+            dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
             dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
             dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
             dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;

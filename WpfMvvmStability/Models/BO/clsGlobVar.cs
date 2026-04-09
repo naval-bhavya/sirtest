@@ -64,6 +64,9 @@ namespace WpfMvvmStability.Models.BO
         public static DataTable dtSimulationModeAllTanks { get; set; }
         public static DataTable dtSimulationBallastTanks { get; set; }
         public static DataTable dtSimulationFuelOilTanks { get; set; }
+
+        public static DataTable dtSimulationCargoTanks { get; set; }
+        public static DataTable dtSimulationDisealOilTanks { get; set; }
         public static DataTable dtSimulationFreshWaterTanks { get; set; }
         public static DataTable dtSimulationMiscTanks { get; set; }
         public static DataTable dtSimulationCompartments { get; set; }
@@ -2543,8 +2546,8 @@ namespace WpfMvvmStability.Models.BO
         {
             public class TankProfile
             {
-                public double[] X = new double[5];
-                public double[] Y = new double[5];
+                public double[] X = new double[20];
+                public double[] Y = new double[20];
             }
 
             // Keyed by Tank_ID; replaces the individual Tank{n}x / Tank{n}y arrays.

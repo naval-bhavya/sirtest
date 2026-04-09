@@ -88,15 +88,25 @@ namespace WpfMvvmStability.Models
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FUELOIL_TANK'";
-
-
                 Models.BO.clsGlobVar.dtSimulationFuelOilTanks = DV.ToTable();
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FRESHWATER_TANK'";
-
-
                 Models.BO.clsGlobVar.dtSimulationFreshWaterTanks = DV.ToTable();
+
+                /// disealoil_tank
+                DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
+                DV.RowFilter = "Group = 'DIESELOIL_TANK'";
+                Models.BO.clsGlobVar.dtSimulationDisealOilTanks = DV.ToTable();
+
+
+                /// cargo tank
+
+
+                DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
+                DV.RowFilter = "Group = 'CARGO'";
+                Models.BO.clsGlobVar.dtSimulationCargoTanks = DV.ToTable();
+
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'MISC_TANK'";

@@ -298,7 +298,7 @@
                             </Border>
 
                             <!-- Corrective Action Button -->
-                            <Button Content="Corrective Action" Name="btnRealModeCorrectiveAction" 
+                            <Button Content="Remedial Measures" Name="btnRealModeCorrectiveAction" 
                         Click="OnGoPageRealCorrectiveAction" Visibility="Hidden"
                         Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
                         Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
@@ -325,13 +325,13 @@
                                 </Button.Resources>
                             </Button>
 
-                            <!-- Status Label -->
+                            <!-- Status Label --><!--
                             <Border Background="#FF4757" CornerRadius="8" Margin="10,0" Height="36" 
                         Width="120" VerticalAlignment="Center">
                                 <Label Name="lblStatus" Content="COMMUNICATION" 
                            Foreground="#FFFFFF" FontSize="10" FontWeight="Bold"
                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                            </Border>
+                            </Border>-->
 
                             <!-- Switch to IPMS Button --><!--
                             <Button Name="btnExit" Content="Switch To IPMS" Click="btnExit_Click" 
@@ -404,7 +404,7 @@
                             </Border>
 
                             <!-- Corrective Action Button -->
-                            <Button Content="Corrective Action" Name="btnSimulationModeCorrectiveAction" 
+                            <Button Content="Remedial Measures" Name="btnSimulationModeCorrectiveAction" 
                             Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False"
                             Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
                             Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
@@ -431,25 +431,6 @@
                                     </Style>
                                 </Button.Resources>
                             </Button>
-
-                            <!-- Status Label -->
-                            <Border Background="#FF9F43" CornerRadius="8" Margin="10,0" Height="36" 
-                            Width="120" VerticalAlignment="Center">
-                                <Label Name="lblconnectionstatus" Content="OFFLINE MODE" 
-                               Foreground="#FFFFFF" FontSize="10" FontWeight="Bold"
-                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                            </Border>
-
-                            <!-- Switch to IPMS Button -->
-                            <!--<Button Name="btnExitSimulation" Content="Switch To IPMS" Click="btnExitSimulation_Click" 
-                            Width="120" Height="36" FontSize="12" FontWeight="SemiBold"
-                            Foreground="#FFFFFF" Background="#FF4757" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>-->
 
                         </StackPanel>
                     </Grid>
@@ -532,13 +513,10 @@
                 <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="StandardLoadingCondition_Click"/>
             </MenuItem>
 
-            <!-- Tools -->
-            <MenuItem Header="_Tools" Style="{StaticResource ModernMenuHeader}">
-                <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernSubMenuItem}"/>
-            </MenuItem>
+            <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernMenuHeader}"/>
 
             <!-- Master Input -->
-            <MenuItem Header="_Master Input" Style="{StaticResource ModernMenuHeader}">
+            <MenuItem Header="_Vessel Data" Style="{StaticResource ModernMenuHeader}">
                 <MenuItem Header="_LightShip Data" Name="LightShip" Style="{StaticResource ModernSubMenuItem}" Click="LightShip_Click"/>
                 <MenuItem Header="_Stability Settings" Name="settings" Style="{StaticResource ModernSubMenuItem}" Click="settings_Click"/>
                 <MenuItem Header="_Wind Speed" Name="windspeed" Style="{StaticResource ModernSubMenuItem}" Click="windspeed_Click"/>
@@ -559,42 +537,12 @@
                               Height="34" FontFamily="Segoe UI" FontSize="13" BorderThickness="0"
                               Background="#FFFFFF" Foreground="#030032">
                                 <ComboBoxItem Content="Select Damage Case" IsSelected="True"/>
-                                <ComboBoxItem Content=" GHIJ(ii) "/>
-                                <ComboBoxItem Content=" KLMN(ii) "/>
-                                <ComboBoxItem Content=" LMNOP(ii) "/>
-                                <ComboBoxItem Content=" EFGH "/>
-                                <ComboBoxItem Content=" ABCD "/>
-                                <ComboBoxItem Content=" BCDE "/>
-                                <ComboBoxItem Content=" CDE "/>
-                                <ComboBoxItem Content=" IJKL(I) "/>
-                                <ComboBoxItem Content=" JKL(II) "/>
-                                <ComboBoxItem Content=" AB "/>
-                                <ComboBoxItem Content=" CD "/>
-                                <ComboBoxItem Content=" FG "/>
-                                <ComboBoxItem Content=" LM "/>
-                                <ComboBoxItem Content=" MN "/>
-                                <ComboBoxItem Content=" A "/>
-                                <ComboBoxItem Content=" B "/>
-                                <ComboBoxItem Content=" C "/>
-                                <ComboBoxItem Content=" D "/>
-                                <ComboBoxItem Content=" E "/>
-                                <ComboBoxItem Content=" F "/>
-                                <ComboBoxItem Content=" G "/>
-                                <ComboBoxItem Content=" H "/>
-                                <ComboBoxItem Content=" I "/>
-                                <ComboBoxItem Content=" J "/>
-                                <ComboBoxItem Content=" K "/>
-                                <ComboBoxItem Content=" L "/>
-                                <ComboBoxItem Content=" M "/>
-                                <ComboBoxItem Content=" N "/>
-                                <ComboBoxItem Content=" O "/>
-                                <ComboBoxItem Content=" P "/>
-                                <ComboBoxItem Content=" Q "/>
-                                <ComboBoxItem Content=" LM(III)"/>
-                                <ComboBoxItem Content=" JK(I) "/>
-                                <ComboBoxItem Content=" NO(I) "/>
-                                <ComboBoxItem Content=" NO(III) "/>
-                                <ComboBoxItem Content=" KL(II) "/>
+                                <ComboBoxItem Content=" Damage case 1 "/>
+                                <ComboBoxItem Content=" Damage case 2 "/>
+                                <ComboBoxItem Content=" Damage case 3 "/>
+                                <ComboBoxItem Content=" Damage case 4 "/>
+                                <ComboBoxItem Content=" Damage case 5 "/>
+                               
                             </ComboBox>
                         </Border>
 

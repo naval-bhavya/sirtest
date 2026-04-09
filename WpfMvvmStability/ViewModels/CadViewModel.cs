@@ -51,7 +51,7 @@ namespace WpfMvvmStability.ViewModels
 
 
 
-            input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanA.dwg");
+            input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanC.dwg");
             model = DwgReader.Read(input);
             Models.BO.clsGlobVar.PlanA = model;
 
@@ -59,9 +59,9 @@ namespace WpfMvvmStability.ViewModels
             model = DwgReader.Read(input);
             Models.BO.clsGlobVar.PlanB = model;
 
-            input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanC.dwg");
-            model = DwgReader.Read(input);
-            Models.BO.clsGlobVar.PlanC = model;
+            //input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanC.dwg");
+            //model = DwgReader.Read(input);
+            //Models.BO.clsGlobVar.PlanC = model;
 
             //input = assembly.GetManifestResourceStream("WpfMvvmStability.Images.PlanD.dwg");
             //model = DwgReader.Read(input);
