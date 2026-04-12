@@ -333,7 +333,7 @@ namespace WpfMvvmStability.Views
                 doc.Open();//Open Document to write
                 wri.PageEvent = new pdfFormating();
 
-                iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph("StabilityP15B Report P15B : Countermeasure", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD));
+                iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph("Stability Report : Countermeasure", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD));
                 p2.Alignment = Element.ALIGN_CENTER;
                 doc.Add(p2);
                 // for adition of logo.......................................

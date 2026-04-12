@@ -442,7 +442,7 @@ namespace WpfMvvmStability.Views
                 }
                 dgHydrostatics.ItemsSource = dtHydroStatic.DefaultView;
 
-                // commented by sachin bcoz moulded draft is not present
+              
                 //dataFileName = DataPath + "MouldedDraftValues\\" + s4 + ".txt";
                 dataFileName = DataPath + "DraftatEquilibriumAngle\\" + s4 + ".txt";
                 //Read the data from text file  dgMouldedDraft 
@@ -774,7 +774,7 @@ namespace WpfMvvmStability.Views
                 doc.Open();//Open Document to write
                 wri.PageEvent = new pdfFormating();
 
-                iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph(" StabilityP15B Report P15B : " + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // Loading Summary Table Name
+                iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph(" Stability Report : " + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // Loading Summary Table Name
                 p2.Alignment = Element.ALIGN_CENTER;
                 doc.Add(p2);
 
@@ -1036,7 +1036,7 @@ namespace WpfMvvmStability.Views
                 doc.Add(new iTextSharp.text.Paragraph("  "));
                 if (rowCount > 86)
                 {
-                    //-------------------------sachin 23.9.22--------
+                   
                     try
                     {
                         
@@ -1843,7 +1843,7 @@ namespace WpfMvvmStability.Views
 
                         }
                     }
-                    //-------------------------------sachin 23.9.22------------------------
+                   
                     else
                     {
                         doc.Add(new iTextSharp.text.Paragraph("  "));
@@ -2036,8 +2036,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
             
-                //---------------------------------sachin 23.9.22 end ---------------------------
-                //END 
+              
 
                 //..................StartOfHydrostatics1.........................................
                 doc.Add(new iTextSharp.text.Paragraph("  "));
@@ -2477,7 +2476,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(new iTextSharp.text.Paragraph("  "));
-                iTextSharp.text.Paragraph pHeaderIntact = new iTextSharp.text.Paragraph("NES 109 StabilityP15B Criteria-" + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD));
+                iTextSharp.text.Paragraph pHeaderIntact = new iTextSharp.text.Paragraph("NES 109 Stability Criteria-" + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD));
                 pHeaderIntact.Alignment = Element.ALIGN_CENTER;
                 doc.Add(pHeaderIntact);
                 doc.Add(new iTextSharp.text.Paragraph("  "));

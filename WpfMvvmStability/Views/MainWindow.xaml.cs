@@ -586,7 +586,7 @@ namespace WpfMvvmStability.Views
                 string cmbSelected = cMBDamage.SelectedItem.ToString();
                 
                 string CmprItem = Convert.ToString(cmbSelected.Split(':')[1]);
-                clsGlobVar.cmbload = Convert.ToString(cmbSelected.Split(':')[1]); //added by sachin 5/12/22
+                clsGlobVar.cmbload = Convert.ToString(cmbSelected.Split(':')[1]); 
                 DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                 string Err = "", cmd = "";
                 cmd = "Update [tblSimulationMode_Tank_Status] set [IsDamaged]=0 where [User]='dbo' and [Tank_ID] between 1 and 515";

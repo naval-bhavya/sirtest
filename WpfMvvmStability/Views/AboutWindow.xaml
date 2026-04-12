@@ -1,12 +1,12 @@
 ﻿<Window x:Class="WpfMvvmStability.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="About StabilityP15B Software" Height="183" Width="238" ResizeMode="NoResize" Topmost="True" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" FontFamily="Calibri" FontSize="14" Background="#FFBEBEBE">
+        Title="About Stability Software" Height="183" Width="238" ResizeMode="NoResize" Topmost="True" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" FontFamily="Calibri" FontSize="14" Background="#FFBEBEBE">
     <Window.Resources>
         
     </Window.Resources>
     <Grid>
-        <GroupBox Header="StabilityP15B Software" Height="144" HorizontalAlignment="Left" Name="groupBox1" VerticalAlignment="Top" Width="216" IsEnabled="True" Background="#FF727272" BorderBrush="#FF727272">
+        <GroupBox Header="Stability Software" Height="144" HorizontalAlignment="Left" Name="groupBox1" VerticalAlignment="Top" Width="216" IsEnabled="True" Background="#FF727272" BorderBrush="#FF727272">
             <Grid>
                 <WrapPanel Height="88" HorizontalAlignment="Left" Margin="4,0,0,0" Name="wrapPanel1" VerticalAlignment="Top" Width="200">
                     <Label Content="Version" Height="28" Name="label1" Width="81" />

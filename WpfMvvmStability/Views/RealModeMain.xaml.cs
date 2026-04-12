@@ -3344,7 +3344,7 @@ namespace WpfMvvmStability.Views
                                     }
                                     else if (PercentageFill > 50 && PercentageFill <= 75)
                                     {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))//BY SACHIN
+                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
                                         {
                                             string strM50 = System.IO.Path.GetFileName(file3);
                                             string str1M50 = strM50.Split('.')[0];

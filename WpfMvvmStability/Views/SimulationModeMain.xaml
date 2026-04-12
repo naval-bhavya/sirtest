@@ -185,8 +185,8 @@
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="4,0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -259,7 +259,7 @@
             <Setter Property="Foreground" Value="#1F48FF"/>
             <Setter Property="BorderBrush" Value="{StaticResource PrimaryBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="Padding" Value="4,1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -272,12 +272,30 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="2,1"/>
             <Setter Property="Margin" Value="5,0"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
         </Style>
 
         <!-- DataGrid Column Header override -->
         <Style x:Key="DataGridSimulation" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource ModernDataGridHeader}"/>
+
+        <!-- DataGrid cell text center alignment -->
+        <Style x:Key="CenterCellStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <!-- DataGrid combo column cell center alignment -->
+        <Style x:Key="CenterComboCellStyle" TargetType="DataGridCell">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+        </Style>
+
+        <!-- DataGrid combo column element center alignment -->
+        <Style x:Key="CenterComboElementStyle" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
 
     </UserControl.Resources>
 
@@ -411,13 +429,13 @@
                         </Grid.RowDefinitions>
 
                         <!-- Action Buttons Header -->
-                        <Border Grid.Row="0" Padding="8,6" CornerRadius="0">
+                        <Border Grid.Row="0" Padding="4,0" CornerRadius="0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button Grid.Column="0" Content="Import" Name="btnImportRealModeData"
@@ -437,15 +455,15 @@
 
                         <!-- Outputs Content -->
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Margin="8">
+                            <StackPanel Margin="4">
 
                                 <!-- Card: Stability Summary -->
-                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,4">
                                     <Border.Effect>
                                         <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.04" Color="#030032"/>
                                     </Border.Effect>
                                     <StackPanel>
-                                        <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                        <Border Background="#030032" CornerRadius="4" Padding="6,3" Margin="0,0,0,5" HorizontalAlignment="Left">
                                             <TextBlock Text="Stability Summary" FontWeight="Bold" Foreground="White" FontSize="12"/>
                                         </Border>
                                         <Grid>
@@ -466,15 +484,15 @@
                                 </Border>
 
                                 <!-- Card: Drafts & Trim -->
-                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,4">
                                     <Border.Effect>
                                         <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.04" Color="#030032"/>
                                     </Border.Effect>
                                     <StackPanel>
-                                        <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                        <Border Background="#030032" CornerRadius="4" Padding="6,3" Margin="0,0,0,5" HorizontalAlignment="Left">
                                             <TextBlock Text="Drafts &amp; Trim" FontWeight="Bold" Foreground="White" FontSize="12"/>
                                         </Border>
-                                        <Grid Margin="0,0,0,8">
+                                        <Grid Margin="0,0,0,4">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="75"/>
@@ -488,7 +506,7 @@
                                             <Label Grid.Row="1" Grid.Column="0" Content="List (deg.)" Style="{StaticResource HeaderLabel}"/>
                                             <Label Grid.Row="1" Grid.Column="1" Name="lblHeel" Content="0" Style="{StaticResource ValueLabel}" Margin="0,2"/>
                                         </Grid>
-                                        <Border Background="#F8F9FC" CornerRadius="6" Padding="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Border Background="#F8F9FC" CornerRadius="6" Padding="6,4" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -523,12 +541,12 @@
                                 </Border>
 
                                 <!-- Card: Hydrostatics -->
-                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <Border Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,6">
                                     <Border.Effect>
                                         <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.04" Color="#030032"/>
                                     </Border.Effect>
                                     <StackPanel>
-                                        <Border Background="#030032" CornerRadius="4" Padding="8,4" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                        <Border Background="#030032" CornerRadius="4" Padding="6,3" Margin="0,0,0,5" HorizontalAlignment="Left">
                                             <TextBlock Text="Hydrostatics" FontWeight="Bold" Foreground="White" FontSize="12"/>
                                         </Border>
                                         <Grid>
@@ -598,36 +616,42 @@
                   SelectionChanged="dgCargoTanks_SelectionChanged" 
                   SelectionUnit="FullRow"
                   HorizontalScrollBarVisibility="Disabled">
+            <DataGrid.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                    <Setter Property="TextAlignment" Value="Center"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True">
+                <DataGridTextColumn Header="TANK NAME" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
                             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridComboBoxColumn x:Name="StatusCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="80" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValueBinding="{Binding Path=Status}">
+                <DataGridComboBoxColumn x:Name="StatusCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="80" Header="STATUS" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                     <DataGridComboBoxColumn.EditingElementStyle>
                         <Style TargetType="{x:Type ComboBox}">
                             <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                         </Style>
                     </DataGridComboBoxColumn.EditingElementStyle>
                 </DataGridComboBoxColumn>
-                <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
-                <DataGridTextColumn Header=" Mass(T) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
-                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
-                <DataGridTextColumn Header=" S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
-                                            <DataGridComboBoxColumn x:Name="FSMTypeCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                <!--<DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>-->
+                <DataGridTextColumn Header=" MASS(T) " HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
+                <DataGridTextColumn Header="VOLUME(CU.M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                <DataGridTextColumn Header="PERCENT FILL" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                <DataGridTextColumn Header=" S.GRAVITY" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeCargo" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM TYPE" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                     <DataGridComboBoxColumn.EditingElementStyle>
                         <Style TargetType="{x:Type ComboBox}">
                             <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                         </Style>
                     </DataGridComboBoxColumn.EditingElementStyle>
                 </DataGridComboBoxColumn>
-                <DataGridTextColumn Header="  FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
-                <DataGridTextColumn Header=" Flood Rate(TPH) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                <DataGridTextColumn Header="  FSM(T-M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
+                <!--<DataGridTextColumn Header=" Flood Rate(TPH) " HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>-->
             </DataGrid.Columns>
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}">
@@ -670,36 +694,42 @@
                                               SelectionChanged="dgBallastTanks_SelectionChanged_1" 
                                               SelectionUnit="FullRow"
                                               HorizontalScrollBarVisibility="Disabled">
+                                        <DataGrid.Resources>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                            </Style>
+                                        </DataGrid.Resources>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True">
+                                            <DataGridTextColumn Header="TANK NAME" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
-                                                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                                                        <Setter Property="HorizontalAlignment" Value="Center"/>
                                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <DataGridComboBoxColumn x:Name="StatusBallast" HeaderStyle="{StaticResource DataGridSimulation}" Width="80" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValueBinding="{Binding Path=Status}">
+                                            <DataGridComboBoxColumn x:Name="StatusBallast" HeaderStyle="{StaticResource DataGridSimulation}" Width="80" Header="STATUS" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header=" Mass(T) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                                            <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
-                                            <DataGridTextColumn Header=" S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
-                                            <DataGridComboBoxColumn x:Name="FSMTypeBallast" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                            <!--<DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>-->
+                                            <DataGridTextColumn Header=" MASS(T) " HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="70" IsReadOnly="False"/>
+                                            <DataGridTextColumn Header="VOLUME (CU.M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="PERCENT FILL" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                                            <DataGridTextColumn Header=" S.GRAVITY" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeBallast" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM TYPE" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="  FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header=" Flood Rate(TPH) " HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="  FSM(T-M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
+                                            <!--<DataGridTextColumn Header=" Flood Rate(TPH) " HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>-->
                                         </DataGrid.Columns>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
@@ -738,31 +768,37 @@
                                               CurrentCellChanged="dgTankCompartment_CurrentCellChanged" 
                                               BeginningEdit="dgTankCompartment_BeginningEdit" 
                                               LoadingRow="dgFuelOilTanks_LoadingRow" 
-                                              SelectionChanged="dgFuelOilTanks_SelectionChanged" 
+                                              SelectionChanged="dgFuelOilTanks_SelectionChanged"
                                               HorizontalScrollBarVisibility="Disabled">
+                                        <DataGrid.Resources>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                            </Style>
+                                        </DataGrid.Resources>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True"/>
-                                            <DataGridComboBoxColumn x:Name="StatusFuel" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}">
+                                            <DataGridTextColumn Header="TANK NAME" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridComboBoxColumn x:Name="StatusFuel" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="STATUS" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                                            <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
-                                            <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
-                                            <DataGridComboBoxColumn x:Name="FSMTypeFuel" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                            <!--<DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>-->
+                                            <DataGridTextColumn Header="MASS(T)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
+                                            <DataGridTextColumn Header="VOLUME (CU.M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="PERCENT FILL" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                                            <DataGridTextColumn Header="S.GRAVITY" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeFuel" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM TYPE" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="FSM(T-M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
+                                            <!--<DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>-->
                                         </DataGrid.Columns>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
@@ -795,31 +831,37 @@
                                               CurrentCellChanged="dgTankCompartment_CurrentCellChanged" 
                                               BeginningEdit="dgTankCompartment_BeginningEdit" 
                                               LoadingRow="dgFreshWaterTanks_LoadingRow" 
-                                              SelectionChanged="dgFreshWaterTanks_SelectionChanged" 
+                                              SelectionChanged="dgFreshWaterTanks_SelectionChanged"
                                               HorizontalScrollBarVisibility="Disabled">
+                                        <DataGrid.Resources>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                            </Style>
+                                        </DataGrid.Resources>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True"/>
-                                            <DataGridComboBoxColumn x:Name="StatusFresh" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}">
+                                            <DataGridTextColumn Header="TANK NAME" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridComboBoxColumn x:Name="StatusFresh" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="STATUS" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                                            <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
-                                            <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="65"/>
-                                            <DataGridComboBoxColumn x:Name="FSMTypeFresh" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                            <!--<DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>-->
+                                            <DataGridTextColumn Header="MASS(T)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
+                                            <DataGridTextColumn Header="VOLUME (CU.M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="PERCENT FILL" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                                            <DataGridTextColumn Header="S.GRAVITY" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="65"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeFresh" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM TYPE" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="FSM(T-M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="80" IsReadOnly="False"/>
+                                            <!--<DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>-->
                                         </DataGrid.Columns>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
@@ -852,31 +894,37 @@
                                               CurrentCellChanged="dgTankCompartment_CurrentCellChanged" 
                                               BeginningEdit="dgTankCompartment_BeginningEdit" 
                                               LoadingRow="dgMiscTanks_LoadingRow" 
-                                              SelectionChanged="dgMiscTanks_SelectionChanged" 
+                                              SelectionChanged="dgMiscTanks_SelectionChanged"
                                               HorizontalScrollBarVisibility="Disabled">
+                                        <DataGrid.Resources>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                                <Setter Property="TextAlignment" Value="Center"/>
+                                            </Style>
+                                        </DataGrid.Resources>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Tank Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True"/>
-                                            <DataGridComboBoxColumn x:Name="StatusMisc" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}">
+                                            <DataGridTextColumn Header="TANK NAME" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridComboBoxColumn x:Name="StatusMisc" HeaderStyle="{StaticResource DataGridSimulation}" Width="70" Header="STATUS" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="85"/>
-                                            <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="75"/>
-                                            <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="60"/>
-                                            <DataGridComboBoxColumn x:Name="FSMTypeMisc" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                            <!--<DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>-->
+                                            <DataGridTextColumn Header="MASS(T)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
+                                            <DataGridTextColumn Header="VOLUME (CU.M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="85"/>
+                                            <DataGridTextColumn Header="PERCENT FILL" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="75"/>
+                                            <DataGridTextColumn Header="S.GRAVITY" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="60"/>
+                                            <DataGridComboBoxColumn x:Name="FSMTypeMisc" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="FSM TYPE" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                                 <DataGridComboBoxColumn.EditingElementStyle>
                                                     <Style TargetType="{x:Type ComboBox}">
                                                         <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                                     </Style>
                                                 </DataGridComboBoxColumn.EditingElementStyle>
                                             </DataGridComboBoxColumn>
-                                            <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="70" IsReadOnly="False"/>
-                                            <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                            <DataGridTextColumn Header="FSM(T-M)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="70" IsReadOnly="False"/>
+                                            <!--<DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>-->
                                         </DataGrid.Columns>
                                         <DataGrid.RowStyle>
                                             <Style TargetType="{x:Type DataGridRow}">
@@ -913,27 +961,27 @@
                                   FrozenColumnCount="1">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Compartment Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True"/>
-                                <DataGridComboBoxColumn x:Name="Status" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}">
+                                <DataGridComboBoxColumn x:Name="Status" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                     <DataGridComboBoxColumn.EditingElementStyle>
                                         <Style TargetType="{x:Type ComboBox}">
                                             <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="Innage(mm)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="75" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
-                                <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="65"/>
-                                <DataGridComboBoxColumn x:Name="FSMType" HeaderStyle="{StaticResource DataGridSimulation}" Width="100" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                <DataGridTextColumn Header="Innage(mm)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="75" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="80"/>
+                                <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="65"/>
+                                <DataGridComboBoxColumn x:Name="FSMType" HeaderStyle="{StaticResource DataGridSimulation}" Width="100" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                     <DataGridComboBoxColumn.EditingElementStyle>
                                         <Style TargetType="{x:Type ComboBox}">
                                             <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="70" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="70" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
                                 <DataGridTextColumn Header="Flood Time(min)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodTime,StringFormat={}{0:0.00}}" Width="95" IsReadOnly="False"/>
                             </DataGrid.Columns>
                             <DataGrid.RowStyle>
@@ -963,27 +1011,27 @@
                                   LoadingRow="dgWTRegion_LoadingRow">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="WT Region Name" Binding="{Binding Path=Tank_Name}" Width="*" IsReadOnly="True"/>
-                                <DataGridComboBoxColumn x:Name="StatusWTRegion" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}">
+                                <DataGridComboBoxColumn x:Name="StatusWTRegion" HeaderStyle="{StaticResource DataGridSimulation}" Width="90" Header="Status" ItemsSource="{Binding Status}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=Status}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                     <DataGridComboBoxColumn.EditingElementStyle>
                                         <Style TargetType="{x:Type ComboBox}">
                                             <EventSetter Event="SelectionChanged" Handler="StatusType_SelectionChanged" />
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
-                                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="85"/>
-                                <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
-                                <DataGridComboBoxColumn x:Name="FSMTypeWTRegion" HeaderStyle="{StaticResource DataGridSimulation}" Width="100" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}">
+                                <DataGridTextColumn Header="Innage(m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Sounding_Level,StringFormat={}{0:0.00}}" Width="65" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Mass(T)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Weight,StringFormat={}{0:0.00}}" Width="60" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Volume (Cu.m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Volume,  StringFormat={}{0:0.00}}" Width="90"/>
+                                <DataGridTextColumn Header="Percent Fill" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=Percent_Full,StringFormat={}{0:0.00}}" Width="85"/>
+                                <DataGridTextColumn Header="S.Gravity" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=SG,StringFormat={}{0:0.000}}" Width="70"/>
+                                <DataGridComboBoxColumn x:Name="FSMTypeWTRegion" HeaderStyle="{StaticResource DataGridSimulation}" Width="100" Header="FSM Type" ItemsSource="{Binding FSMType}" DisplayMemberPath="Key" SelectedValuePath="Value"  SelectedValueBinding="{Binding Path=FSMType}" CellStyle="{StaticResource CenterComboCellStyle}" ElementStyle="{StaticResource CenterComboElementStyle}">
                                     <DataGridComboBoxColumn.EditingElementStyle>
                                         <Style TargetType="{x:Type ComboBox}">
                                             <EventSetter Event="SelectionChanged" Handler="FSMType_SelectionChanged" />
                                         </Style>
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
-                                <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="85" IsReadOnly="False"/>
-                                <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
+                                <DataGridTextColumn Header="FSM(T-m)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FSM,StringFormat={}{0:0.000}}" Width="85" IsReadOnly="False"/>
+                                <DataGridTextColumn Header="Flood Rate(TPH)" HeaderStyle="{StaticResource DataGridSimulation}" ElementStyle="{StaticResource CenterCellStyle}" Binding="{Binding Path=FloodRate,StringFormat={}{0:0.00}}" Width="90"/>
                             </DataGrid.Columns>
                             <DataGrid.RowStyle>
                                 <Style TargetType="{x:Type DataGridRow}">

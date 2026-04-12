@@ -35,7 +35,7 @@ namespace WpfMvvmStability.Views
             int res= Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
             if (res > 0)
             {
-                MessageBox.Show("StabilityP15B Calculation Updated Successfully");
+                MessageBox.Show("Stability Calculation Updated Successfully");
             }
         }
 

@@ -1,24 +1,293 @@
-﻿<Window x:Class="WpfMvvmStability.Views.ConfigurationWindow"
+<Window x:Class="WpfMvvmStability.Views.ConfigurationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Configuration Settings" Height="665" Width="503" FontFamily="Calibri" Background="#FFBEBEBE" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize" Loaded="Window_Loaded">
-    <Grid>
-        <TabControl Height="602" HorizontalAlignment="Left" Margin="12,12,0,0" Name="tabControl1" VerticalAlignment="Top" Width="459">
-            <TabControl.Resources>
-                <Style TargetType="TabItem">
-                    <Setter Property="Foreground" Value="White" />
+        Title="Configuration Settings" Height="665" Width="503"
+        FontFamily="Segoe UI" Background="#F8F9FC"
+        WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow"
+        ResizeMode="NoResize" Loaded="Window_Loaded">
+    <Window.Resources>
+
+        <!-- ── Shared drop shadow matching SimulationModeMain ── -->
+        <DropShadowEffect x:Key="CardShadow" ShadowDepth="1" BlurRadius="8" Opacity="0.08" Color="#030032"/>
+
+        <!-- ── Primary Button  (#1F48FF — same as CalcButton) ── -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#1F48FF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Secondary Button (outlined) ── -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#D0D4E4"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#EEF1FF"/>
+                                <Setter Property="BorderBrush" Value="#1F48FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#B3C0FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Navy action Button (#030032 — same as RunAllButton) ── -->
+        <Style x:Key="NavyButton" TargetType="Button">
+            <Setter Property="Background" Value="#030032"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── TextBox ── -->
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="BorderBrush" Value="#D0D4E4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#1F48FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Label ── -->
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ── GroupBox — dark navy header band matching CorrectiveAction cards ── -->
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="#E2E5F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="0"
+                                Effect="{StaticResource CardShadow}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <!-- Dark navy header band -->
+                                <Border Grid.Row="0" Background="#030032" Padding="12,8">
+                                    <ContentPresenter ContentSource="Header"
+                                                      RecognizesAccessKey="True"
+                                                      TextElement.Foreground="White"
+                                                      TextElement.FontWeight="SemiBold"
+                                                      TextElement.FontSize="13"/>
+                                </Border>
+                                <ContentPresenter Grid.Row="1"
+                                                  Margin="{TemplateBinding Padding}"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── ListBox ── -->
+        <Style TargetType="ListBox">
+            <Setter Property="BorderBrush" Value="#D0D4E4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ScrollViewer Focusable="False" Padding="0">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Resources>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="8,4"/>
+                    <Setter Property="Foreground" Value="#030032"/>
                     <Setter Property="Template">
                         <Setter.Value>
-                            <ControlTemplate TargetType="TabItem">
-                                <Border Name="Border" BorderThickness="1,1,1,0" BorderBrush="#FF727272" CornerRadius="4,4,0,0" Margin="0,0" Height="30">
-                                    <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header" Margin="10,2" />
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border Background="{TemplateBinding Background}"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter/>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#FF727272" />
+                                        <Setter Property="Background" Value="#EEF1FF"/>
+                                        <Setter Property="Foreground" Value="#1F48FF"/>
                                     </Trigger>
-                                    <Trigger Property="IsSelected" Value="False">
-                                        <Setter TargetName="Border" Property="Background" Value="#8A909296" />
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#F8F9FC"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Style.Resources>
+        </Style>
+
+        <!-- ── RadioButton ── -->
+        <Style TargetType="RadioButton">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#030032"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <TabControl Name="tabControl1" Background="Transparent" BorderThickness="0">
+            <TabControl.Template>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" BorderBrush="#E2E5F0" BorderThickness="0,0,0,2">
+                            <TabPanel IsItemsHost="True" Background="Transparent"/>
+                        </Border>
+                        <Border Grid.Row="1" Padding="0,14,0,0">
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </TabControl.Template>
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="Foreground" Value="#4A4A6A"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Grid>
+                                    <Border Name="TabBorder" Background="Transparent"
+                                            Padding="14,10" Margin="0,0,4,0">
+                                        <ContentPresenter x:Name="ContentSite"
+                                                          VerticalAlignment="Center"
+                                                          HorizontalAlignment="Center"
+                                                          ContentSource="Header"/>
+                                    </Border>
+                                    <Border Name="Indicator" Height="2" Background="Transparent"
+                                            VerticalAlignment="Bottom" HorizontalAlignment="Stretch"/>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="ContentSite" Property="TextElement.Foreground" Value="#1F48FF"/>
+                                        <Setter TargetName="ContentSite" Property="TextElement.FontWeight" Value="SemiBold"/>
+                                        <Setter TargetName="Indicator" Property="Background" Value="#1F48FF"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="TabBorder" Property="Background" Value="#EEF1FF"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -26,108 +295,266 @@
                     </Setter>
                 </Style>
             </TabControl.Resources>
-            <TabItem Header="Backup and Restore Database" Name="tabItem1">
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 1: Backup and Restore                               -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <TabItem Header="Backup &amp; Restore" Name="tabItem1">
                 <Grid>
-                    <Button Content="Close" Height="23" HorizontalAlignment="Left" Margin="355,527,0,0" Name="btnClose" VerticalAlignment="Top" Width="75" Click="btnClose_Click" BorderBrush="#FF727272" />
-                    <Button BorderBrush="#FF727272" Content="Create Master LogIn" Height="23" HorizontalAlignment="Left" Margin="6,527,0,0" Name="btnMasterLogin" VerticalAlignment="Top" Width="160" Click="btnMasterLogin_Click" />
-                    <GroupBox Header="Server Settings" Height="248" HorizontalAlignment="Left" Margin="6,5,0,0" Name="groupBox1" VerticalAlignment="Top" Width="437" Background="#FF727272" BorderBrush="#FF727272">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Server Settings -->
+                    <GroupBox Grid.Row="0" Header="Server Settings" Name="groupBox1">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="257*" />
-                                <ColumnDefinition Width="190*" />
-                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="199*" />
-                                <RowDefinition Height="11*" />
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <ListBox Height="101" HorizontalAlignment="Left" Name="listBoxSQLInstances" VerticalAlignment="Top" Width="188" SelectionChanged="listBoxSQLInstances_SelectionChanged" BorderBrush="#FF727272" BorderThickness="1" Margin="0,2,0,0" />
-                            <ListBox Height="101" HorizontalAlignment="Right" Name="listBoxSqlDatabases" VerticalAlignment="Top" Width="194" Margin="0,2,22,0" Grid.ColumnSpan="2" BorderThickness="1" BorderBrush="#FF727272" />
-                            <Label Content="Server Name" Height="28" HorizontalAlignment="Left" Margin="6,114,0,0" Name="label1" VerticalAlignment="Top" />
-                            <TextBox Height="23" HorizontalAlignment="Left" Margin="89,115,0,0" Name="textBoxServerName" VerticalAlignment="Top" Width="147" BorderBrush="#FF727272" />
-                            <Label Content="User" Height="29" HorizontalAlignment="Left" Margin="6,151,0,0" Name="label2" VerticalAlignment="Top" />
-                            <TextBox Height="23" HorizontalAlignment="Left" Margin="89,150,0,0" Name="textBoxUser" VerticalAlignment="Top" Width="79" BorderBrush="#FF727272" />
-                            <Label Content="Password" Height="31" HorizontalAlignment="Left" Margin="176,149,0,0" Name="label3" VerticalAlignment="Top" Width="60" VerticalContentAlignment="Center" />
-                            <TextBox Height="23" HorizontalAlignment="Right" Margin="0,149,91,0" Name="textBoxPassword" VerticalAlignment="Top" Width="99" Grid.ColumnSpan="2" BorderBrush="#FF727272" />
-                            <Button Content="Connect" Height="23" HorizontalAlignment="Left" Margin="99,114,0,0" Name="btnConnect" VerticalAlignment="Top" Width="75" Click="btnConnect_Click" Grid.Column="1" BorderBrush="#FF727272" />
-                            <Button Content="Create" Height="23" HorizontalAlignment="Left" Margin="99,150,0,0" Name="btnCreate" VerticalAlignment="Top" Width="75" Click="btnCreate_Click" Grid.Column="1" BorderBrush="#FF727272" />
+
+                            <!-- ListBoxes -->
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ListBox Grid.Column="0" Height="95" Name="listBoxSQLInstances"
+                                         SelectionChanged="listBoxSQLInstances_SelectionChanged"/>
+                                <ListBox Grid.Column="2" Height="95" Name="listBoxSqlDatabases"/>
+                            </Grid>
+
+                            <!-- Server Name + Connect -->
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="85"/>
+                                </Grid.ColumnDefinitions>
+                                <Label Grid.Column="0" Content="Server Name" Height="28"/>
+                                <TextBox Grid.Column="1" Name="textBoxServerName"/>
+                                <Button Grid.Column="3" Content="Connect" Height="28"
+                                        Name="btnConnect" Click="btnConnect_Click"
+                                        Style="{StaticResource PrimaryButton}"/>
+                            </Grid>
+
+                            <!-- User + Password + Create -->
+                            <Grid Grid.Row="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="38"/>
+                                    <ColumnDefinition Width="85"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="85"/>
+                                </Grid.ColumnDefinitions>
+                                <Label Grid.Column="0" Content="User" Height="28"/>
+                                <TextBox Grid.Column="1" Name="textBoxUser"/>
+                                <Label Grid.Column="3" Content="Password" Height="28"/>
+                                <TextBox Grid.Column="4" Name="textBoxPassword"/>
+                                <Button Grid.Column="6" Content="Create" Height="28"
+                                        Name="btnCreate" Click="btnCreate_Click"
+                                        Style="{StaticResource PrimaryButton}"/>
+                            </Grid>
                         </Grid>
                     </GroupBox>
-                    <GroupBox Header="Restore Database" Height="128" HorizontalAlignment="Left" Margin="6,259,0,0" Name="groupBox2" VerticalAlignment="Top" Width="437" Background="#FF727272" BorderBrush="#FF727272">
+
+                    <!-- Restore Database -->
+                    <GroupBox Grid.Row="2" Header="Restore Database" Name="groupBox2">
                         <Grid>
-                            <Label Content="Select File Path" Height="28" HorizontalAlignment="Left" Margin="6,6,0,0" Name="label4" VerticalAlignment="Top" />
-                            <TextBox Height="23" HorizontalAlignment="Left" Margin="137,6,0,0" Name="textBoxRestorePath" VerticalAlignment="Top" Width="180" BorderBrush="#FF727272" />
-                            <Button Content="Browse" Height="23" HorizontalAlignment="Left" Margin="343,4,0,0" Name="btnBrowse" VerticalAlignment="Top" Width="75" Click="btnBrowse_Click" BorderBrush="#FF727272" />
-                            <Button Content="Restore" Height="23" HorizontalAlignment="Left" Margin="343,0,0,11" Name="btnRestore" VerticalAlignment="Bottom" Width="75" Click="btnRestore_Click" BorderBrush="#FF727272" />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <Label Grid.Column="0" Content="File Path" Height="28"/>
+                                <TextBox Grid.Column="1" Name="textBoxRestorePath"/>
+                                <Button Grid.Column="3" Content="Browse" Height="28"
+                                        Name="btnBrowse" Click="btnBrowse_Click"
+                                        Style="{StaticResource SecondaryButton}"/>
+                            </Grid>
+                            <Button Grid.Row="2" Content="Restore" Height="28" Width="85"
+                                    HorizontalAlignment="Right"
+                                    Name="btnRestore" Click="btnRestore_Click"
+                                    Style="{StaticResource PrimaryButton}"/>
                         </Grid>
                     </GroupBox>
-                    <GroupBox Background="#FF727272" BorderBrush="#FF727272" Header="BackUp Database" Height="128" HorizontalAlignment="Left" Margin="6,393,0,0" Name="groupBox3" VerticalAlignment="Top" Width="437">
+
+                    <!-- Backup Database -->
+                    <GroupBox Grid.Row="4" Header="Backup Database" Name="groupBox3">
                         <Grid>
-                            <Label Content="Select File Path" Height="28" HorizontalAlignment="Left" Margin="6,6,0,0" Name="label5" VerticalAlignment="Top" />
-                            <TextBox BorderBrush="#FF727272" Height="23" HorizontalAlignment="Left" Margin="137,6,0,0" Name="txtBoxBackupPath" VerticalAlignment="Top" Width="180" />
-                            <Button BorderBrush="#FF727272" Click="btnBrowse_Click" Content="Browse" Height="23" HorizontalAlignment="Left" Margin="343,4,0,0" Name="btnBrowse2" VerticalAlignment="Top" Width="75" />
-                            <Button BorderBrush="#FF727272" Click="btnRestore_Click" Content="BackUp" Height="23" HorizontalAlignment="Left" Margin="343,0,0,11" Name="btnBackUp" VerticalAlignment="Bottom" Width="75" />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <Label Grid.Column="0" Content="File Path" Height="28"/>
+                                <TextBox Grid.Column="1" Name="txtBoxBackupPath"/>
+                                <Button Grid.Column="3" Content="Browse" Height="28"
+                                        Name="btnBrowse2" Click="btnBrowse_Click"
+                                        Style="{StaticResource SecondaryButton}"/>
+                            </Grid>
+                            <Button Grid.Row="2" Content="Backup" Height="28" Width="85"
+                                    HorizontalAlignment="Right"
+                                    Name="btnBackUp" Click="btnRestore_Click"
+                                    Style="{StaticResource PrimaryButton}"/>
                         </Grid>
                     </GroupBox>
+
+                    <!-- Bottom Buttons -->
+                    <Grid Grid.Row="6" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Create Master Login" Height="32" Width="150"
+                                Name="btnMasterLogin" Click="btnMasterLogin_Click"
+                                Style="{StaticResource SecondaryButton}"/>
+                        <Button Grid.Column="2" Content="Close" Height="32" Width="85"
+                                Name="btnClose" Click="btnClose_Click"
+                                Style="{StaticResource NavyButton}"/>
+                    </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Connection Setting" Name="tabItem2">
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 2: Connection Settings                              -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <TabItem Header="Connection Settings" Name="tabItem2">
                 <Grid>
-                    <Button BorderBrush="#FF727272" Content="Create Connection String" Height="23" HorizontalAlignment="Left" Margin="282,493,0,0" Name="btnSaveToXml" VerticalAlignment="Top" Width="160" Click="btnSaveToXml_Click" />
-                    <Label Content="COM PORT" Height="28" HorizontalAlignment="Left" Margin="6,58,0,0" Name="lblCOM" VerticalAlignment="Top" />
-                    <TextBox Height="23" HorizontalAlignment="Left" Margin="76,58,0,0" Name="txtComPort" VerticalAlignment="Top" Width="120" />
-                    <Label Content="Server Name" Height="28" HorizontalAlignment="Left" Margin="6,95,0,0" Name="label7" VerticalAlignment="Top" />
-                    <TextBox Height="23" HorizontalAlignment="Left" Margin="76,95,0,0" Name="txtServerName" VerticalAlignment="Top" Width="120" />
-                    <GroupBox Background="#FF727272" BorderBrush="#FF727272" Header="Replication Settings" Height="248" HorizontalAlignment="Left" Margin="6,140,0,0" Name="groupBox4" VerticalAlignment="Top" Width="437">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Modbus Communication -->
+                    <GroupBox Grid.Row="0" Header="Modbus Communication">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="94*" />
-                                <ColumnDefinition Width="140*" />
-                                <ColumnDefinition Width="92*" />
-                                <ColumnDefinition Width="99*" />
-                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="26*" />
-                                <RowDefinition Height="10*" />
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <Label Content="Time Interval" Grid.Column="3" Name="label8" />
-                            <Label Content="Computer Name" Name="label9" />
-                            <Label Content="IP Address" Name="label10" Grid.Column="1" />
-                            <Label Content="Is Replication" Name="label11" Grid.Column="2" />
-                            <TextBox Grid.Column="1" Grid.Row="1" Name="textBox3" />
-                            <TextBox Name="textBox4" Grid.Row="1" />
-                            <TextBox Name="textBox5" Grid.Column="2" Grid.Row="1" />
-                            <TextBox Name="textBox6" Grid.Column="3" Grid.Row="1" />
-                            <TextBox Name="textBox7" Grid.Row="2" />
-                            <TextBox Name="textBox8" Grid.Column="1" Grid.Row="2" />
-                            <TextBox Name="textBox9" Grid.Column="2" Grid.Row="2" />
-                            <TextBox Name="textBox10" Grid.Column="3" Grid.Row="2" />
-                            <TextBox Name="textBox11" Grid.Row="3" />
-                            <TextBox Name="textBox12" Grid.Column="1" Grid.Row="3" />
-                            <TextBox Name="textBox13" Grid.Column="2" Grid.Row="3" />
-                            <TextBox Name="textBox14" Grid.Column="3" Grid.Row="3" />
-                            <TextBox Name="textBox15" Grid.Row="4" />
-                            <TextBox Name="textBox16" Grid.Column="1" Grid.Row="4" />
-                            <TextBox Name="textBox17" Grid.Column="2" Grid.Row="4" />
-                            <TextBox Name="textBox18" Grid.Column="3" Grid.Row="4" />
-                            <TextBox Name="textBox19" Grid.Row="5" />
-                            <TextBox Name="textBox20" Grid.Column="1" Grid.Row="5" />
-                            <TextBox Name="textBox21" Grid.Column="2" Grid.Row="5" />
-                            <TextBox Name="textBox22" Grid.Column="3" Grid.Row="5" />
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Label Content="Type" Width="50" Height="28"/>
+                                <RadioButton GroupName="ModbusType" Content="TCP"
+                                             Name="radioButtonTCP" Margin="0,0,24,0"
+                                             Checked="radioButtonTCP_Checked" VerticalAlignment="Center"/>
+                                <RadioButton GroupName="ModbusType" Content="Serial"
+                                             Name="radioButtonSerial"
+                                             Checked="radioButtonSerial_Checked" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="28"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Label Grid.Column="0" Content="COM Port" Height="28" Name="lblCOM"/>
+                                <TextBox Grid.Column="1" Name="txtComPort"/>
+                                <Label Grid.Column="3" Content="IP" Height="28" Name="lblIP"/>
+                                <TextBox Grid.Column="4" Name="txtIP"/>
+                            </Grid>
                         </Grid>
                     </GroupBox>
-                    <Label Content="Modbus Communication Type" Height="28" HorizontalAlignment="Left" Margin="12,24,0,0" Name="label12" VerticalAlignment="Top" />
-                    <RadioButton GroupName="ModbusType" Content="TCP" Height="16" HorizontalAlignment="Left" Margin="218,29,0,0" Name="radioButtonTCP" VerticalAlignment="Top" Checked="radioButtonTCP_Checked" />
-                    <RadioButton GroupName="ModbusType" Content="Serial" Height="16" HorizontalAlignment="Left" Margin="320,29,0,0" Name="radioButtonSerial" VerticalAlignment="Top" Checked="radioButtonSerial_Checked" />
-                    <Label Content="IP" Height="28" HorizontalAlignment="Left" Margin="241,54,0,0" Name="lblIP" VerticalAlignment="Top" />
-                    <TextBox Height="23" HorizontalAlignment="Left" Margin="288,56,0,0" Name="txtIP" VerticalAlignment="Top" Width="120" />
+
+                    <!-- Server Name -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Server Name" Height="28" Name="label7"/>
+                        <TextBox Grid.Column="1" Name="txtServerName"/>
+                    </Grid>
+
+                    <!-- Replication Settings -->
+                    <GroupBox Grid.Row="4" Header="Replication Settings" Name="groupBox4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="94*"/>
+                                <ColumnDefinition Width="140*"/>
+                                <ColumnDefinition Width="92*"/>
+                                <ColumnDefinition Width="99*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="26*"/>
+                                <RowDefinition Height="10*"/>
+                            </Grid.RowDefinitions>
+                            <Label Content="Time Interval"  Grid.Column="3" Name="label8"  FontSize="11" Foreground="#4A4A6A"/>
+                            <Label Content="Computer Name"  Name="label9"                  FontSize="11" Foreground="#4A4A6A"/>
+                            <Label Content="IP Address"     Grid.Column="1" Name="label10" FontSize="11" Foreground="#4A4A6A"/>
+                            <Label Content="Is Replication" Grid.Column="2" Name="label11" FontSize="11" Foreground="#4A4A6A"/>
+                            <TextBox Grid.Column="1" Grid.Row="1" Name="textBox3"  Margin="2"/>
+                            <TextBox Name="textBox4"          Grid.Row="1"          Margin="2"/>
+                            <TextBox Name="textBox5"  Grid.Column="2" Grid.Row="1" Margin="2"/>
+                            <TextBox Name="textBox6"  Grid.Column="3" Grid.Row="1" Margin="2"/>
+                            <TextBox Name="textBox7"          Grid.Row="2"          Margin="2"/>
+                            <TextBox Name="textBox8"  Grid.Column="1" Grid.Row="2" Margin="2"/>
+                            <TextBox Name="textBox9"  Grid.Column="2" Grid.Row="2" Margin="2"/>
+                            <TextBox Name="textBox10" Grid.Column="3" Grid.Row="2" Margin="2"/>
+                            <TextBox Name="textBox11"         Grid.Row="3"          Margin="2"/>
+                            <TextBox Name="textBox12" Grid.Column="1" Grid.Row="3" Margin="2"/>
+                            <TextBox Name="textBox13" Grid.Column="2" Grid.Row="3" Margin="2"/>
+                            <TextBox Name="textBox14" Grid.Column="3" Grid.Row="3" Margin="2"/>
+                            <TextBox Name="textBox15"         Grid.Row="4"          Margin="2"/>
+                            <TextBox Name="textBox16" Grid.Column="1" Grid.Row="4" Margin="2"/>
+                            <TextBox Name="textBox17" Grid.Column="2" Grid.Row="4" Margin="2"/>
+                            <TextBox Name="textBox18" Grid.Column="3" Grid.Row="4" Margin="2"/>
+                            <TextBox Name="textBox19"         Grid.Row="5"          Margin="2"/>
+                            <TextBox Name="textBox20" Grid.Column="1" Grid.Row="5" Margin="2"/>
+                            <TextBox Name="textBox21" Grid.Column="2" Grid.Row="5" Margin="2"/>
+                            <TextBox Name="textBox22" Grid.Column="3" Grid.Row="5" Margin="2"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Bottom Button -->
+                    <Button Grid.Row="5" Content="Create Connection String" Height="32" Width="190"
+                            HorizontalAlignment="Right" Margin="0,8,0,0"
+                            Name="btnSaveToXml" Click="btnSaveToXml_Click"
+                            Style="{StaticResource PrimaryButton}"/>
                 </Grid>
             </TabItem>
+
         </TabControl>
     </Grid>
 </Window>

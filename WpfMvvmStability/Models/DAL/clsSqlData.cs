@@ -27,18 +27,10 @@ namespace WpfMvvmStability.Models.DAL
             {
                 ReadValuefromXml();
             }
-           // ConString = "Data Source=" + ServerName + ";Initial Catalog=StabilityOPV;Persist Security Info=True;User ID=StabilityOPV;Password=stabilityopv";
-
-           // ConString = "Data Source=" + ServerName + ";Initial Catalog=StabilityP15B;Persist Security Info=True;User ID=StabilityP15B;Password=stabilityp15b";  @Sp 22-12-2016
-           // ConString = "Data Source=" + ServerName + ";Initial Catalog=StabilityP15B;Persist Security Info=True; MultipleActiveResultSets=true; User ID=StabilityP15B;Password=stabilityp15b";
-           ConString = "Data Source=" + "localhost\\SQLEXPRESS01" + ";Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-        // ConString = "Data Source=ZEBEC-PC\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-           // ConString = "Data Source=YASHPRAJAPATI20;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-       // ConString = "Data Source=ZG-26;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-           // ConString = "Data Source=NISHANTVERMA-PC\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-    //ConString = "Data Source=ZP17\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
+          ConString = "Data Source=" + "localhost\\SQLEXPRESS01" + ";Initial Catalog=StabilityP15B;Integrated Security=SSPI";
+       
          
-           
+        
             return ConString;
         }
         ///  <summary> 
@@ -70,14 +62,8 @@ namespace WpfMvvmStability.Models.DAL
             try
             {
                 ReadValuefromXml();
-                //string Con = "Data Source=" + ServerName + ";Initial Catalog=StabilityP15B;Persist Security Info=True; User ID=StabilityP15B;Password=stabilityp15b"; @Sp 22-12-2016
-               //string Con = "Data Source=" + ServerName + ";Initial Catalog=StabilityP15B;Persist Security Info=True; MultipleActiveResultSets=true; User ID=StabilityP15B;Password=stabilityp15b";
                string Con = "Data Source=" + "localhost\\SQLEXPRESS01" + ";Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-             // string Con = "Data Source=ZEBEC-PC\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-           //string Con = "Data Source=ZG-26;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-                //string Con = "Data Source=YASHPRAJAPATI20;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-          //   string Con = "Data Source=ZP17\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-                //string Con = "Data Source=NISHANTVERMA-PC\\SQLEXPRESS;Initial Catalog=StabilityP15B;Integrated Security=SSPI";
+            
                  connect.ConnectionString = Con;
 
             }

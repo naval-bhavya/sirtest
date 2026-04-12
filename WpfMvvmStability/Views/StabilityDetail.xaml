@@ -451,7 +451,7 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Header="NES 109 StabilityP15B Criteria" Height="185" HorizontalAlignment="Left" Margin="644,402,0,0" Name="groupBoxStability" VerticalAlignment="Top" Width="628" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
+        <GroupBox Header="NES 109 Stability Criteria" Height="185" HorizontalAlignment="Left" Margin="644,402,0,0" Name="groupBoxStability" VerticalAlignment="Top" Width="628" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032">
             <Grid>
                 <DataGrid AutoGenerateColumns="False" Name="dgStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
                     <DataGrid.ItemBindingGroup>

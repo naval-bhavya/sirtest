@@ -5,7 +5,7 @@
     <Grid Height="239" Background="LightGray">
         <StackPanel Name="stackPanel2" Width="376">
             <DockPanel Height="54" Name="dockPanel1" Width="376">
-                <Label Content="StabilityP15B Settings " Height="52" Name="lblStabilitySettings" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="16" Loaded="lblStabilitySettings_Loaded" />
+                <Label Content="Stability Settings " Height="52" Name="lblStabilitySettings" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="16" Loaded="lblStabilitySettings_Loaded" />
             </DockPanel>
             <StackPanel Height="120" Name="stackPanel1" Width="374">
                 <Grid Height="120" Name="grid1" Width="374">
@@ -32,7 +32,7 @@
                 </Grid>
             </StackPanel>
             <DockPanel Height="64" Name="dockPanel2" Width="376">
-                <Button Content="Result StabilityP15B calculation" Height="43" Name="btnResStabilitycal" Width="179" Margin=" 10,10,10,10" Click="btnResStabilitycal_Click" />
+                <Button Content="Result Stability calculation" Height="43" Name="btnResStabilitycal" Width="179" Margin=" 10,10,10,10" Click="btnResStabilitycal_Click" />
                 <Button Content="Ok" Height="43" Name="btnOk" Width="75" Margin=" 0,10,10,10" Click="btnOk_Click" />
                 <Button Content="Exit" Height="43" Name="btnExit" Width="75"  Margin=" 0,10,10,10" Click="btnExit_Click" />
             </DockPanel>

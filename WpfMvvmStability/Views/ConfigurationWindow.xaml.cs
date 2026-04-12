@@ -399,7 +399,7 @@ namespace WpfMvvmStability.Views
                 Computer.Attributes.Append(ComputerName);
 
                 XmlAttribute DataBaseName = doc.CreateAttribute("DataBaseName");
-                DataBaseName.InnerText = "StabilityP15B";
+                DataBaseName.InnerText = "Stability";
                 Computer.Attributes.Append(DataBaseName);
 
 
@@ -435,7 +435,7 @@ namespace WpfMvvmStability.Views
                 Computer2.Attributes.Append(ComputerName2);
 
                 XmlAttribute DataBaseName2 = doc.CreateAttribute("DataBaseName");
-                DataBaseName2.InnerText = "StabilityP15B";
+                DataBaseName2.InnerText = "Stability";
                 Computer2.Attributes.Append(DataBaseName2);
 
 
@@ -469,7 +469,7 @@ namespace WpfMvvmStability.Views
                 ComputerName3.InnerText = textBox11.Text;
                 Computer3.Attributes.Append(ComputerName3);
                 XmlAttribute DataBaseName3 = doc.CreateAttribute("DataBaseName");
-                DataBaseName3.InnerText = "StabilityP15B";
+                DataBaseName3.InnerText = "Stability";
                 Computer3.Attributes.Append(DataBaseName3);
                 XmlAttribute ComputerIPAddress3 = doc.CreateAttribute("ComputerIPAddress");
                 ComputerIPAddress3.InnerText = textBox12.Text;
@@ -493,7 +493,7 @@ namespace WpfMvvmStability.Views
                 ComputerName4.InnerText = textBox15.Text;
                 Computer4.Attributes.Append(ComputerName4);
                 XmlAttribute DataBaseName4 = doc.CreateAttribute("DataBaseName");
-                DataBaseName4.InnerText = "StabilityP15B";
+                DataBaseName4.InnerText = "Stability";
                 Computer4.Attributes.Append(DataBaseName4);
                 XmlAttribute ComputerIPAddress4 = doc.CreateAttribute("ComputerIPAddress");
                 ComputerIPAddress4.InnerText = textBox16.Text;
@@ -517,7 +517,7 @@ namespace WpfMvvmStability.Views
                 ComputerName5.InnerText = textBox19.Text;
                 Computer5.Attributes.Append(ComputerName5);
                 XmlAttribute DataBaseName5 = doc.CreateAttribute("DataBaseName");
-                DataBaseName5.InnerText = "StabilityP15B";
+                DataBaseName5.InnerText = "Stability";
                 Computer5.Attributes.Append(DataBaseName5);
                 XmlAttribute ComputerIPAddress5 = doc.CreateAttribute("ComputerIPAddress");
                 ComputerIPAddress5.InnerText = textBox20.Text;

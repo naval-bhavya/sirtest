@@ -1326,7 +1326,7 @@
                     </Grid>
                 </GroupBox>
 
-                <GroupBox Grid.Row="7" Grid.Column="1" Header="NES 109 StabilityP15B Criteria" Name="groupBoxStability" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" Margin="4,0,0,6">
+                <GroupBox Grid.Row="7" Grid.Column="1" Header="NES 109 Stability Criteria" Name="groupBoxStability" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" Margin="4,0,0,6">
                     <Grid>
                         <DataGrid AutoGenerateColumns="False" Name="dgStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="True" CanUserSortColumns="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
                             <DataGrid.Columns>

@@ -32,7 +32,7 @@ namespace WpfMvvmStability.Views
         private void btnLogin(object sender, RoutedEventArgs e)
         {
             pswrd = txtPaswword.Text;
-            if (pswrd == "Zebec123")
+            if (pswrd == "NavalArchGroup@123")
             {
                 this.Close();
                 if (MainWindow.switchLoginstatus == 2)
@@ -47,13 +47,6 @@ namespace WpfMvvmStability.Views
                 }
                 MainWindow.switchLoginstatus = 0;
             }
-            //else if (pswrd == "pass@123")
-            //{
-            //    string message = "Your password is Zebec123";
-            //    string title = "Confirmation";
-            //    System.Windows.Forms.MessageBox.Show(message, title);
-            //    txtPaswword.Clear();
-            //}
             else
             {
                 System.Windows.Forms.MessageBox.Show("Incorrect Password");
@@ -72,7 +65,7 @@ namespace WpfMvvmStability.Views
             if (txtdefaultPaswword.Text == "pass@123")
             {
                 //defaultpwd = "pass@123";
-                string message = "Your password is Zebec123";
+                string message = "Your password is NavalArchGroup@123";
                 string title = "Confirmation";
                 System.Windows.Forms.MessageBox.Show(message, title);
                 txtdefaultPaswword.Clear();

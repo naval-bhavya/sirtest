@@ -951,12 +951,12 @@ namespace WpfMvvmStability.Views
         //}
         private void StatusType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //sachin 21.9.22
+            
             //int type = Convert.ToInt32(clsGlobVar.dtgetsimulationtype.Rows[0]["type"]);
             //var comboBox = sender as System.Windows.Controls.ComboBox;
             //var selectedItem = comboBox.SelectedValue;
             //string statusType = Convert.ToString(selectedItem);
-            //sachin 21.9.22
+           
 
             if (selectionchangecount!=0) 
             {
@@ -1003,13 +1003,13 @@ namespace WpfMvvmStability.Views
                                         query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankIdMul;
                                         query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankIdMul;
                                     }
-                                    //sachin
+                                  
                                     else if (selectedStatus == "2")
                                     {
                                         query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankIdMul;
                                         query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankIdMul;
                                     }
-                                    //sachin above
+                                  
                                     else
                                     {
                                         query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=1 where Tank_ID=" + TankIdMul;
@@ -1025,13 +1025,13 @@ namespace WpfMvvmStability.Views
                                     query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankId;
                                     query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankId;
                                 }
-                                //sachin
+                             
                                 else if (selectedStatus == "2")
                                 {
                                     query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankId;
                                     query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankId;
                                 }
-                                //sachin above
+                             
                                 else
                                 {
                                     query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=1 where Tank_ID=" + TankId;
@@ -1104,13 +1104,13 @@ namespace WpfMvvmStability.Views
                                 query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankId;
                                 query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankId;
                             }
-                            //sachin
+                         
                             else if (statusType == "2")
                             {
                                 query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=0 where Tank_ID=" + TankId;
                                 query += "  update  tblSimulationMode_Tank_Status set IsDamaged=0 where Tank_ID=" + TankId;
                             }
-                            //sachin above
+                          
                             else
                             {
                                 query += "  update  tblSimulationMode_Loading_Condition set IsDamaged=1 where Tank_ID=" + TankId;
@@ -1294,7 +1294,7 @@ namespace WpfMvvmStability.Views
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show("StabilityP15B calculation succeeded");
+                        System.Windows.MessageBox.Show("Stability calculation succeeded");
                         foreach (Window window in Application.Current.Windows)
                         {
                             if (window.GetType() == typeof(MainWindow))
