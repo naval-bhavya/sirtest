@@ -714,7 +714,7 @@ namespace WpfMvvmStability.Views
                     TankId = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["Tank_ID"]);
                     //isVisible=Convert.ToBoolean(((sender as DataGrid).Items[index] as DataRowView)["IsVisible"]);
 
-                    if (header.Trim() == "Volume (Cu.m)" || header.Trim() == "Percent Fill" || header.Trim() == "S.Gravity" || header.Trim() == "Mass(T)" || header.Trim() == "Innage(m)" || header.Trim() == "Flood Time(min)" || header.Trim() == "Flood Rate(TPH)")
+                    if (header.Trim() == "VOLUME (CU.M)" || header.Trim() == "PERCENT FILL" || header.Trim() == "S.GRAVITY" || header.Trim() == "MASS(T)" || header.Trim() == "INNAGE(M)" || header.Trim() == "FLOOD TIME(MIN)" || header.Trim() == "FLOOD RATE(TPH)")
                     {
                         decimal volume = 0, sg, weight = 0, innage = 0,FloodRate=0,FloodTime=0;
                         decimal minsounding = 0;
@@ -724,21 +724,21 @@ namespace WpfMvvmStability.Views
                         FloodTime = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FloodTime"]);
                         decimal maxsounding = maxVolume[TankId];
 
-                        if (header.Trim() == "Volume (Cu.m)")
+                        if (header.Trim() == "VOLUME (CU.M)")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
                         }
-                        if (header.Trim() == "Percent Fill")
+                        if (header.Trim() == "PERCENT FILL")
                         {
                             volume = (percentfill * maxsounding) / 100;
                         }
-                        if (header.Trim() == "S.Gravity")
+                        if (header.Trim() == "S.GRAVITY")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             weight = volume * sg;
                         }
-                        if (header.Trim() == "Mass(T)")
+                        if (header.Trim() == "MASS(T)")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Weight"]) / sg;
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
@@ -857,7 +857,7 @@ namespace WpfMvvmStability.Views
                     //    }
                     //}
 
-                    if (header.Trim() == "FSM(T-m)")
+                    if (header.Trim() == "FSM(T-M)")
                     {
                         decimal fsm;
                         fsm = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FSM"]);
