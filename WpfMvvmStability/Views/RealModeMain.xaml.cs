@@ -49,19 +49,32 @@ namespace WpfMvvmStability.Views
     public partial class RealModeMain : Page
     {
         double x1 = 0, y1 = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0, x4 = 0, y4 = 0, x5 = 0, x6 = 0, y5 = 0, y6 = 0, x7 = 0, x8 = 0, y7 = 0, y8 = 0;
-        private const string folderPath = "3D\\";
+        private const string folderPath = @"3D\";
+        private Dictionary<string, HelixToolkit.SharpDX.MeshGeometry3D> _geometryCache = new Dictionary<string, HelixToolkit.SharpDX.MeshGeometry3D>();
+        private bool _pendingFit = false;
 
         Assembly assembly = Assembly.GetExecutingAssembly();
         BackgroundWorker bw;
 
         TextBox tb = new TextBox();
+        private bool _forceRealModeCalculation = true;
+        private bool _pendingRealModeRefresh = false;
+        private string _lastRealModeVolumeSignature = string.Empty;
         private string TankNameForPercentage;
         private Bounds3D bounds;
+        private Bounds3D boundsProfile;
+        private Bounds3D boundsPlanA;
+        private Bounds3D boundsPlanB;
+        private Bounds3D boundsPlanC;
+        private Bounds3D boundsPlanALL;
         private WpfWireframeGraphics3DUsingDrawingVisual wpfGraphics;
         private WireframeGraphics2Cache graphicsCache;
         private GraphicsConfig graphicsConfig;
         private WW.Math.Vector3D translation;
         private double scaling = 1d;
+        private bool is2DPanning;
+        private System.Windows.Point last2DPanPoint;
+        private Canvas active2DCanvas;
 
         int indexvar;
 
@@ -71,10 +84,67 @@ namespace WpfMvvmStability.Views
         private WireframeGraphics2Cache graphicsCacheNew;
         private GraphicsConfig graphicsConfigNew;
 
-        string header;
+        string header = string.Empty;
         public static Dictionary<int, decimal> maxVolume;
 
+        private string NormalizedGridHeader
+        {
+            get { return NormalizeGridHeader(header); }
+        }
+
+        private static string NormalizeGridHeader(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = value.ToUpperInvariant()
+                .Replace(" ", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace("-", string.Empty);
+
+            if (cleaned == "VOLUME" || cleaned == "VOLUME(CUM)" || cleaned == "VOLUME(CU.M)") return "VOLUME";
+            if (cleaned == "PERCENTFILL" || cleaned == "PERCENT_FULL") return "PERCENT";
+            if (cleaned == "SPECIFICGRAVITY" || cleaned == "SG" || cleaned == "SGRAVITY") return "SG";
+            return cleaned;
+        }
         System.Windows.Threading.DispatcherTimer TimerGraphicsRefresh = new System.Windows.Threading.DispatcherTimer();
+
+        private void Show3DLoading(string message = "Loading 3D model...")
+        {
+            if (overlay3DLoading != null)
+            {
+                txt3DLoadingTitle.Text = message;
+                txt3DLoadingHint.Text = "Please wait a few seconds. The model will appear shortly.";
+                overlay3DLoading.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void Hide3DLoading()
+        {
+            if (overlay3DLoading != null)
+            {
+                overlay3DLoading.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void Schedule3DRefresh()
+        {
+            if (viewPort3d1 == null || viewPort3d1.EffectsManager == null)
+            {
+                return;
+            }
+
+            Show3DLoading("Updating 3D tank filling...");
+            var refreshTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            refreshTimer.Tick += (s, e) =>
+            {
+                refreshTimer.Stop();
+                Refresh3dNew();
+            };
+            refreshTimer.Start();
+        }
 
         /// <summary>
         /// Constructor for RealModeMain.xaml
@@ -132,6 +202,13 @@ namespace WpfMvvmStability.Views
                 {
                     dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
                 }));
+                dgCargoTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    if (Models.BO.clsGlobVar.dtRealCargoTanks != null)
+                    {
+                        dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtRealCargoTanks.DefaultView;
+                    }
+                }));
             }
             catch //(Exception ex)
             {
@@ -143,15 +220,162 @@ namespace WpfMvvmStability.Views
             //Checking whether background worker IsBusy
             if (!bw.IsBusy)
                 bw.RunWorkerAsync();
+            else
+                _pendingRealModeRefresh = true;
         }
+
+        private void StartAutoRefresh()
+        {
+            _forceRealModeCalculation = true;
+            if (bw != null && !bw.IsBusy)
+            {
+                SetCalculationProgress("Calculating", 15);
+                bw.RunWorkerAsync();
+            }
+            else
+            {
+                _pendingRealModeRefresh = true;
+            }
+        }
+
+        private void SetCalculationProgress(string status, double value)
+        {
+            try
+            {
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    if (txtProgressStatus != null)
+                    {
+                        txtProgressStatus.Text = status;
+                        txtProgressStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(31, 72, 255));
+                    }
+                    if (progressStatusDot != null)
+                    {
+                        progressStatusDot.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(31, 72, 255));
+                    }
+                    if (pRGSCalculation != null)
+                    {
+                        pRGSCalculation.Value = value;
+                    }
+                    if (txtProgressPercent != null)
+                    {
+                        txtProgressPercent.Text = status;
+                    }
+                }));
+            }
+            catch
+            {
+            }
+        }
+
+        private void SetCalculationReady()
+        {
+            try
+            {
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    if (txtProgressStatus != null)
+                    {
+                        txtProgressStatus.Text = "Ready";
+                        txtProgressStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+                    }
+                    if (progressStatusDot != null)
+                    {
+                        progressStatusDot.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+                    }
+                    if (pRGSCalculation != null)
+                    {
+                        pRGSCalculation.Value = 100;
+                    }
+                    if (txtProgressPercent != null)
+                    {
+                        txtProgressPercent.Text = "Ready";
+                    }
+                }));
+            }
+            catch
+            {
+            }
+        }
+
+        private static string BuildVolumeSignature(DataTable table)
+        {
+            if (table == null || table.Rows.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder signature = new StringBuilder();
+            foreach (DataRow row in table.Rows)
+            {
+                if (!table.Columns.Contains("Tank_ID") || !table.Columns.Contains("Volume"))
+                {
+                    continue;
+                }
+
+                signature.Append(row["Tank_ID"]);
+                signature.Append(':');
+                signature.Append(row["Volume"]);
+                signature.Append(';');
+            }
+
+            return signature.ToString();
+        }
+
+        private void RunRealModeCalculation()
+        {
+            try
+            {
+                string Err = "";
+                DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+                command.CommandText = "spCal_RealMode_Stability";
+                command.CommandType = CommandType.StoredProcedure;
+
+                DbParameter user = Models.DAL.clsDBUtilityMethods.GetParameter();
+                user.DbType = DbType.String;
+                user.ParameterName = "@User";
+                user.Value = "dbo";
+                command.Parameters.Add(user);
+
+                DbParameter result = Models.DAL.clsDBUtilityMethods.GetParameter();
+                result.DbType = DbType.Int16;
+                result.Direction = ParameterDirection.Output;
+                result.ParameterName = "@Stability_Calculation_Result";
+                command.Parameters.Add(result);
+
+                Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
+                if (result.Value != null && result.Value != DBNull.Value)
+                {
+                    Models.BO.clsGlobVar.CalculationResult = Convert.ToInt32(result.Value);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         private void bw_DoWork(object sender, DoWorkEventArgs e)
          {
             //Below Code Updates Controls(Labels and DataGrids) of RealModeMain Page from background Worker(Different Thread)
             try
              {
                 Models.TableModel.Write_Log("Enter in Real MOde main Do_work");
+                Models.TableModel.RealModeData();
+                string currentVolumeSignature = BuildVolumeSignature(Models.BO.clsGlobVar.dtRealModeAllTanks);
+                bool shouldCalculate = _forceRealModeCalculation || currentVolumeSignature != _lastRealModeVolumeSignature;
+                if (shouldCalculate)
+                {
+                    SetCalculationProgress("Calculating", 45);
+                    RunRealModeCalculation();
+                    _lastRealModeVolumeSignature = currentVolumeSignature;
+                    _forceRealModeCalculation = false;
+                    SetCalculationProgress("Updating", 75);
+                    Models.TableModel.RealModeData();
+                }
+                Models.TableModel.RealModePercentFill();
                 lblDisplacement.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
                 {
+                    Schedule3DRefresh(); // Refresh 3D model with new data
                     lblDisplacement.Content = Convert.ToString(Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Displacement"])));
                     //decimal varDisp = Convert.ToDecimal(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Displacement"]);
                     //lblDisplacement.Content =varDisp.ToString("N");
@@ -257,10 +481,11 @@ namespace WpfMvvmStability.Views
 
                 lblHeel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
                 {
+                    label8.Content = " ";
 
                     if (Convert.ToDouble(Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"]) > 0)
                     {
-                        label6.Content = "PORT";
+                        label8.Content = "PORT";
 
                        // lblHeel.Content = Convert.ToString(Math.Round((Convert.ToDouble( Models.BO.clsGlobVar.dtRealEquillibriumValues.Rows[0]["Heel"])),2));
 
@@ -321,6 +546,13 @@ namespace WpfMvvmStability.Views
                 dgBallastTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
                 {
                     dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtRealBallastTanks.DefaultView;
+                }));
+                dgCargoTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
+                {
+                    if (Models.BO.clsGlobVar.dtRealCargoTanks != null)
+                    {
+                        dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtRealCargoTanks.DefaultView;
+                    }
                 }));
                 dgFuelOilTanks.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new System.Action(delegate()
                 {
@@ -390,6 +622,12 @@ namespace WpfMvvmStability.Views
                // System.Windows.MessageBox.Show(ex.ToString());
             }
            Models.TableModel.Write_Log("End in Real MOde DO_RunWorkerCompleted");
+           SetCalculationReady();
+           if (_pendingRealModeRefresh)
+           {
+               _pendingRealModeRefresh = false;
+               StartAutoRefresh();
+           }
 
         }
 
@@ -454,6 +692,11 @@ namespace WpfMvvmStability.Views
                     boundsCalculator.GetBounds(model, model.ActiveLayout);
                 }
                 bounds = boundsCalculator.Bounds;
+                if (canvas2D == canvas2DProfile) boundsProfile = bounds;
+                else if (canvas2D == canvas2DPlanA) boundsPlanA = bounds;
+                else if (canvas2D == canvas2DPlanB) boundsPlanB = bounds;
+                else if (canvas2D == canvas2DPlanC) boundsPlanC = bounds;
+                else if (canvas2D == canvas2DPlanALL) boundsPlanALL = bounds;
                 WW.Math.Vector3D delta = bounds.Delta;
                 System.Windows.Size estimatedCanvasSize = new System.Windows.Size(200d, 200d);
                 double estimatedScale = Math.Min(estimatedCanvasSize.Width / delta.X, estimatedCanvasSize.Height / delta.Y);
@@ -478,6 +721,7 @@ namespace WpfMvvmStability.Views
                 wpfGraphics.Config = graphicsConfig;
 
                 canvas2D.Children.Add(wpfGraphics.Canvas);
+                Hook2DInteraction(wpfGraphics.Canvas);
 
                 UpdateWpfGraphics();
                 canvas2D.SizeChanged += canvas_SizeChanged;
@@ -534,18 +778,34 @@ namespace WpfMvvmStability.Views
             double angle = ((FP - AP) / 151.5) * (180 / Math.PI);
             //@MT Code added for Ship Profile Image Rotate :END
 
+            Bounds3D activeBounds;
+            if (canvas2D == canvas2DProfile && boundsProfile != null) activeBounds = boundsProfile;
+            else if (canvas2D == canvas2DPlanA && boundsPlanA != null) activeBounds = boundsPlanA;
+            else if (canvas2D == canvas2DPlanB && boundsPlanB != null) activeBounds = boundsPlanB;
+            else if (canvas2D == canvas2DPlanC && boundsPlanC != null) activeBounds = boundsPlanC;
+            else if (canvas2D == canvas2DPlanALL && boundsPlanALL != null) activeBounds = boundsPlanALL;
+            else activeBounds = bounds;
+
             double canvasWidth = canvas2D.ActualWidth;
             double canvasHeight = canvas2D.ActualHeight;
+            double contentMinY = activeBounds.Corner1.Y;
+            double contentMaxY = activeBounds.Corner2.Y;
+            if (contentMinY < 0d && Math.Abs(contentMinY) > Math.Abs(contentMaxY) * 3d)
+            {
+                contentMinY = 0d;
+            }
+
+            double contentHeight = Math.Max(1d, contentMaxY - contentMinY);
+            double verticalPadding = (canvas2D == canvas2DProfile) ? 0.015d : 0.02d;
+            Point2D effectiveCorner1 = new Point2D(activeBounds.Corner1.X, contentMinY - (contentHeight * verticalPadding));
+            Point2D effectiveCorner2 = new Point2D(activeBounds.Corner2.X, contentMaxY + (contentHeight * verticalPadding));
+            Point2D effectiveCenter = new Point2D(activeBounds.Center.X, (effectiveCorner1.Y + effectiveCorner2.Y) / 2d);
             MatrixTransform baseTransform = DxfUtil.GetScaleWMMatrixTransform(
-                (Point2D)bounds.Corner1,
-                (Point2D)bounds.Corner2,
-
-
-                (Point2D)bounds.Center,
+                effectiveCorner1,
+                effectiveCorner2,
+                effectiveCenter,
                 new Point2D(1d, canvasHeight),
                 new Point2D(canvasWidth, 1d),
-
-
                 new Point2D(0.5d * (canvasWidth + 1d), 0.5d * (canvasHeight + 1d))
                 );
 
@@ -556,10 +816,11 @@ namespace WpfMvvmStability.Views
                 X = -canvasWidth / 2d,
                 Y = -canvasHeight / 2d
             });
+            double fitScale = (canvas2D == canvas2DProfile) ? 1.35d : 1.18d;
             transformGroup.Children.Add(new ScaleTransform()
             {
-                ScaleX = scaling,
-                ScaleY = scaling
+                ScaleX = scaling * fitScale,
+                ScaleY = scaling * fitScale
             });
             transformGroup.Children.Add(new TranslateTransform()
             {
@@ -569,21 +830,122 @@ namespace WpfMvvmStability.Views
             transformGroup.Children.Add(new TranslateTransform()
             {
                 X = translation.X * canvasWidth / 2d,
-                Y = -translation.Y * canvasHeight / 2d
+                Y = (-translation.Y * canvasHeight / 2d) + canvasHeight * 0.20d
             });
 
-            //@MT Code added for Ship Profile Image Rotate :START
+            //@MT Code removed for Ship Profile Image Rotate (kept level as requested)
+            /*
             if (canvas2D == canvas2DProfile)
             {
                 transformGroup.Children.Add(new RotateTransform()
                 {
-                    Angle = angle
+                    Angle = angle,
+                    CenterX = canvasWidth / 2d,
+                    CenterY = canvasHeight / 2d
                 });
             }
-            //@MT Code added for Ship Profile Image Rotate :END
+            */
 
             canvas2D.RenderTransform = transformGroup;
 
+        }
+
+        private void Canvas2D_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            double zoomFactor = e.Delta > 0 ? 1.12d : 1d / 1.12d;
+            scaling = Math.Max(0.35d, Math.Min(8d, scaling * zoomFactor));
+            UpdateAll2DTransforms();
+            e.Handled = true;
+        }
+
+        private void btnReset2D_Click(object sender, RoutedEventArgs e)
+        {
+            scaling = 1.0d;
+            translation = new WW.Math.Vector3D(0, 0, 0);
+            UpdateAll2DTransforms();
+        }
+
+        private void Canvas2D_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            active2DCanvas = GetInteractionCanvas(sender);
+            if (active2DCanvas == null)
+            {
+                return;
+            }
+
+            is2DPanning = true;
+            last2DPanPoint = e.GetPosition(active2DCanvas);
+            active2DCanvas.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void Canvas2D_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            is2DPanning = false;
+            if (active2DCanvas != null)
+            {
+                active2DCanvas.ReleaseMouseCapture();
+            }
+            active2DCanvas = null;
+            e.Handled = true;
+        }
+
+        private void Canvas2D_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!is2DPanning || active2DCanvas == null)
+            {
+                return;
+            }
+
+            System.Windows.Point current = e.GetPosition(active2DCanvas);
+            double width = Math.Max(1d, active2DCanvas.ActualWidth);
+            double height = Math.Max(1d, active2DCanvas.ActualHeight);
+            translation.X += (current.X - last2DPanPoint.X) / (width / 2d);
+            translation.Y -= (current.Y - last2DPanPoint.Y) / (height / 2d);
+            last2DPanPoint = current;
+            UpdateAll2DTransforms();
+            e.Handled = true;
+        }
+
+        private void UpdateAll2DTransforms()
+        {
+            UpdateRenderTransform(canvas2DProfile);
+            UpdateRenderTransform(canvas2DPlanA);
+            UpdateRenderTransform(canvas2DPlanB);
+            UpdateRenderTransform(canvas2DPlanC);
+            UpdateRenderTransform(canvas2DPlanALL);
+        }
+
+        private Canvas GetInteractionCanvas(object sender)
+        {
+            DependencyObject current = sender as DependencyObject;
+            while (current != null)
+            {
+                if (current == canvas2DProfile) return canvas2DProfile;
+                if (current == canvas2DPlanA) return canvas2DPlanA;
+                if (current == canvas2DPlanB) return canvas2DPlanB;
+                if (current == canvas2DPlanC) return canvas2DPlanC;
+                if (current == canvas2DPlanALL) return canvas2DPlanALL;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
+        private void Hook2DInteraction(UIElement element)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.PreviewMouseWheel -= Canvas2D_MouseWheel;
+            element.PreviewMouseLeftButtonDown -= Canvas2D_MouseLeftButtonDown;
+            element.PreviewMouseLeftButtonUp -= Canvas2D_MouseLeftButtonUp;
+            element.PreviewMouseMove -= Canvas2D_MouseMove;
+            element.PreviewMouseWheel += Canvas2D_MouseWheel;
+            element.PreviewMouseLeftButtonDown += Canvas2D_MouseLeftButtonDown;
+            element.PreviewMouseLeftButtonUp += Canvas2D_MouseLeftButtonUp;
+            element.PreviewMouseMove += Canvas2D_MouseMove;
         }
 
         //--------------------------------------------------------------------------------
@@ -2211,11 +2573,40 @@ namespace WpfMvvmStability.Views
             }
         }
 
+        private void ResetOutputPanelValues()
+        {
+            lblGMT.Content = "0.000";
+            lblDisplacement.Content = "0";
+            lblTrim.Content = "0.000";
+            lblHeel.Content = "0.000";
+            label5.Content = string.Empty;
+            label8.Content = string.Empty;
+            lblDraftAP.Content = "0.000";
+            lblDraftFP.Content = "0.000";
+            lblDraftMean.Content = "0.000";
+            lblDraftAftMark.Content = "0.000";
+            lblDraftFwdMark.Content = "0.000";
+            lblPROPELLER.Content = "0.000";
+            lblSONARDOME.Content = "0.000";
+            lblKG.Content = "0.000";
+            lblKGF.Content = "0.000";
+            lblLCG.Content = "0.000";
+            lblFSC.Content = "0.000";
+            lblTPC.Content = "0.000";
+            lblMTC.Content = "0.000";
+        }
+
+        private void btnclear_Click(object sender, RoutedEventArgs e)
+        {
+            ResetOutputPanelValues();
+            ModernMessageBox.Show("Output panel values cleared.", "Clear", MessageBoxType.Success);
+        }
+
         private void btnAdd_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if ((MessageBox.Show("Are you sure you want to add new Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                if ((ModernMessageBox.Show("Are you sure you want to add a new variable item?", "Please Confirm", MessageBoxType.Warning, MessageBoxButton.YesNo) == MessageBoxResult.Yes))
                 {
                     DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                     string Err = "";
@@ -2244,7 +2635,7 @@ namespace WpfMvvmStability.Views
             {
                 if (Models.BO.clsGlobVar.dtRealVariableItems.Rows.Count > 1)
                 {
-                    if ((MessageBox.Show("Are you sure, you want to delete selected Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                    if ((ModernMessageBox.Show("Are you sure you want to delete the selected variable item?", "Please Confirm", MessageBoxType.Warning, MessageBoxButton.YesNo) == MessageBoxResult.Yes))
                     {
                         DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                         string Err = "";
@@ -2262,7 +2653,7 @@ namespace WpfMvvmStability.Views
                 }
                 else
                 {
-                    MessageBox.Show("There should be atleast one row in the table");
+                    ModernMessageBox.Show("There should be at least one row in the table.", "Variable Items", MessageBoxType.Warning);
                 }
             }
             catch
@@ -2284,12 +2675,18 @@ namespace WpfMvvmStability.Views
                 int TankId;
                 bool IsSensorfaulty = false;
                 decimal percentfill;
+                string activeHeader = NormalizedGridHeader;
+                DataGrid activeGrid = sender as DataGrid;
+                if (activeGrid == null || index < 0 || index >= activeGrid.Items.Count || string.IsNullOrEmpty(activeHeader))
+                {
+                    return;
+                }
                 //if (clsGlobVar.FlagDamageCases == false)
                 {
 
-                    TankId = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["Tank_ID"]);
-                    IsSensorfaulty = Convert.ToBoolean(((sender as DataGrid).Items[index] as DataRowView)["IsSensorFaulty"]);
-                    if (header == "Volume" || header == "Percent Fill" || header == "SG")
+                    TankId = Convert.ToInt16((activeGrid.Items[index] as DataRowView)["Tank_ID"]);
+                    IsSensorfaulty = Convert.ToBoolean((activeGrid.Items[index] as DataRowView)["IsSensorFaulty"]);
+                    if (activeHeader == "VOLUME" || activeHeader == "PERCENT" || activeHeader == "SG")
                     {
 
                         decimal volume = 0, sg, weight = 0;
@@ -2297,19 +2694,24 @@ namespace WpfMvvmStability.Views
                         sg = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["SG"]);
                         percentfill = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Percent_Full"]);
 
+                        if (maxVolume == null || !maxVolume.ContainsKey(TankId))
+                        {
+                            return;
+                        }
+
                         decimal maxsounding = maxVolume[TankId];
 
-                        if (header == "Volume")
+                        if (activeHeader == "VOLUME")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
                         }
-                        if (header == "Percent Fill")
+                        if (activeHeader == "PERCENT")
                         {
                             volume = (percentfill * maxsounding) / 100;
 
                         }
-                        if (header == "SG")
+                        if (activeHeader == "SG")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             weight = volume * sg;
@@ -2326,7 +2728,7 @@ namespace WpfMvvmStability.Views
                         {
 
                             string error = "Volume should be between " + minsounding + " and " + maxsounding;
-                            System.Windows.MessageBox.Show(error);
+                            ModernMessageBox.Show(error, "Validation Error", MessageBoxType.Error);
                             // e.Cancel = true;
                             return;
                         }
@@ -2344,6 +2746,10 @@ namespace WpfMvvmStability.Views
                             command.CommandType = CommandType.Text;
                             Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
 
+                            Models.TableModel.RealModeData();
+                            Models.TableModel.RealModePercentFill();
+                            StartAutoRefresh();
+                            Schedule3DRefresh();
                         }
                         index = -1;
                         TankId = 0;
@@ -2361,8 +2767,14 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                header = e.Column.Header.ToString();
+                header = e.Column.Header == null ? string.Empty : e.Column.Header.ToString();
                 index = e.Row.GetIndex();
+                if (NormalizedGridHeader != "VOLUME")
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
                 if (e.Column.GetType().ToString() == "System.Windows.Controls.DataGridTextColumn")
                 {
 
@@ -2443,7 +2855,74 @@ namespace WpfMvvmStability.Views
         {
             if (_3dInitialized) return;
             _3dInitialized = true;
+            Show3DLoading();
             Refresh3dNew();
+        }
+
+        /// <summary>
+        /// Fits the camera to show all loaded 3-D geometry, then locks the rotation/zoom
+        /// pivot to the computed scene centre so the model never drifts off screen.
+        /// </summary>
+        private void FitCameraToScene()
+        {
+            if (viewPort3d1?.EffectsManager == null) return;
+
+            // If the 3D tab is not yet visible the viewport has no size — defer.
+            if (viewPort3d1.ActualWidth <= 0 || viewPort3d1.ActualHeight <= 0)
+            {
+                _pendingFit = true;
+                viewPort3d1.SizeChanged -= ViewPort3d1_SizeChanged_Fit;
+                viewPort3d1.SizeChanged += ViewPort3d1_SizeChanged_Fit;
+                return;
+            }
+
+            // -- Step 1: compute scene bounding box centre --
+            var bounds = ViewportExtensions.FindBounds3D(viewPort3d1);
+
+            if (!bounds.IsEmpty && bounds.SizeX > 0.1) // Add a size check to avoid fitting to noise
+            {
+                var centre = new System.Windows.Media.Media3D.Point3D(
+                    bounds.X + bounds.SizeX * 0.5,
+                    bounds.Y + bounds.SizeY * 0.5,
+                    bounds.Z + bounds.SizeZ * 0.5);
+                
+                // Set the rotation pivot first
+                viewPort3d1.FixedRotationPoint = centre;
+                viewPort3d1.FixedRotationPointEnabled = true;
+
+                // Zoom to fit
+                viewPort3d1.ZoomExtents(animationTime: 400);
+            }
+            else
+            {
+                // Fallback: Use camera look direction to find a reasonable pivot
+                var cam = viewPort3d1.Camera as HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
+                if (cam != null)
+                {
+                    viewPort3d1.ZoomExtents(animationTime: 0);
+                    if (cam.LookDirection.Length > 0)
+                    {
+                        var centre = new System.Windows.Media.Media3D.Point3D(
+                            cam.Position.X + cam.LookDirection.X,
+                            cam.Position.Y + cam.LookDirection.Y,
+                            cam.Position.Z + cam.LookDirection.Z);
+                        viewPort3d1.FixedRotationPoint = centre;
+                        viewPort3d1.FixedRotationPointEnabled = true;
+                    }
+                }
+            }
+        }
+
+        private void ViewPort3d1_SizeChanged_Fit(object sender, SizeChangedEventArgs e)
+        {
+            if (e.NewSize.Width > 0 && e.NewSize.Height > 0 && _pendingFit)
+            {
+                _pendingFit = false;
+                viewPort3d1.SizeChanged -= ViewPort3d1_SizeChanged_Fit;
+                var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+                t.Tick += (s, ev) => { t.Stop(); FitCameraToScene(); };
+                t.Start();
+            }
         }
         private void TimerGraphicsRefresh_Tick(object sender, EventArgs e)
         {
@@ -2813,578 +3292,115 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"Refresh3dNew START - scene3D null? {scene3D == null}, EffectsManager null? {viewPort3d1?.EffectsManager == null}");
-                if (scene3D == null || viewPort3d1.EffectsManager == null) { System.Diagnostics.Debug.WriteLine("Refresh3dNew: not ready, aborting"); return; }
+                Show3DLoading();
+                if (scene3D == null || viewPort3d1.EffectsManager == null) { Hide3DLoading(); return; }
 
-                // Clear previously loaded models
                 scene3D.Children.Clear();
 
-                for (int i = 0; i < 2; i++)//6
+                // Build folder paths (handle both 3D and 3D18 variants if present)
+                string base3D = folderPath;
+                string base3D18 = folderPath.Contains("3D18") ? folderPath : folderPath.Replace("3D", "3D18");
+
+                // Optimized dictionary-based lookup for all categories
+                var freshWaterFiles   = BuildTankFileDictionary(base3D + @"\FreshWaterTank\");
+                var freshWater25Files = BuildTankFileDictionary(base3D + @"\FreshWaterTank25\");
+                var freshWater50Files = BuildTankFileDictionary(base3D + @"\FreshWaterTank50\");
+                var freshWater75Files = BuildTankFileDictionary(base3D + @"\FreshWaterTank75\");
+
+                var ballastFiles   = BuildTankFileDictionary(base3D + @"\BallastTank\");
+                var ballast25Files = BuildTankFileDictionary(base3D + @"\BallastTank25\");
+                var ballast50Files = BuildTankFileDictionary(base3D + @"\BallastTank50\");
+                var ballast75Files = BuildTankFileDictionary(base3D + @"\BallastTank75\");
+
+                var fuelOilFiles   = BuildTankFileDictionary(base3D + @"\FuelOilTank\");
+                var fuelOil25Files = BuildTankFileDictionary(base3D + @"\FuelOilTank25\");
+                var fuelOil50Files = BuildTankFileDictionary(base3D + @"\FuelOilTank50\");
+                var fuelOil75Files = BuildTankFileDictionary(base3D + @"\FuelOilTank75\");
+
+                var cargoFiles   = BuildTankFileDictionary(base3D + @"\CargoTank\");
+                var cargo25Files = BuildTankFileDictionary(base3D + @"\CargoTank25\");
+                var cargo50Files = BuildTankFileDictionary(base3D + @"\CargoTank50\");
+                var cargo75Files = BuildTankFileDictionary(base3D + @"\CargoTank75\");
+
+                var dieselFiles   = BuildTankFileDictionary(base3D + @"\DieselOilTank\");
+                var diesel25Files = BuildTankFileDictionary(base3D + @"\DieselOilTank25\");
+                var diesel50Files = BuildTankFileDictionary(base3D + @"\DieselOilTank50\");
+                var diesel75Files = BuildTankFileDictionary(base3D + @"\DieselOilTank75\");
+
+                var miscFiles   = BuildTankFileDictionary(base3D + @"\MiscTank\");
+                var misc25Files = BuildTankFileDictionary(base3D + @"\MiscTank25\");
+                var misc50Files = BuildTankFileDictionary(base3D + @"\MiscTank50\");
+                var misc75Files = BuildTankFileDictionary(base3D + @"\MiscTank75\");
+
+                var compartmentFiles = BuildTankFileDictionary(base3D18 + @"\Compartment\");
+                var wtRegionFiles    = BuildTankFileDictionary(base3D18 + @"\WT_REGION\");
+
+                // Helper to load tanks from DataTable
+                System.Action<DataTable, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, byte, byte, byte, byte> loadTanks = 
+                    (dt, baseDict, p25Dict, p50Dict, p75Dict, a, r, g, b) => {
+                    if (dt == null) return;
+                    foreach (DataRow row in dt.Rows) {
+                        try {
+                            string Name = Convert.ToString(row["Tank_Name"]).Split('.')[0].Trim().Replace("/", "");
+                            bool isDamaged = Convert.ToString(row["IsDamaged"]) == "True";
+                            int tankId = row.Table.Columns.Contains("Tank_ID") ? Convert.ToInt32(row["Tank_ID"]) : -1;
+                            
+                            decimal percentFill = 0;
+                            if (tankId >= 0 && tankId < Models.BO.clsGlobVar.Tank_PercentFill.Length)
+                                percentFill = Models.BO.clsGlobVar.Tank_PercentFill[tankId];
+                            else if (row.Table.Columns.Contains("Percent_Full"))
+                                percentFill = Convert.ToDecimal(row["Percent_Full"]);
+
+                            if (baseDict.TryGetValue(Name, out string baseFile)) {
+                                Element3D device3D = ResolveTankModel(Name, baseFile, isDamaged, percentFill, p25Dict, p50Dict, p75Dict, a, r, g, b);
+                                if (device3D != null) { 
+                                    device3D.Tag = Name; 
+                                    scene3D.Dispatcher.Invoke(() => { if (!scene3D.Children.Contains(device3D)) scene3D.Children.Add(device3D); }); 
+                                }
+                            }
+                        } catch { }
+                    }
+                };
+
+                // Load all categories using DataTables
+                loadTanks(Models.BO.clsGlobVar.dtRealFreshWaterTanks, freshWaterFiles, freshWater25Files, freshWater50Files, freshWater75Files, 180, 0, 0, 100);
+                loadTanks(Models.BO.clsGlobVar.dtRealBallastTanks, ballastFiles, ballast25Files, ballast50Files, ballast75Files, 180, 0, 200, 0);
+                loadTanks(Models.BO.clsGlobVar.dtRealFuelOilTanks, fuelOilFiles, fuelOil25Files, fuelOil50Files, fuelOil75Files, 200, 185, 92, 0);
+                loadTanks(Models.BO.clsGlobVar.dtRealFuelOilTanks, dieselFiles, diesel25Files, diesel50Files, diesel75Files, 200, 185, 92, 0);
+                loadTanks(Models.BO.clsGlobVar.dtRealCargoTanks, cargoFiles, cargo25Files, cargo50Files, cargo75Files, 200, 185, 92, 0);
+                loadTanks(Models.BO.clsGlobVar.dtRealMiscTanks, miscFiles, misc25Files, misc50Files, misc75Files, 180, 255, 128, 192);
+                loadTanks(Models.BO.clsGlobVar.dtRealCompartments, compartmentFiles, compartmentFiles, compartmentFiles, compartmentFiles, 70, 150, 150, 150);
+                loadTanks(Models.BO.clsGlobVar.dtRealWaterTightRegion, wtRegionFiles, wtRegionFiles, wtRegionFiles, wtRegionFiles, 70, 100, 100, 100);
+
+                // Ship hull and structural models from root folder
+                if (Directory.Exists(base3D))
                 {
-                    try
+                    foreach (string file in Directory.EnumerateFiles(base3D, "*.stl"))
                     {
-                        string stats = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["IsDamaged"]);
-                        // bool isvisible = Convert.ToBoolean((dgFreshWaterTanks.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgFreshWaterTanks.Items[i] as DataRowView)["Tank_Name"]);
-                        string NameSplit = Nametxt.Split('.')[0];
-                        string Name = NameSplit.Replace("/", "");
-                        //string Name = Nametxt.Replace("/", "");
-                        //string Name = Nametxt;
-
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank\\", "*.stl"))
-                        {
-                            Element3D device3D = null;
-                            string str = System.IO.Path.GetFileName(file);
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            if (Name == TankName)
-                            {
-                                TankNameForPercentage = TankName;
-                                Getpercentage();
-                                // if (isvisible)
-                                // {
-                                if (stats == "True")
-                                {
-                                    device3D = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D = Display3d1(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank25\\", "*.stl"))
-                                        {
-                                            string strfw25 = System.IO.Path.GetFileName(file1);
-                                            string str1fw25 = strfw25.Split('.')[0];
-                                            string TankName1 = str1fw25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D = Display3d1(file1, 180, 0, 0, 100);
-
-                                            }
-
-
-                                        }
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank50\\", "*.stl"))
-                                        {
-                                            string strfw50 = System.IO.Path.GetFileName(file2);
-                                            string str1fw50 = strfw50.Split('.')[0];
-                                            string TankName2 = str1fw50.Replace("/", "");
-
-                                            if (Name == TankName2)
-                                            {
-                                                device3D = Display3d1(file2, 180, 0, 0, 100);
-
-                                            }
-
-                                        }
-
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FreshWaterTank75\\", "*.stl"))
-                                        {
-                                            string strfw75 = System.IO.Path.GetFileName(file3);
-                                            string str1fw75 = strfw75.Split('.')[0];
-                                            string TankName3 = str1fw75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D = Display3d1(file3, 180, 0, 0, 100);
-
-                                            }
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        device3D = Display3d1(file, 180, 0, 0, 100);
-                                    }
-                                }
-                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-                                //  }
-                            }
-
-                        }
-
-                    }
-                    catch //(Exception ex)
-                    {
-                       // System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-                for (int i = 0; i < 51; i++) //11
-                {
-                    try
-                    {
-                        string stats = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["IsDamaged"]);
-                        //  bool isvisible = Convert.ToBoolean((dgBallastTanks.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgBallastTanks.Items[i] as DataRowView)["Tank_Name"]);
-                        string NameSplit = Nametxt.Split('.')[0];
-                        string Name = NameSplit.Replace("/", "");
-
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\BallastTank\\", "*.stl"))
-                        {
-                            Element3D device3D = null;
-                            string str = System.IO.Path.GetFileName(file);
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            if (Name == TankName)
-                            {
-                                TankNameForPercentage = TankName;
-                                Getpercentage();
-                                //if (isvisible)
-                                //{
-                                if (stats == "True")
-                                {
-                                    device3D = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D = Display3d1(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\BallastTank25\\", "*.stl"))
-                                        {
-                                            string strB25 = System.IO.Path.GetFileName(file1);
-                                            string str1B25 = strB25.Split('.')[0];
-                                            string TankName1 = str1B25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D = Display3d1(file1, 180, 0, 200, 0);
-
-                                            }
-                                        }
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\BallastTank50\\", "*.stl"))
-                                        {
-                                            string strB50 = System.IO.Path.GetFileName(file2);
-                                            string str1B50 = strB50.Split('.')[0];
-                                            string TankName2 = str1B50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D = Display3d1(file2, 180, 0, 200, 0);
-
-                                            }
-                                        }
-
-
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\BallastTank75\\", "*.stl"))
-                                        {
-                                            string strB75 = System.IO.Path.GetFileName(file3);
-                                            string str1B75 = strB75.Split('.')[0];
-                                            string TankName3 = str1B75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D = Display3d1(file3, 180, 0, 200, 0);
-
-                                            }
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        device3D = Display3d1(file, 180, 0, 200, 0);
-                                    }
-                                }
-                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-                                // }
-                            }
-                        }
-                    }
-
-                    catch //(Exception ex)
-                    {
-                        //System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-                for (int i = 0; i < 13; i++)//30
-                {
-                    try
-                    {
-                        string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
-                        // bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
-                        string splitName = Nametxt.Split('.')[0];
-                        string Name = splitName.Replace("/", "");
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\FuelOilTank\\", "*.stl"))
-                        {
-                            Element3D device3D = null;
-                            string str = System.IO.Path.GetFileName(file);
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            //string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                            if (Name == TankName)
-                            {
-                                TankNameForPercentage = TankName;
-                                Getpercentage();
-                                //if (isvisible)
-                                // {
-                                if (stats == "True")
-                                {
-                                    device3D = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D = Display3d1(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank25\\", "*.stl"))
-                                        {
-                                            string strF25 = System.IO.Path.GetFileName(file1);
-                                            string str1F25 = strF25.Split('.')[0];
-                                            string TankName1 = str1F25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D = Display3d1(file1, 200, 185, 92, 0);
-
-                                            }
-                                        }
-
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank50\\", "*.stl"))
-                                        {
-                                            string strF50 = System.IO.Path.GetFileName(file2);
-                                            string str1F50 = strF50.Split('.')[0];
-                                            string TankName2 = str1F50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D = Display3d1(file2, 200, 185, 92, 0);
-
-                                            }
-                                        }
-
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\FuelOilTank75\\", "*.stl"))
-                                        {
-                                            string strF75 = System.IO.Path.GetFileName(file3);
-                                            string str1F75 = strF75.Split('.')[0];
-                                            string TankName3 = str1F75.Replace("/", "");
-                                            if (Name == TankName3)
-                                            {
-                                                device3D = Display3d1(file3, 200, 185, 92, 0);
-
-                                            }
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        device3D = Display3d1(file, 200, 185, 92, 0);
-                                    }
-                                }
-                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-
-                            }
-                        }
-                    }
-                    catch //(Exception ex)
-                    {
-                        //System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-                for (int i = 0; i < 9; i++)
-                {
-                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
-                    //bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
-                    string splitName = Nametxt.Split('.')[0];
-                    string Name = splitName.Replace("/", "");
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\CargoTank\\", "*.stl"))
-                    {
-                        Element3D device3D = null;
-                        string str = System.IO.Path.GetFileName(file);
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                        if (Name == TankName)
-                        {
-                            TankNameForPercentage = TankName;
-                            Getpercentage();
-                            //if (isvisible)
-                            //{
-                            if (stats == "True")
-                            {
-                                device3D = Display3d1(file, 255, 255, 0, 0);
-                            }
-                            else
-                            {
-                                if (PercentageFill == 0)
-                                {
-                                    device3D = Display3d1(file, 200, 185, 185, 196);
-                                }
-
-                                else if (PercentageFill > 0 && PercentageFill <= 25)
-                                {
-                                    foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\CargoTank25\\", "*.stl"))
-                                    {
-                                        string strF25 = System.IO.Path.GetFileName(file1);
-                                        string str1F25 = strF25.Split('.')[0];
-                                        string TankName1 = str1F25.Replace("/", "");
-                                        if (Name == TankName1)
-                                        {
-                                            device3D = Display3d1(file1, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else if (PercentageFill > 25 && PercentageFill <= 50)
-                                {
-                                    foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\CargoTank50\\", "*.stl"))
-                                    {
-                                        string strF50 = System.IO.Path.GetFileName(file2);
-                                        string str1F50 = strF50.Split('.')[0];
-                                        string TankName2 = str1F50.Replace("/", "");
-                                        if (Name == TankName2)
-                                        {
-                                            device3D = Display3d1(file2, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else if (PercentageFill > 50 && PercentageFill <= 75)
-                                {
-                                    foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\CargoTank75\\", "*.stl"))
-                                    {
-                                        string strF75 = System.IO.Path.GetFileName(file3);
-                                        string str1F75 = strF75.Split('.')[0];
-                                        string TankName3 = str1F75.Replace("/", "");
-                                        if (Name == TankName3)
-                                        {
-                                            device3D = Display3d1(file3, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else
-                                {
-                                    device3D = Display3d1(file, 200, 185, 92, 0);
-                                }
-                            }
-                            if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-                            //}
+                        string TankName = System.IO.Path.GetFileNameWithoutExtension(file).Replace("/", "");
+                        Element3D device3D = Display3d1(file, 70, 150, 150, 150);
+                        if (device3D != null) { 
+                            device3D.Tag = TankName; 
+                            scene3D.Dispatcher.Invoke(() => scene3D.Children.Add(device3D)); 
                         }
                     }
                 }
-                for (int i = 0; i < 3; i++)
+                
+                // Fallback: If no hull files in root, check if FPT.stl exists in ballast folder as it might be the hull
+                if (scene3D.Children.Count < 5 && ballastFiles.TryGetValue("FPT", out string fptFile))
                 {
-                    string stats = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["IsDamaged"]);
-                    //bool isvisible = Convert.ToBoolean((dgFuelOilTanks.Items[i] as DataRowView)["IsVisible"]);
-                    string Nametxt = Convert.ToString((dgFuelOilTanks.Items[i] as DataRowView)["Tank_Name"]);
-                    string splitName = Nametxt.Split('.')[0];
-                    string Name = splitName.Replace("/", "");
-                    foreach (string file in Directory.EnumerateFiles(folderPath + "\\DieselOilTank\\", "*.stl"))
-                    {
-                        Element3D device3D = null;
-                        string str = System.IO.Path.GetFileName(file);
-                        string str1 = str.Split('.')[0];
-                        string TankName = str1.Replace("/", "");
-                        string[] results = file.Split(new string[] { "*.stl" }, StringSplitOptions.None);
-                        if (Name == TankName)
-                        {
-                            TankNameForPercentage = TankName;
-                            Getpercentage();
-                            //if (isvisible)
-                            //{
-                            if (stats == "True")
-                            {
-                                device3D = Display3d1(file, 255, 255, 0, 0);
-                            }
-                            else
-                            {
-                                if (PercentageFill == 0)
-                                {
-                                    device3D = Display3d1(file, 200, 185, 185, 196);
-                                }
-
-                                else if (PercentageFill > 0 && PercentageFill <= 25)
-                                {
-                                    foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank25\\", "*.stl"))
-                                    {
-                                        string strF25 = System.IO.Path.GetFileName(file1);
-                                        string str1F25 = strF25.Split('.')[0];
-                                        string TankName1 = str1F25.Replace("/", "");
-                                        if (Name == TankName1)
-                                        {
-                                            device3D = Display3d1(file1, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else if (PercentageFill > 25 && PercentageFill <= 50)
-                                {
-                                    foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank50\\", "*.stl"))
-                                    {
-                                        string strF50 = System.IO.Path.GetFileName(file2);
-                                        string str1F50 = strF50.Split('.')[0];
-                                        string TankName2 = str1F50.Replace("/", "");
-                                        if (Name == TankName2)
-                                        {
-                                            device3D = Display3d1(file2, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else if (PercentageFill > 50 && PercentageFill <= 75)
-                                {
-                                    foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\DieselOilTank75\\", "*.stl"))
-                                    {
-                                        string strF75 = System.IO.Path.GetFileName(file3);
-                                        string str1F75 = strF75.Split('.')[0];
-                                        string TankName3 = str1F75.Replace("/", "");
-                                        if (Name == TankName3)
-                                        {
-                                            device3D = Display3d1(file3, 200, 185, 92, 0);
-
-                                        }
-                                    }
-
-                                }
-                                else
-                                {
-                                    device3D = Display3d1(file, 200, 185, 92, 0);
-                                }
-                            }
-                            if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-                            //}
-                        }
-                    }
+                     Element3D device3D = Display3d1(fptFile, 70, 150, 150, 150);
+                     if (device3D != null) { device3D.Tag = "Hull_FPT"; scene3D.Dispatcher.Invoke(() => scene3D.Children.Add(device3D)); }
                 }
-                for (int i = 0; i < 13; i++)//8
-                {
-                    try
-                    {
-                        string stats = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["IsDamaged"]);
-                        //  bool isvisible = Convert.ToBoolean((dgMiscTanks.Items[i] as DataRowView)["IsVisible"]);
-                        string Nametxt = Convert.ToString((dgMiscTanks.Items[i] as DataRowView)["Tank_Name"]);
-                        string spliteName = Nametxt.Split('.')[0];
-                        string Name = spliteName.Replace("/", "");
-                        foreach (string file in Directory.EnumerateFiles(folderPath + "\\MiscTank\\", "*.stl"))
-                        {
-
-                            Element3D device3D = null;
-                            string str = System.IO.Path.GetFileName(file);
-                            string str1 = str.Split('.')[0];
-                            string TankName = str1.Replace("/", "");
-                            if (Name == TankName)
-                            {
-                                TankNameForPercentage = TankName;
-                                Getpercentage();
-                                // if (isvisible)
-                                // {
-                                if (stats == "True")
-                                {
-                                    device3D = Display3d1(file, 255, 255, 0, 0);
-                                }
-                                else
-                                {
-                                    if (PercentageFill == 0)
-                                    {
-                                        device3D = Display3d1(file, 200, 185, 185, 196);
-                                    }
-
-                                    else if (PercentageFill > 0 && PercentageFill <= 25)
-                                    {
-                                        foreach (string file1 in Directory.EnumerateFiles(folderPath + "\\MiscTank25\\", "*.stl"))
-                                        {
-                                            string strM25 = System.IO.Path.GetFileName(file1);
-                                            string str1M25 = strM25.Split('.')[0];
-                                            string TankName1 = str1M25.Replace("/", "");
-                                            if (Name == TankName1)
-                                            {
-                                                device3D = Display3d1(file1, 180, 255, 128, 192);
-
-                                            }
-                                        }
-
-
-                                    }
-                                    else if (PercentageFill > 25 && PercentageFill <= 50)
-                                    {
-                                        foreach (string file2 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
-                                        {
-                                            string strM50 = System.IO.Path.GetFileName(file2);
-                                            string str1M50 = strM50.Split('.')[0];
-                                            string TankName2 = str1M50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D = Display3d1(file2, 180, 255, 128, 192);
-
-                                            }
-                                        }
-
-                                    }
-                                    else if (PercentageFill > 50 && PercentageFill <= 75)
-                                    {
-                                        foreach (string file3 in Directory.EnumerateFiles(folderPath + "\\MiscTank50\\", "*.stl"))
-                                        {
-                                            string strM50 = System.IO.Path.GetFileName(file3);
-                                            string str1M50 = strM50.Split('.')[0];
-                                            string TankName2 = str1M50.Replace("/", "");
-                                            if (Name == TankName2)
-                                            {
-                                                device3D = Display3d1(file3, 180, 255, 128, 192);
-
-                                            }
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        device3D = Display3d1(file, 180, 255, 128, 192);
-                                    }
-                                }
-                                if (device3D != null) { device3D.Tag = TankName; scene3D.Children.Add(device3D); }
-                                // }
-                            }
-                        }
-                    }
-                    catch //(Exception ex)
-                    {
-                       // System.Windows.MessageBox.Show(ex.ToString());
-                    }
-                }
-
             }
-            catch //(Exception ex)
+            catch (Exception ex)
             {
-               // System.Windows.MessageBox.Show(ex.ToString());
+                System.Diagnostics.Debug.WriteLine($"Refresh3dNew Error: {ex.Message}");
             }
-            if (viewPort3d1.EffectsManager != null)
-            {
-                var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); viewPort3d1.ZoomExtents(animationTime: 300); };
-                zoomTimer.Start();
-            }
-            System.Diagnostics.Debug.WriteLine($"Refresh3dNew done - scene3D children: {scene3D?.Children.Count}");
+
+            var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); FitCameraToScene(); Hide3DLoading(); };
+            zoomTimer.Start();
         }
 
         //private Model3D Display3d(string model, byte A, byte R, byte G, byte B)
@@ -3441,32 +3457,62 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                var reader = new HelixToolkit.SharpDX.StLReader();
-                using (var stream = new System.IO.FileStream(modelPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                if (!_geometryCache.TryGetValue(modelPath, out HelixToolkit.SharpDX.MeshGeometry3D geometry))
                 {
-                    reader.Read(stream, default(HelixToolkit.SharpDX.ModelInfo));
+                    var reader = new HelixToolkit.SharpDX.StLReader();
+                    using (var stream = new System.IO.FileStream(modelPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                        reader.Read(stream, default(HelixToolkit.SharpDX.ModelInfo));
+                    if (reader.Meshes == null || reader.Meshes.Count == 0) return null;
+                    geometry = reader.Meshes[0].ToMeshGeometry3D();
+                    _geometryCache[modelPath] = geometry;
                 }
-                if (reader.Meshes != null && reader.Meshes.Count > 0)
+                var model = new MeshGeometryModel3D
                 {
-                    var material = new PhongMaterial
+                    Geometry = geometry,
+                    Material = new PhongMaterial
                     {
                         DiffuseColor = new HelixToolkit.Maths.Color4(R / 255f, G / 255f, B / 255f, A / 255f)
-                    };
-                    var model = new MeshGeometryModel3D
-                    {
-                        Geometry = reader.Meshes[0].ToMeshGeometry3D(),
-                        Material = material
-                    };
-                    System.Diagnostics.Debug.WriteLine($"3D Model loaded OK: {modelPath}");
-                    return model;
+                    }
+                };
+                return model;
+            }
+            catch { return null; }
+        }
+
+        private System.Collections.Generic.Dictionary<string, string> BuildTankFileDictionary(string folder)
+        {
+            var dict = new System.Collections.Generic.Dictionary<string, string>();
+            if (!System.IO.Directory.Exists(folder)) return dict;
+            foreach (string file in System.IO.Directory.EnumerateFiles(folder, "*.stl"))
+                dict[System.IO.Path.GetFileNameWithoutExtension(file).Replace("/", "")] = file;
+            return dict;
+        }
+
+        private Element3D ResolveTankModel(string name, string baseFile, bool isDamaged, decimal fill,
+            Dictionary<string, string> dict25, Dictionary<string, string> dict50, Dictionary<string, string> dict75,
+            byte r, byte g, byte b, byte a)
+        {
+            string modelPath = baseFile;
+            if (fill > 0 && fill <= 25) { if (dict25.TryGetValue(name, out string f)) modelPath = f; }
+            else if (fill > 25 && fill <= 50) { if (dict50.TryGetValue(name, out string f)) modelPath = f; }
+            else if (fill > 50 && fill <= 75) { if (dict75.TryGetValue(name, out string f)) modelPath = f; }
+            else if (fill > 75) { if (dict75.TryGetValue(name, out string f)) modelPath = f; }
+
+            if (!_geometryCache.TryGetValue(modelPath, out HelixToolkit.SharpDX.MeshGeometry3D geometry))
+            {
+                var reader = new HelixToolkit.SharpDX.StLReader();
+                var objList = reader.Read(modelPath);
+                if (objList != null && objList.Count > 0)
+                {
+                    geometry = objList[0].Geometry as HelixToolkit.SharpDX.MeshGeometry3D;
+                    _geometryCache[modelPath] = geometry;
                 }
             }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine($"3D Model FAILED: {modelPath} - {e.Message}");
-            }
-            return null;
+
+            if (isDamaged) return Display3d1(baseFile, 255, 255, 0, 0);
+            return Display3d1(modelPath, a, r, g, b);
         }
+
         private string TankName;
 
         private string Volume;
@@ -3746,98 +3792,53 @@ namespace WpfMvvmStability.Views
         //    return child;
         //}
 
+        private void ApplyNeutralSensorRowStyle(DataGridRow row)
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            row.ClearValue(DataGridRow.BackgroundProperty);
+            row.ClearValue(DataGridRow.ForegroundProperty);
+        }
+
         private void dgFuelOilTanks_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             Models.TableModel.Write_Log("Loading Color");
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
        
 
         private void dgBallastTanks_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgFreshWaterTanks_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgMiscTanks_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgCompartments_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgWaterTightRegion_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgVariableItems_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            DataRowView item = e.Row.Item as DataRowView;
-            if (item != null)
-            {
-                DataRow row = item.Row;
-
-                e.Row.Background = new SolidColorBrush(System.Windows.Media.Colors.LightBlue);
-
-
-            }
+            ApplyNeutralSensorRowStyle(e.Row);
         }
 
         private void dgVariableItems_KeyDown(object sender, KeyEventArgs e)

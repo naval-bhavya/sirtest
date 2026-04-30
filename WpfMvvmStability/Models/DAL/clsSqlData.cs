@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,17 +17,26 @@ namespace WpfMvvmStability.Models.DAL
     public class clsSqlData
     {
         static string ServerName = "", ConString;
+        static string UserId = "navalarchgroup";
+        static string Password = "navalarch26";
+        static string Database = "StabilityP15B";
+        
         ///  <summary> 
         ///Initializes ConnectionString for SQL DataBase Connection 
         ///</summary> 
         public static string GetConnectionString()
         {
-            //Reading Sql connection string(Server name) from XML file
             if (ServerName == "")
             {
                 ReadValuefromXml();
             }
-          ConString = "Data Source=" + "localhost\\SQLEXPRESS01" + ";Initial Catalog=StabilityP15B;Integrated Security=SSPI";
+            
+            if (string.IsNullOrEmpty(ServerName))
+            {
+                ServerName = FindLocalSqlServer();
+            }
+            
+            ConString = $"Data Source={ServerName};Initial Catalog={Database};User ID={UserId};Password={Password};Encrypt=False;TrustServerCertificate=True;Connection Timeout=30";
        
          
         
@@ -62,8 +71,14 @@ namespace WpfMvvmStability.Models.DAL
             try
             {
                 ReadValuefromXml();
-               string Con = "Data Source=" + "localhost\\SQLEXPRESS01" + ";Initial Catalog=StabilityP15B;Integrated Security=SSPI";
-            
+                
+                if (string.IsNullOrEmpty(ServerName))
+                {
+                    ServerName = FindLocalSqlServer();
+                }
+                
+                string Con = $"Data Source={ServerName};Initial Catalog={Database};User ID={UserId};Password={Password};Encrypt=False;TrustServerCertificate=True;Connection Timeout=30";
+             
                  connect.ConnectionString = Con;
 
             }
@@ -99,16 +114,92 @@ namespace WpfMvvmStability.Models.DAL
             try
             {
                 string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Settings\\StabilityConfig.xml";
-                XPathDocument document = new XPathDocument(path);
-                XPathNavigator navigator = document.CreateNavigator();
-                XPathNodeIterator node = navigator.Select("/Settings/ServerName");
-                foreach (XPathNavigator item in node)
+                if (System.IO.File.Exists(path))
                 {
-                    ServerName = item.Value;
+                    XPathDocument document = new XPathDocument(path);
+                    XPathNavigator navigator = document.CreateNavigator();
+                    XPathNodeIterator node = navigator.Select("/Settings/ServerName");
+                    foreach (XPathNavigator item in node)
+                    {
+                        ServerName = item.Value;
+                    }
+                    
+                    XPathNodeIterator userIdNode = navigator.Select("/Settings/UserId");
+                    foreach (XPathNavigator item in userIdNode)
+                    {
+                        if (!string.IsNullOrEmpty(item.Value))
+                            UserId = item.Value;
+                    }
+                    
+                    XPathNodeIterator passwordNode = navigator.Select("/Settings/Password");
+                    foreach (XPathNavigator item in passwordNode)
+                    {
+                        if (!string.IsNullOrEmpty(item.Value))
+                            Password = item.Value;
+                    }
+                    
+                    XPathNodeIterator databaseNode = navigator.Select("/Settings/Database");
+                    foreach (XPathNavigator item in databaseNode)
+                    {
+                        if (!string.IsNullOrEmpty(item.Value))
+                            Database = item.Value;
+                    }
                 }
             }
             catch
             {
+            }
+        }
+        
+        ///  <summary> 
+        ///Automatically find ANY local SQL Server instance dynamically
+        ///</summary> 
+        public static string FindLocalSqlServer()
+        {
+            try
+            {
+                // First try standard local defaults for speed
+                string[] quickDefaults = { ".", ".\\SQLEXPRESS", "localhost", Environment.MachineName };
+                foreach (var server in quickDefaults)
+                {
+                    if (TestConnection(server)) return server;
+                }
+
+                // If defaults fail, scan the machine for ALL local SQL instances
+                DataTable dt = System.Data.Sql.SqlDataSourceEnumerator.Instance.GetDataSources();
+                foreach (DataRow row in dt.Rows)
+                {
+                    string serverName = row["ServerName"].ToString();
+                    string instanceName = row["InstanceName"].ToString();
+                    
+                    string fullPath = string.IsNullOrEmpty(instanceName) ? serverName : $"{serverName}\\{instanceName}";
+                    
+                    // Test if this instance is local and has our database
+                    if (TestConnection(fullPath)) return fullPath;
+                }
+            }
+            catch { }
+            
+            return ".\\SQLEXPRESS"; // Final fallback
+        }
+        
+        ///  <summary> 
+        ///Test SQL Server connection
+        ///</summary> 
+        private static bool TestConnection(string server)
+        {
+            try
+            {
+                string testConn = $"Data Source={server};Initial Catalog=master;User ID={UserId};Password={Password};Encrypt=False;TrustServerCertificate=True;Connection Timeout=5";
+                using (SqlConnection conn = new SqlConnection(testConn))
+                {
+                    conn.Open();
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
             }
         }
     }

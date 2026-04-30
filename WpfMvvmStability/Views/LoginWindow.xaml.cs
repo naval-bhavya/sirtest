@@ -49,7 +49,7 @@ namespace WpfMvvmStability.Views
             }
             else
             {
-                System.Windows.Forms.MessageBox.Show("Incorrect Password");
+                ModernMessageBox.Show("Incorrect password.", "Login", MessageBoxType.Error);
             }
         }
 
@@ -67,7 +67,7 @@ namespace WpfMvvmStability.Views
                 //defaultpwd = "pass@123";
                 string message = "Your password is NavalArchGroup@123";
                 string title = "Confirmation";
-                System.Windows.Forms.MessageBox.Show(message, title);
+                ModernMessageBox.Show(message, title, MessageBoxType.Info);
                 txtdefaultPaswword.Clear();
                 grdResetPWD.Visibility = Visibility.Hidden;
                 grdLogin.Visibility = Visibility.Visible;
@@ -75,7 +75,7 @@ namespace WpfMvvmStability.Views
             }
             else
             {
-                System.Windows.Forms.MessageBox.Show("Incorrect Password");
+                ModernMessageBox.Show("Incorrect password.", "Login", MessageBoxType.Error);
             }
 
         }

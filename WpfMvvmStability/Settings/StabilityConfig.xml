@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+  <!-- SQL Server Configuration -->
+  <!-- Leave ServerName empty for auto-detect, or specify: localhost, .\SQLEXPRESS, or server name -->
+  <ServerName></ServerName>
+  <UserId>navalarchgroup</UserId>
+  <Password>navalarch26</Password>
+  <Database>StabilityP15B</Database>
+  
+  <!-- Modbus Configuration: 0=Serial, 1=TCP -->
+  <MODBUSTYPE>1</MODBUSTYPE>
+  <PORT></PORT>
+  
+  <!-- Network Computers Configuration -->
+  <Computers>
+    <Computer ComputerName="PC1" DataBaseName="StabilityP15B" ComputerIPAddress="192.168.1.100" QueuePathName=".\Private$\{0}" IsReplicationAllowed="0" TimeInterval="5" MulticastAddress="234.1.1.1:8888" />
+    <Computer ComputerName="PC2" DataBaseName="StabilityP15B" ComputerIPAddress="192.168.1.101" QueuePathName=".\Private$\{0}" IsReplicationAllowed="0" TimeInterval="5" MulticastAddress="234.1.1.1:8888" />
+  </Computers>
+</Settings>

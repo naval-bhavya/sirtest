@@ -14,6 +14,78 @@ namespace WpfMvvmStability.Models
 {
     class TableModel
     {
+        private static void EnsureTankGridColumns(DataTable table)
+        {
+            if (table == null)
+            {
+                return;
+            }
+
+            EnsureColumn(table, "FSMType", typeof(int), 0, "FSM Type", "FSM_Type", "FSMTYPE");
+            EnsureColumn(table, "Status", typeof(int), 0, "Tank_Status", "STATUS");
+            EnsureLookupTextColumn(table, "FSMTypeText", "FSMType",
+                new Dictionary<string, string> { { "0", "Actual" }, { "1", "MAX" }, { "2", "UserInput" } },
+                "FSM Type", "FSM_Type", "FSMTYPE");
+            EnsureLookupTextColumn(table, "StatusText", "Status",
+                new Dictionary<string, string> { { "0", "Intact" }, { "1", "Damage" }, { "2", "Flood" } },
+                "Tank_Status", "STATUS");
+            EnsureColumn(table, "FloodRate", typeof(decimal), 0m, "Flood_Rate", "Flood Rate");
+            EnsureColumn(table, "FloodTime", typeof(decimal), 0m, "Flood_Time", "Flood Time");
+            EnsureColumn(table, "Sounding_Level", typeof(decimal), 0m, "Sounding", "Innage");
+            EnsureColumn(table, "Weight", typeof(decimal), 0m, "Mass", "Mass(T)");
+            EnsureColumn(table, "SG", typeof(decimal), 1m, "Specific_Gravity", "Specific Gravity");
+            EnsureColumn(table, "Percent_Full", typeof(decimal), 0m, "Percent Fill", "PercentFull");
+            EnsureColumn(table, "FSM", typeof(decimal), 0m, "FSMInput", "FSM (T-m)", "FSM(T-M)");
+        }
+
+        private static void EnsureColumn(DataTable table, string columnName, Type type, object defaultValue, params string[] aliases)
+        {
+            if (table.Columns.Contains(columnName))
+            {
+                return;
+            }
+
+            string sourceColumn = aliases.FirstOrDefault(alias => table.Columns.Contains(alias));
+            table.Columns.Add(columnName, type);
+
+            foreach (DataRow row in table.Rows)
+            {
+                object value = sourceColumn == null ? defaultValue : row[sourceColumn];
+                if (value == DBNull.Value || value == null || value.ToString() == string.Empty)
+                {
+                    row[columnName] = defaultValue;
+                    continue;
+                }
+
+                try
+                {
+                    row[columnName] = Convert.ChangeType(value, type);
+                }
+                catch
+                {
+                    row[columnName] = defaultValue;
+                }
+            }
+        }
+
+        private static void EnsureLookupTextColumn(DataTable table, string columnName, string valueColumn, Dictionary<string, string> lookup, params string[] aliases)
+        {
+            if (table.Columns.Contains(columnName))
+            {
+                return;
+            }
+
+            string sourceColumn = aliases.FirstOrDefault(alias => table.Columns.Contains(alias));
+            table.Columns.Add(columnName, typeof(string));
+
+            foreach (DataRow row in table.Rows)
+            {
+                object rawValue = sourceColumn == null && table.Columns.Contains(valueColumn) ? row[valueColumn] : row[sourceColumn];
+                string text = rawValue == DBNull.Value || rawValue == null ? string.Empty : rawValue.ToString().Trim();
+                row[columnName] = lookup.ContainsKey(text) ? lookup[text] : text;
+            }
+        }
+
         ///  <summary> 
         ///Initializes all the Real Mode DataTables 
         ///</summary> 
@@ -26,27 +98,37 @@ namespace WpfMvvmStability.Models
                 DataView DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'BALLAST_TANK'";
                 Models.BO.clsGlobVar.dtRealBallastTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealBallastTanks);
 
+                DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
+                DV.RowFilter = "Group = 'CARGO'";
+                Models.BO.clsGlobVar.dtRealCargoTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealCargoTanks);
 
                 DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FUELOIL_TANK'";
                 Models.BO.clsGlobVar.dtRealFuelOilTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealFuelOilTanks);
 
                 DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FRESHWATER_TANK'";
                 Models.BO.clsGlobVar.dtRealFreshWaterTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealFreshWaterTanks);
 
                 DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'MISC_TANK'";
                 Models.BO.clsGlobVar.dtRealMiscTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealMiscTanks);
 
                 DV = Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'Compartment'";
                 Models.BO.clsGlobVar.dtRealCompartments = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealCompartments);
 
                 DV=Models.BO.clsGlobVar.dtRealModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'WT_REGION'";
                 Models.BO.clsGlobVar.dtRealWaterTightRegion = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtRealWaterTightRegion);
 
 
                 Models.BO.clsGlobVar.dtRealVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetVariableDetails");
@@ -81,60 +163,92 @@ namespace WpfMvvmStability.Models
             try
             {
                 Models.BO.clsGlobVar.dtSimulationModeAllTanks = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationAllTankLoadingStatusDetails");
+                
+                if (Models.BO.clsGlobVar.dtSimulationModeAllTanks == null || Models.BO.clsGlobVar.dtSimulationModeAllTanks.Rows.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("No data loaded from database. Check connection!");
+                    return;
+                }
+                
                 DataView DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'BALLAST_TANK'";
                 Models.BO.clsGlobVar.dtSimulationBallastTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationBallastTanks);
 
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FUELOIL_TANK'";
                 Models.BO.clsGlobVar.dtSimulationFuelOilTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationFuelOilTanks);
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'FRESHWATER_TANK'";
                 Models.BO.clsGlobVar.dtSimulationFreshWaterTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationFreshWaterTanks);
 
-                /// disealoil_tank
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'DIESELOIL_TANK'";
                 Models.BO.clsGlobVar.dtSimulationDisealOilTanks = DV.ToTable();
-
-
-                /// cargo tank
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationDisealOilTanks);
 
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'CARGO'";
                 Models.BO.clsGlobVar.dtSimulationCargoTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationCargoTanks);
+                
+                if (Models.BO.clsGlobVar.dtSimulationCargoTanks == null)
+                {
+                    Models.BO.clsGlobVar.dtSimulationCargoTanks = new DataTable();
+                    EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationCargoTanks);
+                }
 
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'MISC_TANK'";
 
                 Models.BO.clsGlobVar.dtSimulationMiscTanks = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationMiscTanks);
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'Compartment'";
 
 
                 Models.BO.clsGlobVar.dtSimulationCompartments = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationCompartments);
 
                 DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
                 DV.RowFilter = "Group = 'WT_REGION'";
 
 
                 Models.BO.clsGlobVar.dtSimulationWTRegion = DV.ToTable();
+                EnsureTankGridColumns(Models.BO.clsGlobVar.dtSimulationWTRegion);
                 Models.BO.clsGlobVar.SimulationFilling = DAL.clsDAL.ExecuteSPFillingSimulation("spGet_SimulationMode_TankCompartmentFillDetails");
                 Models.BO.clsGlobVar.dtSimulationVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeVariableDetails");
+                if (Models.BO.clsGlobVar.dtSimulationVariableItems == null)
+                {
+                    Models.BO.clsGlobVar.dtSimulationVariableItems = new DataTable();
+                }
                 Models.BO.clsGlobVar.dtSimulationEquillibriumValues = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeEquillibriumValues");
                 Models.BO.clsGlobVar.dtSimulationLoadingSummary = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeLoadingSummaryCurrent");
                 Models.BO.clsGlobVar.dtSimulationDrafts = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeDraftsCurrent");
                 Models.BO.clsGlobVar.dtSimulationGZ = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeGzDataCurrent");
                 Models.BO.clsGlobVar.dtSimulationGZDamaged = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeGzDataCurrentDamaged");
                 Models.BO.clsGlobVar.dtSimulationfloodsummary = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeStabilityfloodSummary");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("SimulationModeData Error: " + ex.Message + "\n\nStackTrace: " + ex.StackTrace);
+            }
+        }
 
-             
-
+        ///  <summary> 
+        ///Initializes all the Simulation Mode Hydrostatics
+        ///</summary> 
+        public static void LoadSimulationHydrostatics()
+        {
+            try
+            {
                 Models.BO.clsGlobVar.dtSimulationHydrostatics = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeHydrostaticDataCurrent");
                 Models.BO.clsGlobVar.dtSimulationStabilityCriteriaIntact = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeIntactStabilityCriteriaCurrent");
                 Models.BO.clsGlobVar.dtSimulationStabilityCriteriaDamage = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeDamageStabilityCriteriaCurrent");
@@ -144,16 +258,38 @@ namespace WpfMvvmStability.Models
                 Models.BO.clsGlobVar.dtRealHydrostatics2 = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetRealModeHydrostatics2");
                 Models.BO.clsGlobVar.dtSimulationHydrostatics2 = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeHydrostatics2");
                 Models.BO.clsGlobVar.dtsimulationDraftsReport = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeDraftsReport");
-               // Models.BO.clsGlobVar.dtsimulationDraftsReport = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeDraftsReport");
-
                 Models.BO.clsGlobVar.dtSimulationMouldedDraft = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeMouldedDraft");
                 Models.BO.clsGlobVar.dtSoundingPer = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSoundingPercentage");
+                if (Models.BO.clsGlobVar.dtSoundingPer == null)
+                {
+                    Models.BO.clsGlobVar.dtSoundingPer = new DataTable();
+                }
                 Models.BO.clsGlobVar.dtDamagedDisplacement = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetDamagedDisplacement");
-                
-               Models.BO.clsGlobVar.dtgetsimulationtype = Models.BLL.clsBLL.GetEnttyDBRecs("vsGettypeValues");
+                if (Models.BO.clsGlobVar.dtDamagedDisplacement == null)
+                {
+                    Models.BO.clsGlobVar.dtDamagedDisplacement = new DataTable();
+                }
+                Models.BO.clsGlobVar.dtgetsimulationtype = Models.BLL.clsBLL.GetEnttyDBRecs("vsGettypeValues");
+                if (Models.BO.clsGlobVar.dtgetsimulationtype == null)
+                {
+                    Models.BO.clsGlobVar.dtgetsimulationtype = new DataTable();
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                System.Windows.MessageBox.Show("LoadSimulationHydrostatics Error: " + ex.Message);
+                if (Models.BO.clsGlobVar.dtSoundingPer == null)
+                {
+                    Models.BO.clsGlobVar.dtSoundingPer = new DataTable();
+                }
+                if (Models.BO.clsGlobVar.dtDamagedDisplacement == null)
+                {
+                    Models.BO.clsGlobVar.dtDamagedDisplacement = new DataTable();
+                }
+                if (Models.BO.clsGlobVar.dtgetsimulationtype == null)
+                {
+                    Models.BO.clsGlobVar.dtgetsimulationtype = new DataTable();
+                }
             }
         }
 

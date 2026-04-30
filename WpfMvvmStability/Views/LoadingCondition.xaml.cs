@@ -124,14 +124,14 @@ namespace WpfMvvmStability.Views
                     #endregion
 
                     this.Close();
-                    MessageBox.Show(listBoxSavedCondition.SelectedItem.ToString() + " Loading Condition Loaded");
+                    ModernMessageBox.Show(listBoxSavedCondition.SelectedItem.ToString() + " loading condition loaded.", "Loading Condition", MessageBoxType.Success);
                     Models.BO.clsGlobVar.loadingconname = listBoxSavedCondition.SelectedItem.ToString();
                     clsGlobVar.cmbload =" ";
                     //Models.clsGlobVar.flagLoadingCondition = true;
                 }
                 else
                 {
-                    MessageBox.Show("Please Select a Loading Condition");
+                    ModernMessageBox.Show("Please select a loading condition.", "Loading Condition", MessageBoxType.Warning);
                 }
                 Mouse.OverrideCursor = null;
             }
@@ -261,7 +261,7 @@ namespace WpfMvvmStability.Views
             }
             catch(Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                ModernMessageBox.Show(ex.Message, "Loading Condition", MessageBoxType.Error);
             }
 
         }
@@ -272,7 +272,7 @@ namespace WpfMvvmStability.Views
             {
                 if (listBoxSavedCondition.SelectedItem != null)
                 {
-                    MessageBoxResult result = MessageBox.Show("Do you want to Delete Selected Loading Condition ?", "Delete Loading Condition", MessageBoxButton.YesNoCancel);
+                    MessageBoxResult result = ModernMessageBox.Show("Do you want to delete the selected loading condition?", "Delete Loading Condition", MessageBoxType.Warning, MessageBoxButton.YesNoCancel);
                     switch (result)
                     {
                         case MessageBoxResult.Yes:
@@ -290,14 +290,14 @@ namespace WpfMvvmStability.Views
                 }
                 else
                 {
-                    MessageBox.Show("Please Select a Loading Condition");
+                    ModernMessageBox.Show("Please select a loading condition.", "Loading Condition", MessageBoxType.Warning);
                 }
 
             }
 
             catch(Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                ModernMessageBox.Show(ex.Message, "Loading Condition", MessageBoxType.Error);
             }
             
         }

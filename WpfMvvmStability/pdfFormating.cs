@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -53,17 +53,29 @@ namespace WpfMvvmStability
             //...................................
 
             //code for watermark.................
-            PdfGState graphicsState = new PdfGState();
-            //iTextSharp.text.Image watermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
-            //PdfContentByte canvas = writer.DirectContentUnder;
-            //Image image = Image.GetInstance(watermark);
-            //image.SetAbsolutePosition(135, 230);
-            //canvas.SaveState();
-            //PdfGState state = new PdfGState();
-            //state.FillOpacity = 0.2f;
-            //canvas.SetGState(state);
-            //canvas.AddImage(image);
-            //canvas.RestoreState();
+            try
+            {
+                string imagePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Assets", "Images", "watermark_light.png");
+                if (!File.Exists(imagePath))
+                {
+                    imagePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Images", "Watermark.png");
+                }
+
+                if (File.Exists(imagePath))
+                {
+                    iTextSharp.text.Image watermark = iTextSharp.text.Image.GetInstance(imagePath);
+                    PdfContentByte canvas = writer.DirectContentUnder;
+                    watermark.SetAbsolutePosition(doc.PageSize.Width / 2 - 200, doc.PageSize.Height / 2 - 150);
+                    watermark.ScaleToFit(400, 400);
+                    canvas.SaveState();
+                    PdfGState state = new PdfGState();
+                    state.FillOpacity = 0.1f;
+                    canvas.SetGState(state);
+                    canvas.AddImage(watermark);
+                    canvas.RestoreState();
+                }
+            }
+            catch { }
             //....................................
 
             Rectangle pageSize = doc.PageSize;

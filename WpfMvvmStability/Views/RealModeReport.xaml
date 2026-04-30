@@ -1,18 +1,178 @@
 <Page x:Class="WpfMvvmStability.Views.RealModeReport"
+      x:Name="reportPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-     xmlns:DV="clr-namespace:System.Windows.Controls.DataVisualization;assembly=System.Windows.Controls.DataVisualization.Toolkit"
-             xmlns:DVC="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
-      xmlns:chartPrimitive="clr-namespace:System.Windows.Controls.DataVisualization.Charting.Primitives;assembly=System.Windows.Controls.DataVisualization.Toolkit"       
-      mc:Ignorable="d" Title="RealModeReport" Background="#FFFFFFFF">
+      xmlns:DV="clr-namespace:System.Windows.Controls.DataVisualization;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+      xmlns:DVC="clr-namespace:System.Windows.Controls.DataVisualization.Charting;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+      xmlns:chartPrimitive="clr-namespace:System.Windows.Controls.DataVisualization.Charting.Primitives;assembly=System.Windows.Controls.DataVisualization.Toolkit"
+      mc:Ignorable="d" Title="RealModeReport" Background="#F5F7FA"
+      HorizontalAlignment="Stretch"
+      VerticalAlignment="Stretch">
     <Page.Resources>
+        <SolidColorBrush x:Key="PageBg" Color="#F5F7FA"/>
+        <SolidColorBrush x:Key="CardBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="AccentBlue" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="AccentGreen" Color="#22C55E"/>
+        <SolidColorBrush x:Key="AccentRed" Color="#EF4444"/>
+        <SolidColorBrush x:Key="AccentAmber" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#64748B"/>
+        <SolidColorBrush x:Key="BorderLight" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="RowAlt" Color="#F8FAFC"/>
+
+        <!-- Watermark ImageBrush -->
+        <ImageBrush x:Key="ReportWatermarkBrush" 
+                    AlignmentX="Center" AlignmentY="Center" 
+                    Stretch="Uniform" Opacity="0.1"
+                    Viewport="0.2,0.2,0.6,0.6"
+                    ViewportUnits="RelativeToBoundingBox">
+            <ImageBrush.ImageSource>
+                <BitmapImage UriSource="/Assets/Images/watermark_light.png"/>
+            </ImageBrush.ImageSource>
+        </ImageBrush>
+
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="AccentBar" TargetType="Border">
+            <Setter Property="Width" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBlue}"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SummaryValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        </Style>
+
+        <Style x:Key="SummaryLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+        </Style>
+
+        <Style x:Key="BtnReport" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource AccentBlue}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DGHeader" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Background" Value="#1E3A5F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1E3A5F"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+
+        <Style x:Key="CenterCellStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderLight}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource CardBg}"/>
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource RowAlt}"/>
+            <Setter Property="RowHeight" Value="24"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="ColumnWidth" Value="*"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="TextBlock.HorizontalAlignment" Value="Center"/>
+            <Setter Property="TextBlock.VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource RowAlt}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="ChartStyle1" TargetType="{x:Type DVC:Chart}">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type DVC:Chart}">
-                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="0"/>
@@ -21,1370 +181,521 @@
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="0"/>
-                                    <ColumnDefinition Width="200"/>
-                                    <ColumnDefinition Width="530"/>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <DV:Title Content="{TemplateBinding Title}" Style="{TemplateBinding TitleStyle}"/>
-                                <Grid Margin="0,15" Grid.Row="0"  Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
-                                    <chartPrimitive:EdgePanel x:Name="ChartArea" Style="{TemplateBinding ChartAreaStyle}">
+                                <ContentControl Content="{TemplateBinding Title}"
+                                                FontFamily="Segoe UI"
+                                                FontWeight="Bold"
+                                                FontSize="14"
+                                                HorizontalAlignment="Center"
+                                                Margin="0,0,0,8"/>
+                                <Grid Margin="0,8,0,0"
+                                      Grid.Row="0"
+                                      Grid.Column="1"
+                                      Grid.ColumnSpan="2"
+                                      Grid.RowSpan="2">
+                                    <chartPrimitive:EdgePanel x:Name="ChartArea"
+                                                              Style="{TemplateBinding ChartAreaStyle}">
                                         <Grid Style="{TemplateBinding PlotAreaStyle}" Panel.ZIndex="-1"/>
-                                        <Border BorderBrush="#FF919191" BorderThickness="1" Panel.ZIndex="10"/>
+                                        <Border BorderBrush="#B8C2CC" BorderThickness="1" Panel.ZIndex="10"/>
                                     </chartPrimitive:EdgePanel>
                                 </Grid>
-                                <DV:Legend x:Name="Legend" Grid.Row="2" Grid.Column="1" Style="{TemplateBinding LegendStyle}" Title="{TemplateBinding LegendTitle}"/>
+                                <ContentControl x:Name="Legend"
+                                                Grid.Row="2"
+                                                Grid.Column="1"
+                                                Margin="10,0,0,0"
+                                                VerticalAlignment="Top"
+                                                Content="{TemplateBinding LegendTitle}"
+                                                FontFamily="Segoe UI"
+                                                FontWeight="Bold"
+                                                FontSize="11"
+                                                Foreground="{StaticResource TextPrimary}"/>
                             </Grid>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style  x:Key="DataGridreport" TargetType="{x:Type DataGridColumnHeader}" >
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="FontWeight" Value="Bold" />
-        </Style>
-
-        <Style   x:Key="DataGridreport1" TargetType="{x:Type TextBlock}">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-        </Style>
     </Page.Resources>
 
-    <Grid Background="White">
-        <ScrollViewer Name="scrollViewer1" ScrollChanged="scrollViewer1_ScrollChanged" Background="White">
-            <Grid Name="grid1" Margin="8">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+    <Grid Background="{DynamicResource PageBg}">
+        <!-- Report Page Watermark Container -->
+        <Grid Background="{DynamicResource ReportWatermarkBrush}"/>
 
-                <!-- Row 0: Generate Report button bar -->
-                <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#FF030032" CornerRadius="3" Padding="10,6" Margin="0,0,0,6">
-                    <DockPanel>
-                        <TextBlock Text="Stability Report" Foreground="White" FontWeight="Bold" FontSize="14" FontFamily="Calibri" VerticalAlignment="Center" DockPanel.Dock="Left"/>
-                        <Button Content="Generate Report" Name="btnGenerateReport" Click="btnGenerateReport_Click" 
-                                Height="36" Width="150" DockPanel.Dock="Right" HorizontalAlignment="Right"
-                                FontFamily="Calibri" FontWeight="SemiBold" FontSize="13" Cursor="Hand"
-                                Background="#1F48FF" Foreground="#FFFFFF" BorderThickness="0">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </DockPanel>
-                </Border>
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-                <!-- Hidden controls preserved for functionality -->
-                <DatePicker Visibility="Collapsed" Name="datePickerTo" Grid.Row="0"/>
-                <ListBox Visibility="Collapsed" Name="listBoxDateList" Background="#FFDEDEDE" SelectionChanged="listBoxDateList_SelectionChanged" Grid.Row="0"/>
-                <Label Visibility="Hidden" Content="From" Name="lblFrom" Grid.Row="0"/>
-                <Label Visibility="Hidden" Content="To" Name="lblTo" Grid.Row="0"/>
-                <Button Visibility="Hidden" Content="Generate DateList" Name="btnGenerateDateList" Click="btnGenerateDateList_Click" Grid.Row="0"/>
-                <DatePicker Visibility="Hidden" Name="datePickerFrom" Grid.Row="0"/>
-
-                <!-- Row 1: Hydrostatics (full width) -->
-                <GroupBox Grid.Row="1" Grid.ColumnSpan="2" Header="Hydrostatics" Name="groupBox2" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" Margin="0,0,0,6">
-                    <Grid>
-                        <DockPanel Name="dockPanel4" Background="#FFFFFFFF">
-                            <DataGrid AutoGenerateColumns="False"  Name="dgHydrostatics"  CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" VerticalScrollBarVisibility="Disabled" IsReadOnly="True" HorizontalScrollBarVisibility="Auto" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20" GridLinesVisibility="Horizontal">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn MinWidth="100" HeaderStyle="{StaticResource DataGridreport}"  Width="Auto" Header="Displacement (T)" Binding="{Binding Displacement,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="55" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="LCB(m)" Binding="{Binding LCB,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="LCB">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="55" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="TCB(m)" Binding="{Binding TCB,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="VCB(m)" Binding="{Binding VCB,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="70" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="KGF(m)" Binding="{Binding KG(Fluid),StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="70" HeaderStyle="{StaticResource DataGridreport}" Width="60" Header="TCF(m)" Binding="{Binding TCF,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="TCG(m)" Binding="{Binding TCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="LCG (m)" Binding="{Binding LCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50"  HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="LCF (m)" Binding="{Binding LCF,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="KMT(m)" Binding="{Binding KMT,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="KML(m)" Binding="{Binding KML,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="BMT(m)" HeaderStyle="{StaticResource DataGridreport}" Binding="{Binding  BMT, StringFormat=n3}">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="BML(m)" HeaderStyle="{StaticResource DataGridreport}" Binding="{Binding BML, StringFormat=n3}">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="70" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="WPA(m²)"  Binding="{Binding WPA,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="73" Width="Auto" HeaderStyle="{StaticResource DataGridGen}" Header="Buoyancy(T)" Binding="{Binding Buoyancy,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                                <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="{x:Type DataGridRow}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Resources>
-                                    <Style TargetType="{x:Type DataGridCell}">
-                                        <Style.Triggers>
-                                            <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF" />
-                                                <Setter Property="BorderBrush" Value="#FF1F48FF" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Resources>
-                            </DataGrid>
-                        </DockPanel>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Row 2: Hydrostatics 2 (full width) -->
-                <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Background="#FF030032" BorderBrush="#FF030032" FontFamily="Calibri" Header="Hydrostatics" Name="Hydrostatic2" SnapsToDevicePixels="True" Margin="0,0,0,6">
-                    <Grid>
-                        <DockPanel Background="#FFFFFFFF" Name="dockPanel1">
-                            <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri"  IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" Name="dgHydrostatics2" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" HorizontalScrollBarVisibility="Disabled" GridLinesVisibility="None" >
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Trim"   MinWidth="83" Width="Auto" FontFamily="Calibri" Binding="{Binding TRIM, StringFormat=n3}"  SortMemberPath="TRIM" >
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="List"  MinWidth="83" FontFamily="Calibri" Width="80" Binding="{Binding Heel, StringFormat= n2}"  SortMemberPath="Heel">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="GMT"  Width="Auto" FontFamily="Calibri" MinWidth="85" Binding="{Binding GMT, StringFormat= n3}"  SortMemberPath="GMT">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding KG(Solid),  StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="KG(m)" MinWidth="93" Width="Auto" SortMemberPath="KG(Solid)">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding KG(Fluid), StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="KGF(M)" MinWidth="92" SortMemberPath="KG(Fluid)" Width="Auto">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding LCG, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="LCG(M)" MinWidth="92" Width="Auto" SortMemberPath="LCG">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding FSC, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="FSC(M)" MinWidth="89" Width="Auto" SortMemberPath="FSC">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding TPC, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="TPC(T/CM)" MinWidth="110" Width="Auto" SortMemberPath="TPC">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Binding="{Binding MCT, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="MTC(T-M/CM)" MinWidth="150" Width="Auto" SortMemberPath="MTC">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                                <DataGrid.Resources>
-                                    <Style TargetType="{x:Type DataGridCell}">
-                                        <Style.Triggers>
-                                            <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                                <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Resources>
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="{x:Type DataGridRow}">
-                                        <Style.Triggers>
-                                            <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                                <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                                <Setter Property="Control.Foreground" Value="White" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                            </DataGrid>
-                        </DockPanel>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Row 3: Draft (left) + Moulded Draft (right) -->
-                <GroupBox Grid.Row="3" Grid.Column="0" Background="#FF030032" BorderBrush="#FF030032" Header="Draft(M)" Name="groupBox11" FontFamily="Calibri" SnapsToDevicePixels="True" Margin="0,0,4,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" Name="dgDraft1" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" GridLinesVisibility="None">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding Draft_AP, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="AP" MinWidth="80" Width="Auto" SortMemberPath="Draft_AP_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Visibility="Hidden"  Binding="{Binding Draft_Propeller, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Propeller" MinWidth="120" Width="Auto" SortMemberPath="Draft_Propeller_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding Draft_Aft_Mark, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Aft Mark" MinWidth="120" Width="Auto" SortMemberPath="Draft_Aft_Mark_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding Draft_Mean, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Mid" MinWidth="80" Width="Auto" SortMemberPath="Draft_Mean_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding Draft_Fore_Mark, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="FWD Mark" MinWidth="110" Width="Auto" SortMemberPath="Draft_Fore_Mark_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Visibility="Hidden" Binding="{Binding Draft_Sonar_Dome, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Sonar Dome" MinWidth="120" Width="Auto" SortMemberPath="Draft_Sonar_Dome_MLD">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Header="FP" Binding="{Binding Draft_FP, StringFormat=n3  }"  MinWidth="80" Width="auto" >
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                            <DataGrid.RowStyle>
-                                <Style TargetType="{x:Type DataGridRow}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.Foreground" Value="White" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
-                <GroupBox Grid.Row="3" Grid.Column="1" Background="#FF030032" BorderBrush="#FF030032" Header="Moulded Draft (m)" Name="groupBox3" Visibility="Visible" FontFamily="Calibri" SnapsToDevicePixels="True" Margin="4,0,0,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" Name="dgMouldedDraft" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding Draft_AP, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="AP" MinWidth="55" SortMemberPath="openingName" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="Control.HorizontalContentAlignment" Value="Center" />
-                                            <Setter Property="Control.FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <!--<DataGridTextColumn Binding="{Binding Draft_Propeller_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Propeller" HeaderStyle="{StaticResource DataGridGen}" MinWidth="80" SortMemberPath="openingNo" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>-->
-                                <DataGridTextColumn Binding="{Binding Draft_Aft_Mark, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Aft Mark" HeaderStyle="{StaticResource DataGridGen}" MinWidth="72" SortMemberPath="openingX" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding Draft_Mean, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Mid" HeaderStyle="{StaticResource DataGridGen}" MinWidth="60" SortMemberPath="openingY" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding Draft_Fore_Mark, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Fwd Mark" HeaderStyle="{StaticResource DataGridGen}" MinWidth="75" SortMemberPath="openingZ" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <!--<DataGridTextColumn Binding="{Binding Draft_Sonar_Dome_MLD, StringFormat=n3}" FontSize="11" Header="Sonar Dome" HeaderStyle="{StaticResource DataGridGen}" SortMemberPath="actualImAng" Width="80">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>-->
-                                <DataGridTextColumn Binding="{Binding Draft_FP, StringFormat=n3}" FontSize="11" Header="FP" HeaderStyle="{StaticResource DataGridGen}" SortMemberPath="actualImAng" Width="Auto">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                            <DataGrid.RowStyle>
-                                <Style TargetType="{x:Type DataGridRow}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.Foreground" Value="White" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Row 4: GZ and heeling Arms (left) + Loading Summary (right) -->
-                <GroupBox Grid.Row="4" Grid.RowSpan="2" Grid.Column="0" Header="GZ and heeling Arms" Name="groupBox5" VerticalAlignment="Top" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" Margin="0,0,4,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" Name="dgGZ" ItemsSource="{Binding}" IsReadOnly="True" HorizontalScrollBarVisibility="Auto" CanUserSortColumns="False" CanUserResizeColumns="False" CanUserReorderColumns="False" CanUserResizeRows="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn MinWidth="80" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="Heel (Degree)" Binding="{Binding HeelAngle,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="40" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="GZ (m)" Binding="{Binding GZ,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="75" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="Wind Heeling(m)" Binding="{Binding WH,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="65" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="Heavy Weights(m)" Binding="{Binding HL,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="65" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="Turning(m)" Binding="{Binding HS,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="65" HeaderStyle="{StaticResource DataGridreport}" Width="Auto" Header="Crowding(m)" Binding="{Binding PC,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
-                            <DataGrid.RowStyle>
-                                <Style TargetType="{x:Type DataGridRow}">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF" />
-                                            <Setter Property="Foreground" Value="White" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF" />
-                                            <Setter Property="BorderBrush" Value="#FF1F48FF" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                        </DataGrid>
-                        <!--<GroupBox Background="#FF030032" BorderBrush="#FF030032" Header="Moulded Draft (m)" Height="84" HorizontalAlignment="Left" Margin="364,0,0,0" Name="groupBox3" VerticalAlignment="Top" Visibility="Visible" Width="495">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="7*" />
-                                    <ColumnDefinition Width="457" />
-                                    <ColumnDefinition Width="7*" />
-                                </Grid.ColumnDefinitions>
-                                <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" Grid.ColumnSpan="3" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" Name="dgMouldedDraft" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Binding="{Binding Draft_AP_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="AP" MinWidth="55" SortMemberPath="openingName" Width="30">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                            <DataGridTextColumn.HeaderStyle>
-                                                <Style TargetType="DataGridColumnHeader">
-                                                    <Setter Property="Control.HorizontalContentAlignment" Value="Center" />
-                                                    <Setter Property="Control.FontWeight" Value="Bold" />
-                                                </Style>
-                                            </DataGridTextColumn.HeaderStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_Propeller_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Propeller" HeaderStyle="{StaticResource DataGridGen}" MinWidth="80" SortMemberPath="openingNo" Width="Auto">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_Aft_Mark_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Aft Mark" HeaderStyle="{StaticResource DataGridGen}" MinWidth="72" SortMemberPath="openingX" Width="Auto">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_Mean_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Mid" HeaderStyle="{StaticResource DataGridGen}" MinWidth="60" SortMemberPath="openingY" Width="Auto">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_Fore_Mark_MLD, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Fwd Mark" HeaderStyle="{StaticResource DataGridGen}" MinWidth="75" SortMemberPath="openingZ" Width="Auto">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_Sonar_Dome_MLD, StringFormat=n3}" FontSize="11" Header="Sonar Dome" HeaderStyle="{StaticResource DataGridGen}" SortMemberPath="actualImAng" Width="80">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Draft_FP_MLD, StringFormat=n3}" FontSize="11" Header="FP" HeaderStyle="{StaticResource DataGridGen}" SortMemberPath="actualImAng" Width="60">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="FrameworkElement.HorizontalAlignment" Value="Center" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                    </DataGrid.Columns>
-                                    <DataGrid.Resources>
-                                        <Style TargetType="{x:Type DataGridCell}">
-                                            <Style.Triggers>
-                                                <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                    <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                                    <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGrid.Resources>
-                                    <DataGrid.RowStyle>
-                                        <Style TargetType="{x:Type DataGridRow}">
-                                            <Style.Triggers>
-                                                <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                                    <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                                    <Setter Property="Control.Foreground" Value="White" />
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGrid.RowStyle>
-                                </DataGrid>
-                            </Grid>
-                        </GroupBox>-->
-                    </Grid>
-                </GroupBox>
-
-                <!-- Right column: Loading Summary stacked on top, Damaged Tanks below -->
-                <StackPanel Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Margin="4,0,0,0">
-                    <GroupBox Header="Loading Summary" Name="groupBox4" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" FontSize="9" Margin="0,0,0,6">
-                        <Grid>
-                            <DataGrid AutoGenerateColumns="False" Name="dgLoadingSummary" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False"  FontSize="12" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Auto" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn MinWidth="120" Width="190"  Header="Items" Binding="{Binding Tank_Name}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="left" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="80" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="% Full" Binding="{Binding Percent_Full,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="80" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="Volume (Cu.m)" Binding="{Binding Volume,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="SG" Binding="{Binding SG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="Weight (T)" Binding="{Binding Weight,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="LCG (m)" Binding="{Binding LCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="TCG (m)" Binding="{Binding TCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="VCG (m)" Binding="{Binding VCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" HeaderStyle="{StaticResource DataGridreport}" Header="FSM (T-m)" Binding="{Binding FSM,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="50" Width="Auto" Visibility="Hidden" HeaderStyle="{StaticResource DataGridreport}" Header="IsDamaged" Binding="{Binding IsDamaged,StringFormat=N1}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                                <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="{x:Type DataGridRow}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF"/>
-                                                <Setter Property="Foreground" Value="White"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Resources>
-                                    <Style TargetType="{x:Type DataGridCell}">
-                                        <Style.Triggers>
-                                            <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF" />
-                                                <Setter Property="BorderBrush" Value="#FF1F48FF"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Resources>
-                            </DataGrid>
-                        </Grid>
-                    </GroupBox>
-
-                    <GroupBox Header="DAMAGED TANKS AND COMPARTMENTS" Name="gbSoundingPer" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" FontSize="9" Margin="0,0,0,6">
-                        <Grid>
-                            <DataGrid AutoGenerateColumns="False" Name="dgSoundingPer" ItemsSource="{Binding}" VerticalScrollBarVisibility="Visible" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True" HorizontalScrollBarVisibility="Visible" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn MinWidth="70" Width="150" Header="Name" Binding="{Binding Tank_Name,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Left" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.HeaderStyle>
-                                            <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="HorizontalContentAlignment" Value="left" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                            </Style>
-                                        </DataGridTextColumn.HeaderStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="80" Width="Auto" HeaderStyle="{StaticResource DataGridGen}" Header="%Full" Binding="{Binding Percent_Full,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="openingNo">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="72" HeaderStyle="{StaticResource DataGridGen}" Width="Auto" Header="Volume(cu.m.)" Binding="{Binding CapacityMC,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="CapacityMC">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" HeaderStyle="{StaticResource DataGridGen}" Width="Auto" Header="Weight(T)" Binding="{Binding CapacityTonnes,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="CapacityTonnes">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn MinWidth="60" HeaderStyle="{StaticResource DataGridGen}" Width="Auto" Header="LCG(m)" Binding="{Binding LCG,StringFormat=n3}" FontFamily="Calibri" FontSize="11" SortMemberPath="LCG">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="TCG(m)" HeaderStyle="{StaticResource DataGridGen}" Width="60" Binding="{Binding TCG,StringFormat=n3}" SortMemberPath="TCG" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="VCG(m)" HeaderStyle="{StaticResource DataGridGen}" Width="60" Binding="{Binding VCG,StringFormat=n3}" SortMemberPath="VCG" FontSize="11">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                                <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="{x:Type DataGridRow}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Resources>
-                                    <Style TargetType="{x:Type DataGridCell}">
-                                        <Style.Triggers>
-                                            <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#FF1F48FF" />
-                                                <Setter Property="BorderBrush" Value="#FF1F48FF" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Resources>
-                            </DataGrid>
-                        </Grid>
-                    </GroupBox>
+            <!-- HEADER -->
+            <Grid Grid.Row="0" Margin="0,0,0,6">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Stability Report"
+                               Foreground="{DynamicResource TextPrimary}"
+                               FontFamily="Segoe UI"
+                               FontSize="20"
+                               FontWeight="Bold"/>
+                    <Border x:Name="statusBorder" Background="#DCFCE7" CornerRadius="999" Padding="10,4" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="txtSummaryStatus" Text="INTACT" Foreground="#166534" FontSize="10" FontWeight="Bold"/>
+                    </Border>
                 </StackPanel>
-
-                <!-- Row 6: Immersion particulars (left) + Damaged Displacement (right) -->
-                <GroupBox Grid.Row="6" Grid.Column="0" Background="#FF030032" BorderBrush="#FF030032" Header="Immersion particulars" Name="groupBox1" FontFamily="Calibri" SnapsToDevicePixels="True" Margin="0,0,4,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" BorderBrush="#FF030032" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False" FontFamily="Calibri" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" ItemsSource="{Binding}" MinRowHeight="20" Name="dgDraft" RowBackground="#FFFFFFFF" RowHeight="20" VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" VerticalAlignment="Top" FlowDirection="LeftToRight" VerticalContentAlignment="Center">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding openingName, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Name" MinWidth="80" Width="Auto" SortMemberPath="openingName">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding openingNo, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Type" MinWidth="80" Width="Auto" SortMemberPath="openingNo">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding openingX, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="X(m)" MinWidth="65" Width="Auto" SortMemberPath="openingX" >
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding openingY, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Y(m)" MinWidth="65" Width="Auto" SortMemberPath="openingY">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding openingZ, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Z(m)" MinWidth="65" Width="Auto" SortMemberPath="openingZ">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                                            <!--<Setter Property="FontWeight" Value="Bold" />-->
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding actualImAng, StringFormat=n3}" FontFamily="Calibri" FontSize="11" Header="Flood Angle(Deg.)" MinWidth="100" Width="Auto">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.BorderBrush" Value="#FF1F48FF" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                            <DataGrid.RowStyle>
-                                <Style TargetType="{x:Type DataGridRow}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridRow.IsSelected" Value="True">
-                                            <Setter Property="Control.Background" Value="#FF1F48FF" />
-                                            <Setter Property="Control.Foreground" Value="White" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
-                <GroupBox Grid.Row="6" Grid.Column="1" Header="Damaged Displacement" Name="groupDAMDISP" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" FontSize="9" Margin="4,0,0,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" Name="Damaged_Displacement" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False"  FontSize="12" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Auto" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                            <DataGrid.Columns>
-                                <!--<DataGridTextColumn MinWidth="120" Width="190"  Header="Items" Binding="{Binding Tank_Name}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>-->
-                                <DataGridTextColumn MinWidth="150" Width="150"  Header="Items" Binding="{Binding Items}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="100" Width="100"  Header="Weight" Binding="{Binding Weight}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="LCG" Binding="{Binding LCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="TCG" Binding="{Binding TCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="VCG" Binding="{Binding VCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF" />
-                                            <Setter Property="BorderBrush" Value="#FF1F48FF"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Hidden test12 GroupBox preserved for functionality -->
-                <GroupBox Header="test12" Visibility="Hidden" Name="test12" Grid.Row="6" Grid.Column="1" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" FontSize="9">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" Name="test1" ItemsSource="{Binding}" CanUserReorderColumns="False" CanUserResizeColumns="False"  FontSize="12" CanUserSortColumns="False" GridLinesVisibility="Horizontal" CanUserResizeRows="False" IsReadOnly="True" HorizontalScrollBarVisibility="Auto" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                            <DataGrid.Columns>
-                                <!--<DataGridTextColumn MinWidth="120" Width="190"  Header="Items" Binding="{Binding Tank_Name}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>-->
-                                <DataGridTextColumn MinWidth="150" Width="150"  Header="status" Binding="{Binding status}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <!--<DataGridTextColumn MinWidth="100" Width="100"  Header="Weight" Binding="{Binding Weight}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="LCG" Binding="{Binding LCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="TCG" Binding="{Binding TCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="80" Width="80"  Header="VCG" Binding="{Binding VCG}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.HeaderStyle>
-                                        <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="HorizontalContentAlignment" Value="left" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </Style>
-                                    </DataGridTextColumn.HeaderStyle>
-                                </DataGridTextColumn>-->
-                            </DataGrid.Columns>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF" />
-                                            <Setter Property="BorderBrush" Value="#FF1F48FF"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Row 7: GZ Curve (left) + NES 109 Stability Criteria (right) -->
-                <GroupBox Grid.Row="7" Grid.Column="0" Header="GZ Curve" Name="groupBox7" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" MinHeight="310" Margin="0,0,4,6">
-                    <Grid>
-                        <DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="#FFFFFFFF" Padding="5" FontFamily="Calibri" FontSize="11">
-                            <DVC:Chart.Series>
-                                <DVC:LineSeries Title="GZ" Name="GZSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="Red"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>
-                                <DVC:LineSeries Title="WH" Name="WHSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="LightBlue"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>
-                                <DVC:LineSeries Title="HL" Name="HLSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="Gray"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>
-                                <DVC:LineSeries Title="HS" Name="HSSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="LightPink"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>
-                                <DVC:LineSeries Title="PC" Name="PCSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="LightGreen"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>
-                                <!--<DVC:LineSeries Title="DF Point" Name="DFSeries"
-                                IndependentValueBinding="{Binding Path=Key}"
-                                DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
-                                    <DVC:LineSeries.DataPointStyle>
-                                        <Style TargetType="{x:Type DVC:LineDataPoint}">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Background" Value="Purple"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="DVC:LineDataPoint">
-                                                        <Canvas x:Name="PlotArea"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </DVC:LineSeries.DataPointStyle>
-
-                                    <DVC:LineSeries.LegendItemStyle>
-                                        <Style TargetType="{x:Type DVC:LegendItem}" >
-                                            <Setter Property="Visibility" Value="Visible"></Setter>
-                                        </Style>
-                                    </DVC:LineSeries.LegendItemStyle>
-                                </DVC:LineSeries>-->
-                            </DVC:Chart.Series>
-                            <DVC:Chart.Axes >
-                                <DVC:LinearAxis Orientation="Y" 
-                                    Title="GZ (m)" 
-                                        Maximum="3"
-                                        Minimum="-2"
-                                           ShowGridLines="True" >
-                                </DVC:LinearAxis>
-                                <DVC:LinearAxis Orientation="X" 
-                                    Title="Degree" 
-                                        Maximum="120"
-                                        Minimum="-25"
-                                        ShowGridLines="True">
-                                </DVC:LinearAxis>
-                                <DVC:CategoryAxis >
-                                </DVC:CategoryAxis>
-                            </DVC:Chart.Axes>
-                        </DVC:Chart>
-                    </Grid>
-                </GroupBox>
-
-                <GroupBox Grid.Row="7" Grid.Column="1" Header="NES 109 Stability Criteria" Name="groupBoxStability" IsEnabled="True" FontFamily="Calibri" SnapsToDevicePixels="True" Background="#FF030032" BorderBrush="#FF030032" Margin="4,0,0,6">
-                    <Grid>
-                        <DataGrid AutoGenerateColumns="False" Name="dgStability" ItemsSource="{Binding}" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="True" CanUserSortColumns="False" FontFamily="Calibri" BorderBrush="#FF030032" MinRowHeight="20" RowHeight="20">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn MinWidth="60" Width="200" Header="Criterion" Binding="{Binding Criterion,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Left" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="50" Width="auto" Header="Critical Value" Binding="{Binding Critical_Value,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="50" Width="Auto" Header="Actual Value" Binding="{Binding Actual_Value,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn MinWidth="40" Width="Auto" Header="Status" Binding="{Binding Status,StringFormat=n3}" FontFamily="Calibri" FontSize="11">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                            <DataGrid.RowBackground>#FFFFFFFF</DataGrid.RowBackground>
-                            <DataGrid.RowStyle>
-                                <Style TargetType="{x:Type DataGridRow}">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Resources>
-                                <Style TargetType="{x:Type DataGridCell}">
-                                    <Style.Triggers>
-                                        <Trigger Property="DataGridCell.IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1F48FF" />
-                                            <Setter Property="BorderBrush" Value="#FF1F48FF"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.Resources>
-                        </DataGrid>
-                    </Grid>
-                </GroupBox>
-
+                <Button Content="Generate Report" Name="btnGenerateReport" Click="btnGenerateReport_Click"
+                        Style="{StaticResource BtnReport}" HorizontalAlignment="Right"/>
             </Grid>
-        </ScrollViewer>
+
+            <ScrollViewer Grid.Row="1" Name="scrollViewer1" ScrollChanged="scrollViewer1_ScrollChanged" 
+                          Background="Transparent" VerticalScrollBarVisibility="Auto">
+                <Grid Name="grid1" Margin="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- TOP SUMMARY STRIP -->
+                    <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <TextBlock Text="Report Summary" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,8"/>
+                            <UniformGrid Columns="4">
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="GMt" Style="{StaticResource SummaryLabel}"/>
+                                    <TextBlock x:Name="txtSummaryGMT" Text="N/A" Style="{StaticResource SummaryValue}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="Displacement" Style="{StaticResource SummaryLabel}"/>
+                                    <TextBlock x:Name="txtSummaryDisplacement" Text="N/A" Style="{StaticResource SummaryValue}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="Trim" Style="{StaticResource SummaryLabel}"/>
+                                    <TextBlock x:Name="txtSummaryTrim" Text="N/A" Style="{StaticResource SummaryValue}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="List" Style="{StaticResource SummaryLabel}"/>
+                                    <TextBlock x:Name="txtSummaryList" Text="N/A" Style="{StaticResource SummaryValue}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Hidden controls preserved for functionality -->
+                    <DatePicker Visibility="Collapsed" Name="datePickerTo" Grid.Row="0"/>
+                    <ListBox Visibility="Collapsed" Name="listBoxDateList" Background="#FFDEDEDE" SelectionChanged="listBoxDateList_SelectionChanged" Grid.Row="0"/>
+                    <Label Visibility="Hidden" Content="From" Name="lblFrom" Grid.Row="0"/>
+                    <Label Visibility="Hidden" Content="To" Name="lblTo" Grid.Row="0"/>
+                    <Button Visibility="Hidden" Content="Generate DateList" Name="btnGenerateDateList" Click="btnGenerateDateList_Click" Grid.Row="0"/>
+                    <DatePicker Visibility="Hidden" Name="datePickerFrom" Grid.Row="0"/>
+
+                    <!-- HYDROSTATICS -->
+                    <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#14B8A6"/>
+                                <TextBlock Text="Hydrostatics" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgHydrostatics" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      VerticalScrollBarVisibility="Disabled" IsReadOnly="True"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      HorizontalAlignment="Stretch">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Displacement (T)" Width="*" Binding="{Binding Displacement,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="LCB (m)" Width="*" Binding="{Binding LCB,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="TCB (m)" Width="*" Binding="{Binding TCB,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="VCB (m)" Width="*" Binding="{Binding VCB,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="KGF (m)" Width="*" Binding="{Binding [KG(Fluid)],StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="TCF (m)" Width="*" Binding="{Binding TCF,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="TCG (m)" Width="*" Binding="{Binding TCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="LCG (m)" Width="*" Binding="{Binding LCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="LCF (m)" Width="*" Binding="{Binding LCF,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="KMT (m)" Width="*" Binding="{Binding KMT,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="KML (m)" Width="*" Binding="{Binding KML,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="BMT (m)" Width="*" Binding="{Binding BMT,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="BML (m)" Width="*" Binding="{Binding BML,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="WPA (m2)" Width="*" Binding="{Binding WPA,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Buoyancy (T)" Width="*" Binding="{Binding Buoyancy,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Border Background="{StaticResource RowAlt}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" 
+                                    CornerRadius="6" Padding="8" Margin="0,8,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Trim / Stability Snapshot" FontWeight="SemiBold" FontSize="10" Margin="0,0,0,6"/>
+                                    <DataGrid Name="dgHydrostatics2" 
+                                              CanUserSortColumns="False" CanUserResizeRows="False" 
+                                              VerticalScrollBarVisibility="Disabled" IsReadOnly="True"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Trim" Width="*" Binding="{Binding TRIM,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridTextColumn Header="List" Width="*" Binding="{Binding Heel,StringFormat=n2}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridTextColumn Header="GMT" Width="*" Binding="{Binding GMT,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridTextColumn Header="KG (m)" Width="*" Binding="{Binding [KG(Solid)],StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridTextColumn Header="KGF (m)" Width="*" Binding="{Binding [KG(Fluid)],StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                            <DataGridTextColumn Header="Roll Period" Width="*" Binding="{Binding Roll_Period,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- DRAFT MARKS -->
+                    <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#EC4899"/>
+                                <TextBlock Text="Draft Marks (m)" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgDraft1" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      VerticalScrollBarVisibility="Disabled" IsReadOnly="True"
+                                      HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="AP" Width="*" Binding="{Binding Draft_AP,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Aft Mark" Width="*" Binding="{Binding Draft_Aft_Mark,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Mid" Width="*" Binding="{Binding Draft_Mean,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Fwd Mark" Width="*" Binding="{Binding Draft_Fore_Mark,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="FP" Width="*" Binding="{Binding Draft_FP,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- MOULDED DRAFT -->
+                    <Border Grid.Row="3" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#8B5CF6"/>
+                                <TextBlock Text="Moulded Draft (m)" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgMouldedDraft" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      VerticalScrollBarVisibility="Disabled" IsReadOnly="True"
+                                      HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="AP" Width="*" Binding="{Binding Draft_AP,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Aft Mark" Width="*" Binding="{Binding Draft_Aft_Mark,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Mid" Width="*" Binding="{Binding Draft_Mean,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Fwd Mark" Width="*" Binding="{Binding Draft_Fore_Mark,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="FP" Width="*" Binding="{Binding Draft_FP,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GZ AND HEELING ARMS -->
+                    <Border Grid.Row="4" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#6366F1"/>
+                                <TextBlock Text="GZ and Heeling Arms" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgGZ" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      IsReadOnly="True" HorizontalScrollBarVisibility="Auto">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Heel (deg)" Width="*" Binding="{Binding HeelAngle,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="GZ (m)" Width="*" Binding="{Binding GZ,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Wind Heeling (m)" Width="*" Binding="{Binding WH,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Heavy Weights (m)" Width="*" Binding="{Binding HL,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Turning (m)" Width="*" Binding="{Binding HS,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Crowding (m)" Width="*" Binding="{Binding PC,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- LOADING SUMMARY -->
+                    <Border Grid.Row="5" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#0EA5E9"/>
+                                <TextBlock Text="Loading Summary" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgLoadingSummary" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
+                                      MaxHeight="220">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Tank Name" Width="1.5*" Binding="{Binding Tank_Name}" HeaderStyle="{StaticResource DGHeader}"/>
+                                    <DataGridTextColumn Header="% Full" Width="*" Binding="{Binding Percent_Full,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Volume (m3)" Width="*" Binding="{Binding Volume,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="SG" Width="0.7*" Binding="{Binding SG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Weight (T)" Width="*" Binding="{Binding Weight,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="LCG (m)" Width="*" Binding="{Binding LCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="TCG (m)" Width="*" Binding="{Binding TCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="VCG (m)" Width="*" Binding="{Binding VCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="FSM (T-m)" Width="*" Binding="{Binding FSM,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- DAMAGED TANKS -->
+                    <Border x:Name="gbSoundingPer" Grid.Row="6" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#F97316"/>
+                                <TextBlock Text="Damaged Tanks and Compartments" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgSoundingPer" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      IsReadOnly="True" HorizontalScrollBarVisibility="Auto">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Name" Width="1.5*" Binding="{Binding Tank_Name}" HeaderStyle="{StaticResource DGHeader}"/>
+                                    <DataGridTextColumn Header="% Full" Width="*" Binding="{Binding Percent_Full,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Volume (m3)" Width="*" Binding="{Binding CapacityMC,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Weight (T)" Width="*" Binding="{Binding CapacityTonnes,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="LCG (m)" Width="*" Binding="{Binding LCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="TCG (m)" Width="*" Binding="{Binding TCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="VCG (m)" Width="*" Binding="{Binding VCG,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Border x:Name="groupDAMDISP" Margin="0,8,0,0" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock Text="Damaged Displacement" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                                    <DataGrid Name="Damaged_Displacement"
+                                              CanUserSortColumns="False" CanUserResizeRows="False"
+                                              IsReadOnly="True" HorizontalScrollBarVisibility="Auto"
+                                              AutoGenerateColumns="True"
+                                              HeadersVisibility="Column"
+                                              MinHeight="80"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- IMMERSION PARTICULARS -->
+                    <Border Grid.Row="7" Style="{StaticResource CardStyle}" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#A855F7"/>
+                                <TextBlock Text="Immersion Particulars" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgDraft" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      IsReadOnly="True" HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Name" Width="1.5*" Binding="{Binding openingName,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}"/>
+                                    <DataGridTextColumn Header="Type" Width="*" Binding="{Binding openingNo,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="X (m)" Width="*" Binding="{Binding openingX,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Y (m)" Width="*" Binding="{Binding openingY,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Z (m)" Width="*" Binding="{Binding openingZ,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Flood Angle (deg)" Width="*" Binding="{Binding actualImAng,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GZ CURVE - FULL WIDTH -->
+                    <Border Grid.Row="8" Style="{StaticResource CardStyle}" Margin="0,0,0,6" Padding="6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#F59E0B"/>
+                                <TextBlock Text="GZ Curve" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <Border Background="#F8FAFC" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="4" MinHeight="220">
+                                <Grid>
+                                    <DVC:Chart Name="GzChart" Style="{StaticResource ChartStyle1}" Background="#F8FAFC" BorderBrush="{StaticResource BorderLight}" BorderThickness="0" Padding="5" MinHeight="220" FontFamily="Segoe UI" Foreground="{StaticResource TextPrimary}">
+                                        <DVC:Chart.Series>
+                                            <DVC:LineSeries Title="GZ" Name="GZSeries"
+                                                    IndependentValueBinding="{Binding Path=Key}"
+                                                    DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                                                <DVC:LineSeries.DataPointStyle>
+                                                    <Style TargetType="DVC:LineDataPoint">
+                                                        <Setter Property="Background" Value="#2563EB"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="DVC:LineDataPoint">
+                                                                    <Canvas/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </DVC:LineSeries.DataPointStyle>
+                                            </DVC:LineSeries>
+                                            <DVC:LineSeries Title="Wind Heeling" Name="WHSeries"
+                                                    IndependentValueBinding="{Binding Path=Key}"
+                                                    DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                                                <DVC:LineSeries.DataPointStyle>
+                                                    <Style TargetType="DVC:LineDataPoint">
+                                                        <Setter Property="Background" Value="#16A34A"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="DVC:LineDataPoint">
+                                                                    <Canvas/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </DVC:LineSeries.DataPointStyle>
+                                            </DVC:LineSeries>
+                                            <DVC:LineSeries Title="Heavy Weights" Name="HLSeries"
+                                                    IndependentValueBinding="{Binding Path=Key}"
+                                                    DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                                                <DVC:LineSeries.DataPointStyle>
+                                                    <Style TargetType="DVC:LineDataPoint">
+                                                        <Setter Property="Background" Value="#F97316"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="DVC:LineDataPoint">
+                                                                    <Canvas/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </DVC:LineSeries.DataPointStyle>
+                                            </DVC:LineSeries>
+                                            <DVC:LineSeries Title="Turning" Name="HSSeries"
+                                                    IndependentValueBinding="{Binding Path=Key}"
+                                                    DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                                                <DVC:LineSeries.DataPointStyle>
+                                                    <Style TargetType="DVC:LineDataPoint">
+                                                        <Setter Property="Background" Value="#DC2626"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="DVC:LineDataPoint">
+                                                                    <Canvas/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </DVC:LineSeries.DataPointStyle>
+                                            </DVC:LineSeries>
+                                            <DVC:LineSeries Title="Reference Curve" Name="PCSeries"
+                                                    IndependentValueBinding="{Binding Path=Key}"
+                                                    DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
+                                                <DVC:LineSeries.DataPointStyle>
+                                                    <Style TargetType="DVC:LineDataPoint">
+                                                        <Setter Property="Background" Value="#9333EA"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="DVC:LineDataPoint">
+                                                                    <Canvas/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </DVC:LineSeries.DataPointStyle>
+                                        </DVC:LineSeries>
+                                    </DVC:Chart.Series>
+                                        <DVC:Chart.Axes>
+                                            <DVC:LinearAxis Orientation="Y" Title="Righting Arm GZ (m)"/>
+                                            <DVC:LinearAxis Orientation="X" Title="Heel Angle (deg)"/>
+                                        </DVC:Chart.Axes>
+                                    </DVC:Chart>
+                                    <TextBlock x:Name="txtGzEmptyState"
+                                               Text="No GZ data available"
+                                               Foreground="{DynamicResource TextMuted}"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- STABILITY CRITERIA -->
+                    <Border Grid.Row="9" Style="{StaticResource CardStyle}" Margin="0,0,0,2">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource AccentBar}" Background="#10B981"/>
+                                <TextBlock Text="NES 109 Stability Criteria" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
+                            <DataGrid Name="dgStability" 
+                                      CanUserSortColumns="False" CanUserResizeRows="False" 
+                                      IsReadOnly="True" HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Criterion" Width="3*" Binding="{Binding Criterion}" HeaderStyle="{StaticResource DGHeader}"/>
+                                    <DataGridTextColumn Header="Critical Value" Width="*" Binding="{Binding Critical_Value,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTextColumn Header="Actual Value" Width="*" Binding="{Binding Actual_Value,StringFormat=n3}" HeaderStyle="{StaticResource DGHeader}" ElementStyle="{StaticResource CenterCellStyle}"/>
+                                    <DataGridTemplateColumn Header="Status" Width="*" HeaderStyle="{StaticResource DGHeader}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="8,3" HorizontalAlignment="Center">
+                                                     <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#FEE2E2"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Status}" Value="OK">
+                                                                    <Setter Property="Background" Value="#DCFCE7"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="PASS">
+                                                                    <Setter Property="Background" Value="#DCFCE7"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="True">
+                                                                    <Setter Property="Background" Value="#DCFCE7"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="TRUE">
+                                                                    <Setter Property="Background" Value="#DCFCE7"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="NA">
+                                                                    <Setter Property="Background" Value="#E5E7EB"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock HorizontalAlignment="Center" FontWeight="Bold" FontSize="10">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="#DC2626"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="OK">
+                                                                        <Setter Property="Foreground" Value="#16A34A"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="PASS">
+                                                                        <Setter Property="Foreground" Value="#16A34A"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#16A34A"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="TRUE">
+                                                                        <Setter Property="Foreground" Value="#16A34A"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="NA">
+                                                                        <Setter Property="Foreground" Value="#64748B"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                        <Run Text="{Binding Status, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Hidden compatibility grid preserved for legacy code-behind -->
+                    <DataGrid Name="test1"
+                              Grid.Row="9"
+                              Visibility="Collapsed"
+                              AutoGenerateColumns="True"
+                              HeadersVisibility="Column"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeRows="False"/>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- FOOTER -->
+            <Border Grid.Row="2" Background="Transparent" Padding="0,6,0,0">
+                <TextBlock Text="Confidential - Stability assessment for controlled circulation only" 
+                           Foreground="{DynamicResource TextMuted}" FontFamily="Segoe UI" FontSize="10"/>
+            </Border>
+        </Grid>
     </Grid>
 </Page>

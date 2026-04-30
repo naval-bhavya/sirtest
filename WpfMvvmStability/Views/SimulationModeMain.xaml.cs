@@ -60,11 +60,15 @@ namespace WpfMvvmStability.Views
         int PK = 0;
         int canvasselect = 0;
         int indexvar;
-        string header;
+        string header = string.Empty;
         public int popMessageBox =0;
         public int selectionchangecount = 0;
         int TankID;
         TextBox tb = new TextBox();
+        private readonly Expander expander1 = new Expander();
+        private readonly Expander expander2 = new Expander();
+        private readonly Expander expander3 = new Expander();
+        private readonly Expander expander4 = new Expander();
         private decimal PercentageFill;
         private string TankNameForPercentage;
         public static Dictionary<int, decimal> maxVolume;
@@ -87,6 +91,96 @@ namespace WpfMvvmStability.Views
 
         private WW.Math.Vector3D translation;
         private double scaling = 1d;
+        private bool is2DPanning;
+        private System.Windows.Point last2DPanPoint;
+        private Canvas active2DCanvas;
+
+        private string NormalizedGridHeader
+        {
+            get { return NormalizeGridHeader(header); }
+        }
+
+        private static string NormalizeGridHeader(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = value.ToUpperInvariant()
+                .Replace(" ", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace("-", string.Empty);
+
+            if (cleaned == "VOLUME(CUM)" || cleaned == "VOLUME(CU.M)") return "VOLUME";
+            if (cleaned == "PERCENTFILL" || cleaned == "PERCENT_FULL") return "PERCENT";
+            if (cleaned == "SPECIFICGRAVITY" || cleaned == "SG" || cleaned == "SGRAVITY") return "SG";
+            if (cleaned == "MASS(T)" || cleaned == "MASST") return "MASS";
+            if (cleaned == "INNAGE(M)" || cleaned == "INNAGEM") return "INNAGE";
+            if (cleaned == "FLOODTIME(MIN)" || cleaned == "FLOODTIMEMIN") return "FLOODTIME";
+            if (cleaned == "FLOODRATE(TPH)" || cleaned == "FLOODRATETPH") return "FLOODRATE";
+            if (cleaned == "FSM(TM)" || cleaned == "FSM(T-M)" || cleaned == "FSMTM") return "FSM";
+            return cleaned;
+        }
+
+        private bool HasSimulationTankVolume()
+        {
+            return HasAnyVolume(Models.BO.clsGlobVar.dtSimulationCargoTanks)
+                || HasAnyVolume(Models.BO.clsGlobVar.dtSimulationBallastTanks)
+                || HasAnyVolume(Models.BO.clsGlobVar.dtSimulationFuelOilTanks)
+                || HasAnyVolume(Models.BO.clsGlobVar.dtSimulationFreshWaterTanks)
+                || HasAnyVolume(Models.BO.clsGlobVar.dtSimulationMiscTanks)
+                || HasAnyVolume(Models.BO.clsGlobVar.dtSimulationWTRegion);
+        }
+
+        private static bool HasAnyVolume(DataTable table)
+        {
+            if (table == null || !table.Columns.Contains("Volume"))
+            {
+                return false;
+            }
+
+            foreach (DataRow row in table.Rows)
+            {
+                decimal volume;
+                if (decimal.TryParse(Convert.ToString(row["Volume"]), out volume) && volume > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void BuildSimulationMaxVolumeCache()
+        {
+            maxVolume = new Dictionary<int, decimal>();
+            if (Models.BO.clsGlobVar.dtSimulationModeAllTanks == null)
+            {
+                return;
+            }
+
+            DataView view = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
+            view.RowFilter = "Group NOT LIKE 'Lightship'";
+            DataTable table = view.ToTable();
+
+            foreach (DataRow row in table.Rows)
+            {
+                if (!table.Columns.Contains("Tank_ID") || !table.Columns.Contains("Max_Volume"))
+                {
+                    continue;
+                }
+
+                int tankId;
+                decimal maxTankVolume;
+                if (int.TryParse(Convert.ToString(row["Tank_ID"]), out tankId)
+                    && decimal.TryParse(Convert.ToString(row["Max_Volume"]), out maxTankVolume)
+                    && !maxVolume.ContainsKey(tankId))
+                {
+                    maxVolume.Add(tankId, maxTankVolume);
+                }
+            }
+        }
 
         System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
 
@@ -116,6 +210,7 @@ namespace WpfMvvmStability.Views
 
               
                 Models.TableModel.SimulationModeData();
+                Models.TableModel.LoadSimulationHydrostatics();
              
                 ViewModels.CadViewModel.Cad2dModels();
                 GetDataforDataGridInitialized();
@@ -123,10 +218,17 @@ namespace WpfMvvmStability.Views
                 {
                     if (window.GetType() == typeof(MainWindow))
                     {
-                        //((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeLongitudinal", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeStability", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeCorrectiveAction", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationGenerateReport", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
+                        var frame = (window as MainWindow).frameSimulationMode;
+                        if (frame?.Template != null)
+                        {
+                            var btnStability = frame.Template.FindName("btnSimulationModeStability", frame) as Button;
+                            var btnCorrective = frame.Template.FindName("btnSimulationModeCorrectiveAction", frame) as Button;
+                            var btnReport = frame.Template.FindName("btnSimulationGenerateReport", frame) as Button;
+                            
+                            if (btnStability != null) btnStability.IsEnabled = false;
+                            if (btnCorrective != null) btnCorrective.IsEnabled = false;
+                            if (btnReport != null) btnReport.IsEnabled = false;
+                        }
                     }
                 }
                 Mouse.OverrideCursor = null;
@@ -172,23 +274,43 @@ namespace WpfMvvmStability.Views
                 StatusWTRegion.ItemsSource = statusList;
 
                 //var x=Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
-                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
-                dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
-                dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
-                dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
-                dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
-                dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationCargoTanks != null)
+                    dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationBallastTanks != null)
+                    dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationFuelOilTanks != null)
+                    dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationFreshWaterTanks != null)
+                    dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationMiscTanks != null)
+                    dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationCompartments != null)
+                    dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
 
-                dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
-                dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationWTRegion != null)
+                    dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
               
-
+                Refresh3dNew();
+                // Check if Equillibrium data exists
+                if (Models.BO.clsGlobVar.dtSimulationEquillibriumValues == null || Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows.Count == 0)
+                {
+                    return;
+                }
 
                 Model(Models.BO.clsGlobVar.Profile, canvas2DProfile);
                 Model(Models.BO.clsGlobVar.PlanA, canvas2DPlanA);
                 Model(Models.BO.clsGlobVar.PlanB, canvas2DPlanB);
                 //Model(Models.BO.clsGlobVar.PlanC, canvas2DPlanC);
                 //ModelNew(Models.BO.clsGlobVar.PlanALL, canvas2DAll);
+
+                BuildSimulationMaxVolumeCache();
+                if (!HasSimulationTankVolume())
+                {
+                    ResetOutputPanelValues();
+                    return;
+                }
 
 
                 //lblDeadWeight.Content = Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Lightship_Weight"]), 1).ToString();
@@ -310,22 +432,10 @@ namespace WpfMvvmStability.Views
                 //ViewModels.MainViewModel.Flag3D = false;
                 //this.DataContext = new ViewModels.MainViewModel(folderPath, viewPort3d);
                 //ViewModels.MainViewModel.Flag3D = false;
-                Refresh3dNew();
+                // Refresh3dNew(); // Moved to earlier in method
                 Mouse.OverrideCursor = null;
 
-                maxVolume = new Dictionary<int, decimal>();
-
-                DataTable dtmaxVolume = new DataTable();
-                DataView DV = Models.BO.clsGlobVar.dtSimulationModeAllTanks.AsDataView();
-                DV.RowFilter = "Group NOT LIKE 'Variable Data'";
-                DV.RowFilter = "Group NOT LIKE 'Lightship'";
-                dtmaxVolume = DV.ToTable();
-
-                for (int i = 0; i < dtmaxVolume.Rows.Count - 2; i++)
-                {
-                    maxVolume.Add(Convert.ToInt32(dtmaxVolume.Rows[i]["Tank_ID"]), Convert.ToDecimal(dtmaxVolume.Rows[i]["Max_Volume"]));
-
-                }
+                BuildSimulationMaxVolumeCache();
 
 
 
@@ -421,6 +531,7 @@ namespace WpfMvvmStability.Views
                 wpfGraphics.Config = graphicsConfig;
 
                 canvas2D.Children.Add(wpfGraphics.Canvas);
+                Hook2DInteraction(wpfGraphics.Canvas);
 
                 UpdateWpfGraphics();
 
@@ -481,16 +592,18 @@ namespace WpfMvvmStability.Views
             double canvasWidth = canvas2D.ActualWidth;
             double canvasHeight = canvas2D.ActualHeight;
 
-            // The DXF has a fixed reference datum at Y≈-120000 far below the ship.
-            // All views: ship content spans Y≈0 to Y=Corner2.Y, so center at Corner2.Y*0.5.
-            // Profile gets tighter zoom (0.60) to show hull larger; plan views use 0.75.
-            double yCenter = activeBounds.Corner2.Y * 0.45;
-            double yHalf = (canvas2D == canvas2DProfile)
-                ? activeBounds.Corner2.Y * 0.65
-                : (canvas2D == canvas2DPlanB) ? activeBounds.Corner2.Y * 0.55 : activeBounds.Corner2.Y * 0.75;
-            Point2D effectiveCorner1 = new Point2D(activeBounds.Corner1.X, yCenter - yHalf);
-            Point2D effectiveCorner2 = new Point2D(activeBounds.Corner2.X, yCenter + yHalf);
-            Point2D effectiveCenter  = new Point2D(activeBounds.Center.X,  yCenter);
+            double contentMinY = activeBounds.Corner1.Y;
+            double contentMaxY = activeBounds.Corner2.Y;
+            if (contentMinY < 0d && Math.Abs(contentMinY) > Math.Abs(contentMaxY) * 3d)
+            {
+                contentMinY = 0d;
+            }
+
+            double contentHeight = Math.Max(1d, contentMaxY - contentMinY);
+            double verticalPadding = (canvas2D == canvas2DProfile) ? 0.015d : 0.02d;
+            Point2D effectiveCorner1 = new Point2D(activeBounds.Corner1.X, contentMinY - (contentHeight * verticalPadding));
+            Point2D effectiveCorner2 = new Point2D(activeBounds.Corner2.X, contentMaxY + (contentHeight * verticalPadding));
+            Point2D effectiveCenter = new Point2D(activeBounds.Center.X, (effectiveCorner1.Y + effectiveCorner2.Y) / 2d);
 
             MatrixTransform baseTransform = DxfUtil.GetScaleWMMatrixTransform(
                 effectiveCorner1,
@@ -508,10 +621,11 @@ namespace WpfMvvmStability.Views
                 X = -canvasWidth / 2d,
                 Y = -canvasHeight / 2d
             });
+            double fitScale = (canvas2D == canvas2DProfile) ? 1.35d : 1.18d;
             transformGroup.Children.Add(new ScaleTransform()
             {
-                ScaleX = scaling,
-                ScaleY = scaling
+                ScaleX = scaling * fitScale,
+                ScaleY = scaling * fitScale
             });
             transformGroup.Children.Add(new TranslateTransform()
             {
@@ -521,21 +635,136 @@ namespace WpfMvvmStability.Views
             transformGroup.Children.Add(new TranslateTransform()
             {
                 X = translation.X * canvasWidth / 2d,
-                Y = -translation.Y * canvasHeight / 2d
+                Y = (-translation.Y * canvasHeight / 2d) + (canvas2D == canvas2DProfile ? canvasHeight * 0.15d : 0)
             });
 
-            //@MT Code added for Ship Profile Image Rotate :START
+            //@MT Code removed for Ship Profile Image Rotate (kept level as requested)
+            /*
             if (canvas2D == canvas2DProfile)
             {
                 transformGroup.Children.Add(new RotateTransform()
                 {
-                    Angle = angle
+                    Angle = angle,
+                    CenterX = canvasWidth / 2d,
+                    CenterY = canvasHeight / 2d
                 });
             }
-            //@MT Code added for Ship Profile Image Rotate :END
+            */
 
             canvas2D.RenderTransform = transformGroup;
 
+        }
+
+        private void btnReset2D_Click(object sender, RoutedEventArgs e)
+        {
+            scaling = 1.0d;
+            translation = new WW.Math.Vector3D(0, 0, 0);
+            UpdateAll2DTransforms();
+        }
+
+        private void Canvas2D_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            double zoomFactor = e.Delta > 0 ? 1.12d : 1d / 1.12d;
+            scaling = Math.Max(0.35d, Math.Min(8d, scaling * zoomFactor));
+            UpdateAll2DTransforms();
+            e.Handled = true;
+        }
+
+        private void Canvas2D_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            active2DCanvas = GetInteractionCanvas(sender);
+            if (active2DCanvas == null)
+            {
+                return;
+            }
+
+            is2DPanning = true;
+            last2DPanPoint = e.GetPosition(active2DCanvas);
+            active2DCanvas.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void Canvas2D_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            is2DPanning = false;
+            if (active2DCanvas != null)
+            {
+                active2DCanvas.ReleaseMouseCapture();
+            }
+            active2DCanvas = null;
+            e.Handled = true;
+        }
+
+        private void Canvas2D_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!is2DPanning || active2DCanvas == null)
+            {
+                return;
+            }
+
+            System.Windows.Point current = e.GetPosition(active2DCanvas);
+            double width = Math.Max(1d, active2DCanvas.ActualWidth);
+            double height = Math.Max(1d, active2DCanvas.ActualHeight);
+            translation.X += (current.X - last2DPanPoint.X) / (width / 2d);
+            translation.Y -= (current.Y - last2DPanPoint.Y) / (height / 2d);
+            last2DPanPoint = current;
+            UpdateAll2DTransforms();
+            e.Handled = true;
+        }
+
+        private void UpdateAll2DTransforms()
+        {
+            UpdateRenderTransform(canvas2DProfile);
+            UpdateRenderTransform(canvas2DPlanA);
+            UpdateRenderTransform(canvas2DPlanB);
+        }
+
+        private Canvas GetInteractionCanvas(object sender)
+        {
+            DependencyObject current = sender as DependencyObject;
+            while (current != null)
+            {
+                if (current == canvas2DProfile) return canvas2DProfile;
+                if (current == canvas2DPlanA) return canvas2DPlanA;
+                if (current == canvas2DPlanB) return canvas2DPlanB;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
+        private void Hook2DInteraction(UIElement element)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.PreviewMouseWheel -= Canvas2D_MouseWheel;
+            element.PreviewMouseLeftButtonDown -= Canvas2D_MouseLeftButtonDown;
+            element.PreviewMouseLeftButtonUp -= Canvas2D_MouseLeftButtonUp;
+            element.PreviewMouseMove -= Canvas2D_MouseMove;
+            element.PreviewMouseWheel += Canvas2D_MouseWheel;
+            element.PreviewMouseLeftButtonDown += Canvas2D_MouseLeftButtonDown;
+            element.PreviewMouseLeftButtonUp += Canvas2D_MouseLeftButtonUp;
+            element.PreviewMouseMove += Canvas2D_MouseMove;
+        }
+
+        private void Show3DLoading(string message = "Loading 3D model...")
+        {
+            if (overlay3DLoading != null)
+            {
+                txt3DLoadingTitle.Text = message;
+                txt3DLoadingHint.Text = "Please wait a few seconds. The model will appear shortly.";
+                overlay3DLoading.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void Hide3DLoading()
+        {
+            if (overlay3DLoading != null)
+            {
+                overlay3DLoading.Visibility = Visibility.Collapsed;
+            }
         }
         /****************************************************************************************************/
        
@@ -709,12 +938,18 @@ namespace WpfMvvmStability.Views
                 int TankId, fsmType;
                 decimal percentfill;
                 bool isVisible;
+                string activeHeader = NormalizedGridHeader;
+                DataGrid activeGrid = sender as DataGrid;
+                if (activeGrid == null || index < 0 || index >= activeGrid.Items.Count || string.IsNullOrEmpty(activeHeader))
+                {
+                    return;
+                }
                 //if (clsGlobVar.FlagDamageCases == false)
                 {
-                    TankId = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["Tank_ID"]);
+                    TankId = Convert.ToInt16((activeGrid.Items[index] as DataRowView)["Tank_ID"]);
                     //isVisible=Convert.ToBoolean(((sender as DataGrid).Items[index] as DataRowView)["IsVisible"]);
 
-                    if (header.Trim() == "VOLUME (CU.M)" || header.Trim() == "PERCENT FILL" || header.Trim() == "S.GRAVITY" || header.Trim() == "MASS(T)" || header.Trim() == "INNAGE(M)" || header.Trim() == "FLOOD TIME(MIN)" || header.Trim() == "FLOOD RATE(TPH)")
+                    if (activeHeader == "VOLUME" || activeHeader == "PERCENT" || activeHeader == "SG" || activeHeader == "MASS" || activeHeader == "INNAGE" || activeHeader == "FLOODTIME" || activeHeader == "FLOODRATE")
                     {
                         decimal volume = 0, sg, weight = 0, innage = 0,FloodRate=0,FloodTime=0;
                         decimal minsounding = 0;
@@ -722,29 +957,33 @@ namespace WpfMvvmStability.Views
                         percentfill = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Percent_Full"]);
                         FloodRate = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FloodRate"]);
                         FloodTime = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FloodTime"]);
+                        if (maxVolume == null || !maxVolume.ContainsKey(TankId))
+                        {
+                            return;
+                        }
                         decimal maxsounding = maxVolume[TankId];
 
-                        if (header.Trim() == "VOLUME (CU.M)")
+                        if (activeHeader == "VOLUME")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
                         }
-                        if (header.Trim() == "PERCENT FILL")
+                        if (activeHeader == "PERCENT")
                         {
                             volume = (percentfill * maxsounding) / 100;
                         }
-                        if (header.Trim() == "S.GRAVITY")
+                        if (activeHeader == "SG")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Volume"]);
                             weight = volume * sg;
                         }
-                        if (header.Trim() == "MASS(T)")
+                        if (activeHeader == "MASS")
                         {
                             volume = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Weight"]) / sg;
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
                         }
 
-                        if (header.Trim() == "Flood Time(min)")
+                        if (activeHeader == "FLOODTIME")
                         {
                             FloodTime = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FloodTime"]);
                             weight = FloodRate * FloodTime / 60;
@@ -758,11 +997,11 @@ namespace WpfMvvmStability.Views
                                 weight=volume*sg;
 
                                 string error1 = "Compartment Fully Flooded After " + Math.Round((weight * 60 / FloodRate),1) + " Minutes";
-                                System.Windows.MessageBox.Show(error1);
+                                ModernMessageBox.Show(error1, "Validation Error", MessageBoxType.Error);
                                 
                             }
                         }
-                        if (header.Trim() == "Flood Rate(TPH)")
+                        if (activeHeader == "FLOODRATE")
                         {
                             FloodRate = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FloodRate"]);
                             weight = FloodRate * FloodTime / 60;
@@ -776,13 +1015,13 @@ namespace WpfMvvmStability.Views
                                 weight = volume * sg;
 
                                 string error2 = "Compartment Fully Flooded After " + Math.Round((weight * 60 / FloodRate),1) + " Minutes";
-                                System.Windows.MessageBox.Show(error2);
+                                ModernMessageBox.Show(error2, "Validation Error", MessageBoxType.Error);
                                 
                             }
                         }
 
 
-                        if (header.Trim() == "Innage(m)")
+                        if (activeHeader == "INNAGE")
                         {
                             volume = GetVolumeFromSounding(TankId, Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["Sounding_Level"]));
                             percentfill = Convert.ToDecimal((volume * 100) / maxsounding);
@@ -809,7 +1048,7 @@ namespace WpfMvvmStability.Views
                         {
                             
                             string error = "Volume should be between " + minsounding + " and " + maxsounding;
-                            System.Windows.MessageBox.Show(error);
+                            ModernMessageBox.Show(error, "Validation Error", MessageBoxType.Error);
                             return;
                         }
                         else
@@ -857,7 +1096,7 @@ namespace WpfMvvmStability.Views
                     //    }
                     //}
 
-                    if (header.Trim() == "FSM(T-M)")
+                    if (activeHeader == "FSM")
                     {
                         decimal fsm;
                         fsm = Convert.ToDecimal(((sender as DataGrid).Items[index] as DataRowView)["FSM"]);
@@ -873,7 +1112,7 @@ namespace WpfMvvmStability.Views
                         }
                     }
 
-                    if (header.Trim() == "Flood Rate(TPH)")
+                    if (activeHeader == "FLOODRATE")
                     {
                         decimal floodRate;
                         floodRate = Convert.ToInt16(((sender as DataGrid).Items[index] as DataRowView)["FloodRate"]);
@@ -931,6 +1170,10 @@ namespace WpfMvvmStability.Views
                 //DataGridRow dataGridRow = FindParent<DataGridRow>(cb);
                 //int index = dataGridRow.GetIndex();
                 DataGrid dataGrid = FindParent<DataGrid>(cb);
+                if (dataGrid == null || index < 0 || index >= dataGrid.Items.Count)
+                {
+                    return;
+                }
                 TankId = Convert.ToInt16((dataGrid.Items[index] as DataRowView)["Tank_ID"]);
                 var comboBox = sender as System.Windows.Controls.ComboBox;
                 var selectedItem = comboBox.SelectedValue;
@@ -1077,7 +1320,7 @@ namespace WpfMvvmStability.Views
                             {
                            // popMessageBox = 1;
                           //  comboBox.SelectedValue = 0;
-                            System.Windows.MessageBox.Show("FIRST RUN INTACT CONDITION THEN DAMAGE");
+                            ModernMessageBox.Show("First run intact condition, then damage.", "Stability Calculation", MessageBoxType.Warning);
                             selectionchangecount = 1;
                             comboBox.SelectedValue = 0;
                             return;
@@ -1088,7 +1331,7 @@ namespace WpfMvvmStability.Views
                         {
                             // popMessageBox = 1;
                             //  comboBox.SelectedValue = 0;
-                            System.Windows.MessageBox.Show("FIRST RUN INTACT CONDITION THEN DAMAGE");
+                            ModernMessageBox.Show("First run intact condition, then damage.", "Stability Calculation", MessageBoxType.Warning);
                             selectionchangecount = 1;
                             comboBox.SelectedValue = 0;
                             return;
@@ -1173,7 +1416,7 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                if ((MessageBox.Show("Are you sure you want to add new Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                if ((ModernMessageBox.Show("Are you sure you want to add a new variable item?", "Please Confirm", MessageBoxType.Warning, MessageBoxButton.YesNo) == MessageBoxResult.Yes))
                 {
                     DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                     string Err = "";
@@ -1183,7 +1426,8 @@ namespace WpfMvvmStability.Views
                     command.CommandType = CommandType.Text;
                     Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
                     Models.BO.clsGlobVar.dtSimulationVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeVariableDetails");
-                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+                    if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                        dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
                 }
 
             }
@@ -1196,9 +1440,9 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                if (Models.BO.clsGlobVar.dtSimulationVariableItems.Rows.Count > 1)
+                if (Models.BO.clsGlobVar.dtSimulationVariableItems != null && Models.BO.clsGlobVar.dtSimulationVariableItems.Rows.Count > 1)
                 {
-                    if ((MessageBox.Show("Are you sure, you want to delete selected Variable Item?", "Please confirm.", MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+                    if ((ModernMessageBox.Show("Are you sure you want to delete the selected variable item?", "Please Confirm", MessageBoxType.Warning, MessageBoxButton.YesNo) == MessageBoxResult.Yes))
                     {
                         DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
                         string Err = "";
@@ -1210,12 +1454,13 @@ namespace WpfMvvmStability.Views
                         command.CommandType = CommandType.Text;
                         Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
                         Models.BO.clsGlobVar.dtSimulationVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeVariableDetails");
-                        dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
                     }
                 }
                 else
                 {
-                    MessageBox.Show("There should be atleast one row in the table");
+                    ModernMessageBox.Show("There should be at least one row in the table.", "Variable Items", MessageBoxType.Warning);
                 }
             }
             catch
@@ -1232,6 +1477,13 @@ namespace WpfMvvmStability.Views
 
         private void btnCalculate_Click(object sender, RoutedEventArgs e)
         {
+            if (!HasSimulationTankVolume())
+            {
+                ResetOutputPanelValues();
+                ModernMessageBox.Show("Please enter at least one tank volume before calculation.", "Stability Calculation", MessageBoxType.Warning);
+                return;
+            }
+
             //int type = Convert.ToInt32(clsGlobVar.dtgetsimulationtype.Rows[0]["type"]);
             //if (type != 0 && CmprItem.Trim() == "GHIJ(ii)")
             //{
@@ -1289,12 +1541,12 @@ namespace WpfMvvmStability.Views
                     //RefreshScreen();
                     if (Models.BO.clsGlobVar.CalculationResult == 0)
                     {
-                        System.Windows.MessageBox.Show("Calculation terminated");
+                        ModernMessageBox.Show("Calculation terminated.", "Stability Calculation", MessageBoxType.Warning);
                        // System.Windows.MessageBox.Show("StabilityP15B calculation succeeded");
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show("Stability calculation succeeded");
+                        ModernMessageBox.Show("Stability calculation succeeded.", "Stability Calculation", MessageBoxType.Success);
                         foreach (Window window in Application.Current.Windows)
                         {
                             if (window.GetType() == typeof(MainWindow))
@@ -1351,56 +1603,53 @@ namespace WpfMvvmStability.Views
             {
                 if (window.GetType() == typeof(MainWindow))
                 {
-                   int type=Convert.ToInt32(clsGlobVar.dtgetsimulationtype.Rows[0]["type"]);
+                    var frame = (window as MainWindow).frameSimulationMode;
+                    if (frame?.Template == null) continue;
+                    
+                    int type=Convert.ToInt32(clsGlobVar.dtgetsimulationtype.Rows[0]["type"]);
+                    var lblType = frame.Template.FindName("lblSimulationStabilityType", frame) as Label;
+                    var lblStatus = frame.Template.FindName("lblSimulationStabilityStatus", frame) as Label;
+                    var btnStability = frame.Template.FindName("btnSimulationModeStability", frame) as Button;
+                    var btnCorrective = frame.Template.FindName("btnSimulationModeCorrectiveAction", frame) as Button;
+                    
                     if (type == 0)
                     {
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityType", (window as MainWindow).frameSimulationMode) as Label).Content = "Intact".ToUpper();
+                        if (lblType != null) lblType.Content = "Intact".ToUpper();
                     }
                     if (type != 0)
                     {
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityType", (window as MainWindow).frameSimulationMode) as Label).Content = "damage".ToUpper();
+                        if (lblType != null) lblType.Content = "damage".ToUpper();
                     }
-                    ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityStatus", (window as MainWindow).frameSimulationMode) as Label).Content = Convert.ToString(clsGlobVar.dtSimulationStabilitySummary.Rows[0]["Stability_Status"]).ToUpper();
+                    if (lblStatus != null) lblStatus.Content = Convert.ToString(clsGlobVar.dtSimulationStabilitySummary.Rows[0]["Stability_Status"]).ToUpper();
 
-                    if (((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityStatus", (window as MainWindow).frameSimulationMode) as Label).Content.ToString() == "OK")
+                    if (lblStatus != null && lblStatus.Content.ToString() == "OK")
                     {
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityStatus", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
+                        lblStatus.Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
                     }
-                    else if (((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityStatus", (window as MainWindow).frameSimulationMode) as Label).Content.ToString() == "NOT OK")
+                    else if (lblStatus != null && lblStatus.Content.ToString() == "NOT OK")
                     {
-                      //  ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityStatus", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
+                      //  lblStatus.Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
                     }
 
-
-                    ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeStability", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = true;
-                    if (Convert.ToString(((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityType", (window as MainWindow).frameSimulationMode) as Label).Content) == "Intact".ToUpper())
+                    if (btnStability != null) btnStability.IsEnabled = true;
+                    if (lblType != null && lblType.Content.ToString() == "Intact".ToUpper())
                     {
-                        //((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeLongitudinal", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeCorrectiveAction", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityType", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
-                        //((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Content = Convert.ToString(clsGlobVar.dtSimulationStabilitySummary.Rows[1]["Stability_Status"]).ToUpper();
-                        //if (((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Content.ToString() == "OK")
-                        //{
-                        //    ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
-                        //}
-                        //else if (((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Content.ToString() == "NOT OK")
-                        //{
-                        //    ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
-                        //}
+                        if (btnCorrective != null) btnCorrective.IsEnabled = false;
+                        if (lblType != null) lblType.Background = new SolidColorBrush(System.Windows.Media.Colors.LawnGreen);
                     }
                     else
                     {
-                        //((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeLongitudinal", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = false;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("btnSimulationModeCorrectiveAction", (window as MainWindow).frameSimulationMode) as Button).IsEnabled = true;
-                        ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationStabilityType", (window as MainWindow).frameSimulationMode) as Label).Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
-                        // ((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).IsEnabled = false;
-                        //((window as MainWindow).frameSimulationMode.Template.FindName("lblSimulationModeLongitudinalResult", (window as MainWindow).frameSimulationMode) as Label).Content = "NA";
+                        if (btnCorrective != null) btnCorrective.IsEnabled = true;
+                        if (lblType != null) lblType.Background = new SolidColorBrush(System.Windows.Media.Colors.Red);
                     }
                 }
             }
-            dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
-            dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
-            dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationCargoTanks != null)
+                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationBallastTanks != null)
+                dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationFreshWaterTanks != null)
+                dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
             dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
             dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
             dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
@@ -1454,8 +1703,16 @@ namespace WpfMvvmStability.Views
             //    }
             //}
             //Models.BO.clsGlobVar.dtSimulationVariableItems = Models.BLL.clsBLL.GetEnttyDBRecs("vsGetSimulationModeVariableDetails");
-            dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
-            dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationWTRegion != null)
+                dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
+
+            // Check if Equillibrium data exists
+            if (Models.BO.clsGlobVar.dtSimulationEquillibriumValues == null || Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows.Count == 0)
+            {
+                return;
+            }
 
             lblDisplacement.Content = Math.Round(Convert.ToDouble(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Displacement"])).ToString();
             //decimal varoutdisp = Convert.ToDecimal(Models.BO.clsGlobVar.dtSimulationEquillibriumValues.Rows[0]["Displacement"]);
@@ -1621,6 +1878,7 @@ namespace WpfMvvmStability.Views
                 //if (Models.BO.clsGlobVar.CalculationResult == 1)
                 {
                     Models.TableModel.SimulationModeData();
+                    Models.TableModel.LoadSimulationHydrostatics();
                     Models.TableModel.SimulationModePercentFill();
                    //Models.TableModel.simulationmodeCorrectiveFill();
 
@@ -1631,6 +1889,33 @@ namespace WpfMvvmStability.Views
             }
         }
         #endregion BackgroundWorker
+        
+        // Tab Control Event Handlers
+        private void tabControl2_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                // Tab selection handled by existing code
+                // DrawHatchProfile/DrawHatchPlan are called elsewhere
+            }
+            catch (Exception ex)
+            {
+                // Handle error
+            }
+        }
+        
+        private void tabControl5_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                // Handle tab selection change for tabControl5
+            }
+            catch (Exception ex)
+            {
+                // Handle error
+            }
+        }
+        
         public string pdfsavename = string.Empty;
         private void btnSaveLoadingCondition_Click(object sender, RoutedEventArgs e)
         {
@@ -1713,7 +1998,10 @@ namespace WpfMvvmStability.Views
 
                     List<FixedItems> listFixedLoads = new List<FixedItems>();
                     FixedItems objDeck1 = new FixedItems();
-                    dt = Models.BO.clsGlobVar.dtSimulationVariableItems;
+                    if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                        dt = Models.BO.clsGlobVar.dtSimulationVariableItems;
+                    else
+                        dt = new DataTable();
 
                     foreach (DataRow dr in dt.Rows)
                     {
@@ -1742,10 +2030,10 @@ namespace WpfMvvmStability.Views
                     Mouse.OverrideCursor = null;
                     if (loadingName != string.Empty)
                     {
-                        System.Windows.MessageBox.Show("Loading Condition Saved Successfully");
+                        ModernMessageBox.Show("Loading condition saved successfully.", "Loading Condition", MessageBoxType.Success);
                     }
                     else
-                    { System.Windows.MessageBox.Show("Loading Condition Saved Without name"); }
+                    { ModernMessageBox.Show("Loading condition saved without a name.", "Loading Condition", MessageBoxType.Warning); }
               
             }
             catch
@@ -1809,14 +2097,19 @@ namespace WpfMvvmStability.Views
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
 
                 Models.TableModel.SimulationModeData();
-                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
-                dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
-                dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
-                dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationCargoTanks != null)
+                    dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationBallastTanks != null)
+                    dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationFreshWaterTanks != null)
+                    dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationFuelOilTanks != null)
+                    dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
                 dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
                 dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
 
-                dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+                if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                    dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
                 Mouse.OverrideCursor = null;
             }
             catch
@@ -1869,13 +2162,11 @@ namespace WpfMvvmStability.Views
                 return;
             }
 
-            // -- Step 1: compute scene bounding box centre (CPU-side, no GPU needed) --
+            // -- Step 1: compute scene bounding box centre --
             var bounds = ViewportExtensions.FindBounds3D(viewPort3d);
 
-            if (!bounds.IsEmpty)
+            if (!bounds.IsEmpty && bounds.SizeX > 0.1) 
             {
-                // Lock rotation/zoom pivot to exact scene centre BEFORE calling ZoomExtents
-                // so that even mid-animation rotation is around the correct point.
                 var centre = new System.Windows.Media.Media3D.Point3D(
                     bounds.X + bounds.SizeX * 0.5,
                     bounds.Y + bounds.SizeY * 0.5,
@@ -1883,23 +2174,25 @@ namespace WpfMvvmStability.Views
                 viewPort3d.FixedRotationPoint        = centre;
                 viewPort3d.FixedRotationPointEnabled = true;
 
-                // -- Step 2: smooth camera fly-in to fit all geometry --
+                // -- Step 2: smooth camera fly-in --
                 viewPort3d.ZoomExtents(animationTime: 400);
             }
             else
             {
-                // Fallback: instant fit so camera.Position/LookDirection are final values,
-                // then derive centre from camera state (LookDirection = target − position).
-                viewPort3d.ZoomExtents(animationTime: 0);
+                // Fallback: derivation from current camera state
                 var cam = viewPort3d.Camera as HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
-                if (cam != null && cam.LookDirection.Length > 0)
+                if (cam != null)
                 {
-                    var centre = new System.Windows.Media.Media3D.Point3D(
-                        cam.Position.X + cam.LookDirection.X,
-                        cam.Position.Y + cam.LookDirection.Y,
-                        cam.Position.Z + cam.LookDirection.Z);
-                    viewPort3d.FixedRotationPoint        = centre;
-                    viewPort3d.FixedRotationPointEnabled = true;
+                    viewPort3d.ZoomExtents(animationTime: 0);
+                    if (cam.LookDirection.Length > 0)
+                    {
+                        var centre = new System.Windows.Media.Media3D.Point3D(
+                            cam.Position.X + cam.LookDirection.X,
+                            cam.Position.Y + cam.LookDirection.Y,
+                            cam.Position.Z + cam.LookDirection.Z);
+                        viewPort3d.FixedRotationPoint        = centre;
+                        viewPort3d.FixedRotationPointEnabled = true;
+                    }
                 }
             }
         }
@@ -1987,9 +2280,16 @@ namespace WpfMvvmStability.Views
 
                     DataRow tankRow = clsGlobVar.dtSimulationModeAllTanks.Rows[tankId - 1];
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
-                    bool isDamaged = tankRow["IsDamaged"].ToString() == Boolean.TrueString ?  true :false;
-                 
-                    DrawHatchDeckPlan(canvas2DPlanB, tankId, percent, kvp.Value.X, kvp.Value.Y, System.Windows.Media.Color.FromArgb(180, 194, 214, 154));
+                    bool isDamaged = tankRow["IsDamaged"].ToString() == Boolean.TrueString;
+                    bool isFaulty = tankRow["IsSensorFaulty"] != DBNull.Value && Convert.ToBoolean(tankRow["IsSensorFaulty"]);
+
+                    System.Windows.Media.Color tankColor = isFaulty
+                        ? System.Windows.Media.Color.FromArgb(255, 255, 120, 0) // Faulty: Vibrant Orange
+                        : isDamaged
+                            ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) // Damaged: Reddish
+                            : System.Windows.Media.Color.FromArgb(180, 194, 214, 154); // Normal: Greenish
+
+                    DrawHatchDeckPlan(canvas2DPlanB, tankId, percent, kvp.Value.X, kvp.Value.Y, tankColor);
                     UpdateRenderTransform(canvas2DPlanB);
                 }
 
@@ -2020,10 +2320,15 @@ namespace WpfMvvmStability.Views
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
                     DataRow tankDamageRow = clsGlobVar.dtSimulationLoadingSummary.Rows[tankId - 1];
                    
-                    bool isDamaged = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString
-                                    ? true : false;
-                    System.Windows.Media.Color tankColor = isDamaged
-                       ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) : System.Windows.Media.Color.FromArgb(180, 194, 214, 154);
+                    bool isDamaged = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString;
+                    bool isFaulty = tankDamageRow["IsSensorFaulty"] != DBNull.Value && Convert.ToBoolean(tankDamageRow["IsSensorFaulty"]);
+
+                    System.Windows.Media.Color tankColor = isFaulty
+                        ? System.Windows.Media.Color.FromArgb(255, 255, 120, 0) // Faulty: Vibrant Orange
+                        : isDamaged
+                            ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) // Damaged: Reddish
+                            : System.Windows.Media.Color.FromArgb(180, 194, 214, 154); // Normal: Greenish
+
                     DrawHatchDeckPlan(canvas2DPlanA, tankId, percent, kvp.Value.X, kvp.Value.Y, tankColor);
                     UpdateRenderTransform(canvas2DPlanA);
                 }
@@ -2065,11 +2370,15 @@ namespace WpfMvvmStability.Views
 
                     decimal percent = Convert.ToDecimal(tankRow["Percent_Full"]);
                     DataRow tankDamageRow = clsGlobVar.dtSimulationLoadingSummary.Rows[tankId - 1];
-                    bool isDamaged  = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString
-                                    ? true : false;
-                    System.Windows.Media.Color tankColor = isDamaged
-                        ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78)
-                        : System.Windows.Media.Color.FromArgb(180, 194, 214, 154);
+                    bool isDamaged = tankDamageRow["IsDamaged"].ToString() == Boolean.TrueString;
+                    bool isFaulty = tankDamageRow["IsSensorFaulty"] != DBNull.Value && Convert.ToBoolean(tankDamageRow["IsSensorFaulty"]);
+
+                    System.Windows.Media.Color tankColor = isFaulty
+                        ? System.Windows.Media.Color.FromArgb(255, 255, 120, 0) // Faulty: Vibrant Orange
+                        : isDamaged
+                            ? System.Windows.Media.Color.FromArgb(255, 218, 97, 78) // Damaged: Reddish
+                            : System.Windows.Media.Color.FromArgb(180, 194, 214, 154); // Normal: Greenish
+
                     DrawHatchProfile(canvas2DProfile, tankId, percent, kvp.Value.X, kvp.Value.Y, tankColor);
                     UpdateRenderTransform(canvas2DProfile);
                     DrawTrimLine();
@@ -2361,8 +2670,9 @@ namespace WpfMvvmStability.Views
         {
             try
             {
+                Show3DLoading();
                 System.Diagnostics.Debug.WriteLine($"Refresh3dNew START - scene3D null? {scene3D == null}, viewport null? {viewPort3d == null}, EffectsManager null? {viewPort3d?.EffectsManager == null}");
-                if (scene3D == null) { System.Diagnostics.Debug.WriteLine("scene3D is NULL - aborting"); return; }
+                if (scene3D == null) { System.Diagnostics.Debug.WriteLine("scene3D is NULL - aborting"); Hide3DLoading(); return; }
                 scene3D.Children.Clear();
 
                 // Build name→path dictionaries once per folder (avoids O(tanks×files) inner loops)
@@ -2487,12 +2797,13 @@ namespace WpfMvvmStability.Views
             }
             catch
             {
+                Hide3DLoading();
             }
             System.Diagnostics.Debug.WriteLine($"Refresh3dNew done - scene3D children count: {scene3D.Children.Count}");
             // Give the renderer one frame to process the newly added geometry,
             // then fit the camera and lock the rotation pivot to the scene centre.
             var zoomTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); FitCameraToScene(); };
+            zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); FitCameraToScene(); Hide3DLoading(); };
             zoomTimer.Start();
             Models.TableModel.Write_Log(" END : Refresh3dNew");
         }
@@ -3669,17 +3980,23 @@ namespace WpfMvvmStability.Views
                 #region Cargo
                 {
                     DataTable cargotank = Models.BO.clsGlobVar.dtSimulationCargoTanks;
-                    DataColumn dc = new DataColumn("Volume");
-                    DataColumn dcStatus = new DataColumn("Status");
-                    dc.DataType = typeof(int);
-                    dcStatus.DataType = typeof(int);
-                    dcStatus.DefaultValue = 0;
-                    dc.DefaultValue = 0;
-                    cargotank.Columns.Remove("Volume");
-                    cargotank.Columns.Remove("Status");
-                    cargotank.Columns.Add(dc);
-                    cargotank.Columns.Add(dcStatus);
-                    dgBallastTanks.ItemsSource = cargotank.DefaultView;
+                    if (cargotank != null)
+                        dgBallastTanks.ItemsSource = null;
+                    if (cargotank != null && cargotank.Rows.Count > 0)
+                    {
+                        DataColumn dc = new DataColumn("Volume");
+                        DataColumn dcStatus = new DataColumn("Status");
+                        dc.DataType = typeof(int);
+                        dcStatus.DataType = typeof(int);
+                        dcStatus.DefaultValue = 0;
+                        dc.DefaultValue = 0;
+                        cargotank.Columns.Remove("Volume");
+                        cargotank.Columns.Remove("Status");
+                        cargotank.Columns.Add(dc);
+                        cargotank.Columns.Add(dcStatus);
+                    }
+                    if (cargotank != null)
+                        dgBallastTanks.ItemsSource = cargotank.DefaultView;
                 }
                 #endregion
                 DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
@@ -3701,7 +4018,7 @@ namespace WpfMvvmStability.Views
                 command.CommandText = query;
                 command.CommandType = CommandType.Text;
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
-                MessageBox.Show("CARGO Tanks Cleared ");
+                ModernMessageBox.Show("Cargo tanks cleared.", "Clear Tanks", MessageBoxType.Success);
             }
             catch //(Exception)
             {
@@ -4207,124 +4524,187 @@ namespace WpfMvvmStability.Views
             expander4.BorderBrush = Brushes.Gray;
         }
 
+        private void ResetOutputPanelValues()
+        {
+            lblGMT.Content = "0.000";
+            lblDisplacement.Content = "0";
+            lblTrim.Content = "0.000";
+            lblHeel.Content = "0.000";
+            lblDraftAP.Content = "0.000";
+            lblDraftFP.Content = "0.000";
+            lblDraftMean.Content = "0.000";
+            lblDraftAftMark.Content = "0.000";
+            lblDraftFwdMark.Content = "0.000";
+            lblPROPELLER.Content = "0.000";
+            lblSONARDOME.Content = "0.000";
+            lblKG.Content = "0.000";
+            lblKGF.Content = "0.000";
+            lblLCG.Content = "0.000";
+            lblFSC.Content = "0.000";
+            lblTPC.Content = "0.000";
+            lblMTC.Content = "0.000";
+        }
+
         private void btnclear_Click(object sender, RoutedEventArgs e)
         {
             #region Cargo
             {
                 DataTable ballasttank = Models.BO.clsGlobVar.dtSimulationCargoTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                ballasttank.Columns.Remove("Volume");
-                ballasttank.Columns.Remove("Status");
-                ballasttank.Columns.Add(dc);
-                ballasttank.Columns.Add(dcStatus);
-                dgCargoTanks.ItemsSource = ballasttank.DefaultView;
+                if (ballasttank != null)
+                    dgCargoTanks.ItemsSource = null;
+                if (ballasttank != null && ballasttank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    ballasttank.Columns.Remove("Volume");
+                    ballasttank.Columns.Remove("Status");
+                    ballasttank.Columns.Add(dc);
+                    ballasttank.Columns.Add(dcStatus);
+                }
+                if (ballasttank != null)
+                    dgCargoTanks.ItemsSource = ballasttank.DefaultView;
             }
             #endregion
 
             #region Ballast
             {
                 DataTable ballasttank = Models.BO.clsGlobVar.dtSimulationBallastTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                ballasttank.Columns.Remove("Volume");
-                ballasttank.Columns.Remove("Status");
-                ballasttank.Columns.Add(dc);
-                ballasttank.Columns.Add(dcStatus);
-                dgBallastTanks.ItemsSource = ballasttank.DefaultView;
+                if (ballasttank != null)
+                    dgBallastTanks.ItemsSource = null;
+                if (ballasttank != null && ballasttank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    ballasttank.Columns.Remove("Volume");
+                    ballasttank.Columns.Remove("Status");
+                    ballasttank.Columns.Add(dc);
+                    ballasttank.Columns.Add(dcStatus);
+                }
+                if (ballasttank != null)
+                    dgBallastTanks.ItemsSource = ballasttank.DefaultView;
             }
             #endregion
 
             #region FOTank
             {
                 DataTable FOtank = Models.BO.clsGlobVar.dtSimulationFuelOilTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                FOtank.Columns.Remove("Volume");
-                FOtank.Columns.Remove("Status");
-                FOtank.Columns.Add(dc);
-                FOtank.Columns.Add(dcStatus);
-                dgFuelOilTanks.ItemsSource = FOtank.DefaultView;
+                if (FOtank != null)
+                    dgFuelOilTanks.ItemsSource = null;
+                if (FOtank != null && FOtank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    FOtank.Columns.Remove("Volume");
+                    FOtank.Columns.Remove("Status");
+                    FOtank.Columns.Add(dc);
+                    FOtank.Columns.Add(dcStatus);
+                }
+                if (FOtank != null)
+                    dgFuelOilTanks.ItemsSource = FOtank.DefaultView;
             }
             #endregion
 
             #region FWTank
             {
                 DataTable FWtank = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                FWtank.Columns.Remove("Volume");
-                FWtank.Columns.Remove("Status");
-                FWtank.Columns.Add(dc);
-                FWtank.Columns.Add(dcStatus);
-                dgFreshWaterTanks.ItemsSource = FWtank.DefaultView;
+                if (FWtank != null)
+                    dgFreshWaterTanks.ItemsSource = null;
+                if (FWtank != null && FWtank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    FWtank.Columns.Remove("Volume");
+                    FWtank.Columns.Remove("Status");
+                    FWtank.Columns.Add(dc);
+                    FWtank.Columns.Add(dcStatus);
+                }
+                if (FWtank != null)
+                    dgFreshWaterTanks.ItemsSource = FWtank.DefaultView;
             }
             #endregion
 
             #region MiscTank
             {
                 DataTable Misctank = Models.BO.clsGlobVar.dtSimulationMiscTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                Misctank.Columns.Remove("Volume");
-                Misctank.Columns.Remove("Status");
-                Misctank.Columns.Add(dc);
-                Misctank.Columns.Add(dcStatus);
-                dgMiscTanks.ItemsSource = Misctank.DefaultView;
+                if (Misctank != null)
+                    dgMiscTanks.ItemsSource = null;
+                if (Misctank != null && Misctank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    Misctank.Columns.Remove("Volume");
+                    Misctank.Columns.Remove("Status");
+                    Misctank.Columns.Add(dc);
+                    Misctank.Columns.Add(dcStatus);
+                }
+                if (Misctank != null)
+                    dgMiscTanks.ItemsSource = Misctank.DefaultView;
             }
             #endregion
 
             #region Cmp
             {
                 DataTable cmp = Models.BO.clsGlobVar.dtSimulationCompartments;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                cmp.Columns.Remove("Volume");
-                cmp.Columns.Remove("Status");
-                cmp.Columns.Add(dc);
-                cmp.Columns.Add(dcStatus);
-                dgCompartments.ItemsSource = cmp.DefaultView;
+                if (cmp != null)
+                    dgCompartments.ItemsSource = null;
+                if (cmp != null && cmp.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    cmp.Columns.Remove("Volume");
+                    cmp.Columns.Remove("Status");
+                    cmp.Columns.Add(dc);
+                    cmp.Columns.Add(dcStatus);
+                }
+                if (cmp != null)
+                    dgCompartments.ItemsSource = cmp.DefaultView;
             }
             #endregion
 
             #region WTRegion
             {
                 DataTable WTR = Models.BO.clsGlobVar.dtSimulationWTRegion;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                WTR.Columns.Remove("Volume");
-                WTR.Columns.Remove("Status");
-                WTR.Columns.Add(dc);
-                WTR.Columns.Add(dcStatus);
-                dgWTRegion.ItemsSource = WTR.DefaultView;
+                if (WTR != null)
+                    dgWTRegion.ItemsSource = null;
+                if (WTR != null && WTR.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    WTR.Columns.Remove("Volume");
+                    WTR.Columns.Remove("Status");
+                    WTR.Columns.Add(dc);
+                    WTR.Columns.Add(dcStatus);
+                }
+                if (WTR != null)
+                    dgWTRegion.ItemsSource = WTR.DefaultView;
             }
             #endregion
 
@@ -4334,7 +4714,8 @@ namespace WpfMvvmStability.Views
             command.CommandText = query;
             command.CommandType = CommandType.Text;
             Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
-            MessageBox.Show(" All Data Cleared ");
+            ResetOutputPanelValues();
+            ModernMessageBox.Show("All loading and output panel values cleared.", "Clear", MessageBoxType.Success);
         }
 
         private void dgBallastTanks_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
@@ -4601,14 +4982,22 @@ namespace WpfMvvmStability.Views
 
         public void LoadingFixedSave()
         {
-            dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
-            dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
-            dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
-            dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
-            dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
-            dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
-            dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
-            dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationCargoTanks != null)
+                dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationCargoTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationBallastTanks != null)
+                dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationBallastTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationFreshWaterTanks != null)
+                dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationFuelOilTanks != null)
+                dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationFuelOilTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationMiscTanks != null)
+                dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtSimulationMiscTanks.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationCompartments != null)
+                dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtSimulationCompartments.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationVariableItems != null)
+                dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtSimulationVariableItems.DefaultView;
+            if (Models.BO.clsGlobVar.dtSimulationWTRegion != null)
+                dgWTRegion.ItemsSource = Models.BO.clsGlobVar.dtSimulationWTRegion.DefaultView;
         }
 
         private void dgVariableItems_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -4651,17 +5040,23 @@ namespace WpfMvvmStability.Views
                  #region Ballast
                 {
                     DataTable ballasttank = Models.BO.clsGlobVar.dtSimulationBallastTanks;
-                    DataColumn dc = new DataColumn("Volume");
-                    DataColumn dcStatus = new DataColumn("Status");
-                    dc.DataType = typeof(int);
-                    dcStatus.DataType = typeof(int);
-                    dcStatus.DefaultValue = 0;
-                    dc.DefaultValue = 0;
-                    ballasttank.Columns.Remove("Volume");
-                    ballasttank.Columns.Remove("Status");
-                    ballasttank.Columns.Add(dc);
-                    ballasttank.Columns.Add(dcStatus);
-                    dgBallastTanks.ItemsSource = ballasttank.DefaultView;
+                    if (ballasttank != null)
+                        dgBallastTanks.ItemsSource = null;
+                    if (ballasttank != null && ballasttank.Rows.Count > 0)
+                    {
+                        DataColumn dc = new DataColumn("Volume");
+                        DataColumn dcStatus = new DataColumn("Status");
+                        dc.DataType = typeof(int);
+                        dcStatus.DataType = typeof(int);
+                        dcStatus.DefaultValue = 0;
+                        dc.DefaultValue = 0;
+                        ballasttank.Columns.Remove("Volume");
+                        ballasttank.Columns.Remove("Status");
+                        ballasttank.Columns.Add(dc);
+                        ballasttank.Columns.Add(dcStatus);
+                    }
+                    if (ballasttank != null)
+                        dgBallastTanks.ItemsSource = ballasttank.DefaultView;
                 }
                 #endregion
                 DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
@@ -4683,7 +5078,7 @@ namespace WpfMvvmStability.Views
                 command.CommandText = query;
                 command.CommandType = CommandType.Text;
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
-                MessageBox.Show("Ballast Tanks Cleared ");
+                ModernMessageBox.Show("Ballast tanks cleared.", "Clear Tanks", MessageBoxType.Success);
             }
             catch //(Exception)
             {
@@ -4699,17 +5094,23 @@ namespace WpfMvvmStability.Views
                 #region FOTank
                 {
                     DataTable FOtank = Models.BO.clsGlobVar.dtSimulationFuelOilTanks;
-                    DataColumn dc = new DataColumn("Volume");
-                    DataColumn dcStatus = new DataColumn("Status");
-                    dc.DataType = typeof(int);
-                    dcStatus.DataType = typeof(int);
-                    dcStatus.DefaultValue = 0;
-                    dc.DefaultValue = 0;
-                    FOtank.Columns.Remove("Volume");
-                    FOtank.Columns.Remove("Status");
-                    FOtank.Columns.Add(dc);
-                    FOtank.Columns.Add(dcStatus);
-                    dgFuelOilTanks.ItemsSource = FOtank.DefaultView;
+                    if (FOtank != null)
+                        dgFuelOilTanks.ItemsSource = null;
+                    if (FOtank != null && FOtank.Rows.Count > 0)
+                    {
+                        DataColumn dc = new DataColumn("Volume");
+                        DataColumn dcStatus = new DataColumn("Status");
+                        dc.DataType = typeof(int);
+                        dcStatus.DataType = typeof(int);
+                        dcStatus.DefaultValue = 0;
+                        dc.DefaultValue = 0;
+                        FOtank.Columns.Remove("Volume");
+                        FOtank.Columns.Remove("Status");
+                        FOtank.Columns.Add(dc);
+                        FOtank.Columns.Add(dcStatus);
+                    }
+                    if (FOtank != null)
+                        dgFuelOilTanks.ItemsSource = FOtank.DefaultView;
                 }
                 #endregion
 
@@ -4732,7 +5133,7 @@ namespace WpfMvvmStability.Views
                 command.CommandText = query;
                 command.CommandType = CommandType.Text;
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
-                MessageBox.Show("Fuel Oil Tanks Cleared ");
+                ModernMessageBox.Show("Fuel oil tanks cleared.", "Clear Tanks", MessageBoxType.Success);
             }
             catch //(Exception)
             {
@@ -4748,17 +5149,23 @@ namespace WpfMvvmStability.Views
  #region FWTank
             {
                 DataTable FWtank = Models.BO.clsGlobVar.dtSimulationFreshWaterTanks;
-                DataColumn dc = new DataColumn("Volume");
-                DataColumn dcStatus = new DataColumn("Status");
-                dc.DataType = typeof(int);
-                dcStatus.DataType = typeof(int);
-                dcStatus.DefaultValue = 0;
-                dc.DefaultValue = 0;
-                FWtank.Columns.Remove("Volume");
-                FWtank.Columns.Remove("Status");
-                FWtank.Columns.Add(dc);
-                FWtank.Columns.Add(dcStatus);
-                dgFreshWaterTanks.ItemsSource = FWtank.DefaultView;
+                if (FWtank != null)
+                    dgFreshWaterTanks.ItemsSource = null;
+                if (FWtank != null && FWtank.Rows.Count > 0)
+                {
+                    DataColumn dc = new DataColumn("Volume");
+                    DataColumn dcStatus = new DataColumn("Status");
+                    dc.DataType = typeof(int);
+                    dcStatus.DataType = typeof(int);
+                    dcStatus.DefaultValue = 0;
+                    dc.DefaultValue = 0;
+                    FWtank.Columns.Remove("Volume");
+                    FWtank.Columns.Remove("Status");
+                    FWtank.Columns.Add(dc);
+                    FWtank.Columns.Add(dcStatus);
+                }
+                if (FWtank != null)
+                    dgFreshWaterTanks.ItemsSource = FWtank.DefaultView;
             }
             #endregion
 
@@ -4782,7 +5189,7 @@ namespace WpfMvvmStability.Views
             command.CommandType = CommandType.Text;
             Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
 
-            MessageBox.Show("Fresh Water Tanks Cleared ");
+            ModernMessageBox.Show("Fresh water tanks cleared.", "Clear Tanks", MessageBoxType.Success);
             }
             catch //(Exception)
             {
@@ -4798,17 +5205,23 @@ namespace WpfMvvmStability.Views
                 #region MiscTank
                 {
                     DataTable Misctank = Models.BO.clsGlobVar.dtSimulationMiscTanks;
-                    DataColumn dc = new DataColumn("Volume");
-                    DataColumn dcStatus = new DataColumn("Status");
-                    dc.DataType = typeof(int);
-                    dcStatus.DataType = typeof(int);
-                    dcStatus.DefaultValue = 0;
-                    dc.DefaultValue = 0;
-                    Misctank.Columns.Remove("Volume");
-                    Misctank.Columns.Remove("Status");
-                    Misctank.Columns.Add(dc);
-                    Misctank.Columns.Add(dcStatus);
-                    dgMiscTanks.ItemsSource = Misctank.DefaultView;
+                    if (Misctank != null)
+                        dgMiscTanks.ItemsSource = null;
+                    if (Misctank != null && Misctank.Rows.Count > 0)
+                    {
+                        DataColumn dc = new DataColumn("Volume");
+                        DataColumn dcStatus = new DataColumn("Status");
+                        dc.DataType = typeof(int);
+                        dcStatus.DataType = typeof(int);
+                        dcStatus.DefaultValue = 0;
+                        dc.DefaultValue = 0;
+                        Misctank.Columns.Remove("Volume");
+                        Misctank.Columns.Remove("Status");
+                        Misctank.Columns.Add(dc);
+                        Misctank.Columns.Add(dcStatus);
+                    }
+                    if (Misctank != null)
+                        dgMiscTanks.ItemsSource = Misctank.DefaultView;
                 }
                 #endregion
 
@@ -4834,7 +5247,7 @@ namespace WpfMvvmStability.Views
                 command.CommandText = query;
                 command.CommandType = CommandType.Text;
                 Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
-                MessageBox.Show("Miscellaneous Tanks Cleared ");
+                ModernMessageBox.Show("Miscellaneous tanks cleared.", "Clear Tanks", MessageBoxType.Success);
             }
             catch //(Exception)
             {

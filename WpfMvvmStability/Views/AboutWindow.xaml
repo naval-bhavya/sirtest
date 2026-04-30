@@ -1,22 +1,138 @@
 ﻿<Window x:Class="WpfMvvmStability.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="About Stability Software" Height="183" Width="238" ResizeMode="NoResize" Topmost="True" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" FontFamily="Calibri" FontSize="14" Background="#FFBEBEBE">
-    <Window.Resources>
-        
-    </Window.Resources>
-    <Grid>
-        <GroupBox Header="Stability Software" Height="144" HorizontalAlignment="Left" Name="groupBox1" VerticalAlignment="Top" Width="216" IsEnabled="True" Background="#FF727272" BorderBrush="#FF727272">
-            <Grid>
-                <WrapPanel Height="88" HorizontalAlignment="Left" Margin="4,0,0,0" Name="wrapPanel1" VerticalAlignment="Top" Width="200">
-                    <Label Content="Version" Height="28" Name="label1" Width="81" />
-                    <Label Content="01" Height="28" Name="label2" Width="97" />
-                    <Label Content="Dated" Height="28" Name="label3" Width="81" />
-                    <Label Content="18-Jan-2017" Height="28" Name="label4" Width="97" />
-                    <Label Content="Framework" Height="28" Name="label5" Width="81" />
-                    <Label Content="Microsoft .Net 4.0" Height="28" Name="label6" Width="113" />
-                </WrapPanel>
-            </Grid>
-        </GroupBox>
-    </Grid>
+        Title="About Stability Software" Height="470" Width="560" 
+        ResizeMode="NoResize" Topmost="True" 
+        WindowStartupLocation="CenterScreen" 
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent"
+        FontFamily="Segoe UI">
+    <Border Background="White" CornerRadius="12" BorderBrush="#E5E7EB" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="50"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header with Gradient -->
+            <Border Grid.Row="0" CornerRadius="12,12,0,0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#2563EB" Offset="0"/>
+                        <GradientStop Color="#1E40AF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Margin="25,0,0,0">
+                        <TextBlock Text="Stability Software" 
+                                   Foreground="White" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="Marine Stability Assessment System" 
+                                   Foreground="#BFDBFE" FontSize="12" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Button Content="X" Width="35" Height="35" 
+                            Background="Transparent" Foreground="White"
+                            FontSize="18" FontWeight="Bold" Cursor="Hand"
+                            HorizontalAlignment="Right" Margin="0,0,15,0"
+                            Click="Button_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="border" Background="Transparent" CornerRadius="17">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="border" Property="Background" Value="#DC2626"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+            </Border>
+            
+            <!-- Content -->
+            <StackPanel Grid.Row="1" Margin="30,20,30,20">
+                <!-- Version Info -->
+                <Border Background="#F9FAFB" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Border Grid.Column="0" Background="#2563EB" 
+                                CornerRadius="30" Width="50" Height="50"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="V" Foreground="White" FontSize="22" FontWeight="Bold"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
+                            <TextBlock Text="Version 01" 
+                                       Foreground="#1F2937" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Build 2024.1" 
+                                       Foreground="#6B7280" FontSize="12" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                
+                <!-- Date Info -->
+                <Border Background="#F9FAFB" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Border Grid.Column="0" Background="#2563EB" 
+                                CornerRadius="30" Width="50" Height="50"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="D" Foreground="White" FontSize="22" FontWeight="Bold"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
+                            <TextBlock Text="Release Date" 
+                                       Foreground="#1F2937" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="18-Jan-2017" 
+                                       Foreground="#6B7280" FontSize="12" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                
+                <!-- Framework Info -->
+                <Border Background="#F9FAFB" CornerRadius="8" Padding="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Border Grid.Column="0" Background="#2563EB" 
+                                CornerRadius="30" Width="50" Height="50"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="F" Foreground="White" FontSize="22" FontWeight="Bold"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
+                            <TextBlock Text="Framework" 
+                                       Foreground="#1F2937" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Microsoft .NET Framework 4.8" 
+                                       Foreground="#6B7280" FontSize="12" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+            
+            <!-- Footer -->
+            <Border Grid.Row="2" Background="#F9FAFB" 
+                    CornerRadius="0,0,12,12" Padding="20">
+                <TextBlock Text="© 2026 NavalArch Group. All rights reserved." 
+                           Foreground="#6B7280" FontSize="11"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
+    </Border>
 </Window>

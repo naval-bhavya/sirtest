@@ -37,7 +37,7 @@ namespace WpfMvvmStability.Views
                 int res = Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
                 if (res > 0)
                 {
-                    MessageBox.Show("Records Updated Successfully");
+                    ModernMessageBox.Show("Records updated successfully.", "Wind Speed Settings", MessageBoxType.Success);
                 }
             }
             else
@@ -50,7 +50,7 @@ namespace WpfMvvmStability.Views
                 int res = Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, Err);
                 if (res > 0)
                 {
-                    MessageBox.Show("Records Updated Successfully");
+                    ModernMessageBox.Show("Records updated successfully.", "Wind Speed Settings", MessageBoxType.Success);
                 }
             }
         }

@@ -43,6 +43,23 @@ namespace WpfMvvmStability.Views
             radioButtonTCP.IsChecked = true;
             instances();
         }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+        }
+
+        private void Backdrop_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+        }
+
+        private void DialogRoot_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+        }
+
         private void instances()
         {
             try
@@ -248,11 +265,12 @@ namespace WpfMvvmStability.Views
 
                 listBoxSqlDatabases.Items.Clear();
 
-
-                while (reader.Read())
+                if (reader.HasRows)
                 {
-
-                    listBoxSqlDatabases.Items.Add(reader[0].ToString());
+                    while (reader.Read())
+                    {
+                        listBoxSqlDatabases.Items.Add(reader[0].ToString());
+                    }
                 }
 
                 conn.Close();

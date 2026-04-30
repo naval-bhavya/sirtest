@@ -1,0 +1,169 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Modern Dialog Colors -->
+    <SolidColorBrush x:Key="DialogBackground" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="DialogHeaderBackground" Color="#2563EB"/>
+    <SolidColorBrush x:Key="DialogHeaderText" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="DialogBorder" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="DialogTextPrimary" Color="#1F2937"/>
+    <SolidColorBrush x:Key="DialogTextSecondary" Color="#6B7280"/>
+    <SolidColorBrush x:Key="DialogInputBackground" Color="#F9FAFB"/>
+    <SolidColorBrush x:Key="DialogInputBorder" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="DialogButtonPrimary" Color="#2563EB"/>
+    <SolidColorBrush x:Key="DialogButtonPrimaryHover" Color="#1D4ED8"/>
+    <SolidColorBrush x:Key="DialogButtonSecondary" Color="#6B7280"/>
+    <SolidColorBrush x:Key="DialogButtonSecondaryHover" Color="#4B5563"/>
+    
+    <!-- Modern Dialog Window Style -->
+    <Style x:Key="ModernDialogStyle" TargetType="Window">
+        <Setter Property="WindowStyle" Value="None"/>
+        <Setter Property="AllowsTransparency" Value="True"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="SizeToContent" Value="WidthAndHeight"/>
+        <Setter Property="WindowStartupLocation" Value="CenterScreen"/>
+    </Style>
+    
+    <!-- Dialog Header Style -->
+    <Style x:Key="DialogHeaderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource DialogHeaderBackground}"/>
+        <Setter Property="Height" Value="50"/>
+        <Setter Property="CornerRadius" Value="8,8,0,0"/>
+    </Style>
+    
+    <Style x:Key="DialogHeaderTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource DialogHeaderText}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="20,0,0,0"/>
+    </Style>
+    
+    <!-- Close Button Style -->
+    <Style x:Key="DialogCloseButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource DialogHeaderText}"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="15">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#DC2626"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Modern TextBox Style -->
+    <Style x:Key="ModernDialogTextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="{StaticResource DialogInputBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource DialogInputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{StaticResource DialogTextPrimary}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            CornerRadius="6">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="5,0,5,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource DialogButtonPrimary}"/>
+                            <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Modern Button Styles -->
+    <Style x:Key="ModernDialogButtonPrimary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource DialogButtonPrimary}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" 
+                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{StaticResource DialogButtonPrimaryHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Background" Value="#9CA3AF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Style x:Key="ModernDialogButtonSecondary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource DialogButtonSecondary}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" 
+                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{StaticResource DialogButtonSecondaryHover}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Dialog Content Panel Style -->
+    <Style x:Key="DialogContentPanel" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource DialogBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource DialogBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="Margin" Value="10"/>
+    </Style>
+    
+    <!-- Label Style -->
+    <Style x:Key="ModernDialogLabel" TargetType="Label">
+        <Setter Property="Foreground" Value="{StaticResource DialogTextPrimary}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    
+</ResourceDictionary>

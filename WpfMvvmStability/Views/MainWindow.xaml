@@ -11,34 +11,33 @@
         xmlns:modelView="clr-namespace:WpfMvvmStability.Views" 
    
     Title="" WindowStartupLocation="CenterScreen" Name="MainWin" 
-    ResizeMode="CanMinimize" WindowStyle="SingleBorderWindow" Topmost="False" 
+    ResizeMode="CanResizeWithGrip" WindowStyle="SingleBorderWindow" Topmost="False" 
     xmlns:my="clr-namespace:WpfMvvmStability" 
-    BorderThickness="0" SnapsToDevicePixels="True" FontFamily="Calibri"  
-    WindowState="Normal" Loaded="Main_Loaded" Height="870" Width="1300" 
-       
-    Icon="/Stability;component/logo.ico" Background="#F0F2F5">
+    BorderThickness="0" SnapsToDevicePixels="True" FontFamily="Segoe UI"  
+    WindowState="Maximized" Loaded="Main_Loaded" MinHeight="870" MinWidth="1300" 
+    Icon="/Stability;component/logo.ico" Background="{DynamicResource WindowBackgroundBrush}">
 
     <Window.Resources>
 
-        <!-- ================= LIGHT BLUE THEME PALETTE ================= -->
+        <!-- ================= PROFESSIONAL NAVY THEME PALETTE ================= -->
 
         <!-- Primary -->
-        <Color x:Key="PrimaryColor">#1890FF</Color>
-        <Color x:Key="PrimaryLightColor">#40A9FF</Color>
-        <Color x:Key="PrimaryDarkColor">#096DD9</Color>
-        <Color x:Key="PrimaryBgColor">#E6F7FF</Color>
-        <Color x:Key="PrimaryBorderColor">#91D5FF</Color>
+        <Color x:Key="PrimaryColor">#1F48FF</Color>
+        <Color x:Key="PrimaryLightColor">#4D6BFF</Color>
+        <Color x:Key="PrimaryDarkColor">#030032</Color>
+        <Color x:Key="PrimaryBgColor">#ECF1FF</Color>
+        <Color x:Key="PrimaryBorderColor">#9AB0FF</Color>
 
         <!-- Neutral / Background -->
-        <Color x:Key="PageBgColor">#F0F2F5</Color>
+        <Color x:Key="PageBgColor">#F4F7FF</Color>
         <Color x:Key="CardBgColor">#FFFFFF</Color>
-        <Color x:Key="BorderColor">#E0E0E0</Color>
-        <Color x:Key="DividerColor">#D9D9D9</Color>
+        <Color x:Key="BorderColor">#D8E2FF</Color>
+        <Color x:Key="DividerColor">#C4D0F8</Color>
 
         <!-- Text -->
-        <Color x:Key="TextPrimaryColor">#333333</Color>
-        <Color x:Key="TextSecondaryColor">#555555</Color>
-        <Color x:Key="TextDisabledColor">#999999</Color>
+        <Color x:Key="TextPrimaryColor">#030032</Color>
+        <Color x:Key="TextSecondaryColor">#526184</Color>
+        <Color x:Key="TextDisabledColor">#96A4C5</Color>
 
         <!-- Success / Danger / Warning -->
         <Color x:Key="SuccessColor">#52C41A</Color>
@@ -68,6 +67,162 @@
         <SolidColorBrush x:Key="DangerBgBrush" Color="{StaticResource DangerBgColor}"/>
         <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
         <SolidColorBrush x:Key="WarningBgBrush" Color="{StaticResource WarningBgColor}"/>
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F4F7FF"/>
+        <SolidColorBrush x:Key="ShellBackgroundBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#0D125A"/>
+        <SolidColorBrush x:Key="ShellBorderBrush" Color="#233A96"/>
+        <SolidColorBrush x:Key="ShellMutedBrush" Color="#A8B8EA"/>
+        <SolidColorBrush x:Key="TextOnShellBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MenuPopupBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MenuPopupBorderBrush" Color="#D8E2FF"/>
+        <SolidColorBrush x:Key="MenuPopupHoverBrush" Color="#EDF2FF"/>
+        <SolidColorBrush x:Key="MenuPopupTextBrush" Color="#1E293B"/>
+        <SolidColorBrush x:Key="MenuPopupSelectedTextBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="InputForegroundBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="InputBorderBrush" Color="#1F48FF"/>
+        <SolidColorBrush x:Key="TabIdleBrush" Color="#EAF0FF"/>
+        <SolidColorBrush x:Key="TabHoverBrush" Color="#F7F9FF"/>
+        <SolidColorBrush x:Key="TabSelectedBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TabBorderBrush" Color="#C7D4FF"/>
+        <SolidColorBrush x:Key="FrameChromeBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="FrameContentBorderBrush" Color="#0D1663"/>
+        <SolidColorBrush x:Key="NavIdleBackgroundBrush" Color="#1F48FF"/>
+        <SolidColorBrush x:Key="NavIdleForegroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="NavIdleBorderBrush" Color="#6E8BFF"/>
+        <SolidColorBrush x:Key="NavSelectedBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="NavSelectedForegroundBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="NavSelectedBorderBrush" Color="#1F48FF"/>
+        <SolidColorBrush x:Key="ThemeActionBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeActionForegroundBrush" Color="#030032"/>
+        <SolidColorBrush x:Key="ThemeActionBorderBrush" Color="#6E8BFF"/>
+
+        <Style x:Key="ModernMenuHeader" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource TextOnShellBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="4,4,0,4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid>
+                            <Border x:Name="HeaderBorder"
+                                    Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}"
+                                    CornerRadius="0">
+                                <Grid>
+                                    <ContentPresenter x:Name="HeaderHost"
+                                                      ContentSource="Header"
+                                                      RecognizesAccessKey="True"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                    <Border x:Name="HeaderAccent"
+                                            Height="2"
+                                            VerticalAlignment="Bottom"
+                                            HorizontalAlignment="Stretch"
+                                            Background="Transparent"
+                                            Margin="4,0,4,-5"/>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   HorizontalOffset="0"
+                                   VerticalOffset="8"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   PopupAnimation="Fade">
+                                <Border Background="{StaticResource MenuPopupBrush}"
+                                        BorderBrush="{StaticResource MenuPopupBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="4"
+                                        MinWidth="220">
+                                    <Border.Effect>
+                                        <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.14" Color="Black"/>
+                                    </Border.Effect>
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource ShellBorderBrush}"/>
+                                <Setter TargetName="HeaderAccent" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource ShellBorderBrush}"/>
+                                <Setter TargetName="HeaderAccent" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource ShellBorderBrush}"/>
+                                <Setter TargetName="HeaderAccent" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernSubMenuItem" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuPopupTextBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header"
+                                              RecognizesAccessKey="True"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuPopupHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource PrimaryBgBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource PrimaryBgBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernSeparator" TargetType="Separator">
+            <Setter Property="Margin" Value="10,8"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="{StaticResource DividerBrush}"/>
+        </Style>
 
         <!-- ================= MODERN STYLES ================= -->
 
@@ -81,16 +236,20 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Border" 
-                                Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="4" 
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
                                 Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -98,6 +257,14 @@
                                 <Setter Property="Background" TargetName="Border" Value="{StaticResource PrimaryBgBrush}"/>
                                 <Setter Property="BorderBrush" TargetName="Border" Value="{StaticResource PrimaryBrush}"/>
                                 <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Border" Property="Opacity" Value="0.95"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5"/>
@@ -133,6 +300,242 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="NavActionButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource NavIdleBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource NavIdleForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource NavIdleBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextOnShellBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="Border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource NavSelectedBackgroundBrush}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource NavSelectedBorderBrush}"/>
+                                <Setter TargetName="Border" Property="BorderThickness" Value="1"/>
+                                <Setter Property="Foreground" Value="{StaticResource NavSelectedForegroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemeModeButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ThemeActionBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ThemeActionForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ThemeActionBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextOnShellBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Foreground" Value="{StaticResource TextOnShellBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MenuComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource InputBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource InputForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Padding" Value="10,7"/>
+                        <Setter Property="FontSize" Value="13"/>
+                        <Setter Property="FontWeight" Value="Medium"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="ItemBorder"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="3"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsHighlighted" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuPopupHoverBrush}"/>
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource PrimaryBgBrush}"/>
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="OuterBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="40"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Margin="12,0,0,0">
+                                        <ContentPresenter x:Name="SelectionHost"
+                                                          VerticalAlignment="Center"
+                                                          HorizontalAlignment="Left"
+                                                          Content="{TemplateBinding SelectionBoxItem}"
+                                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                        <TextBlock x:Name="EmptyText"
+                                                   Text="No data available"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextDisabledBrush}"
+                                                   Visibility="Collapsed"/>
+                                    </Grid>
+                                    <Border Grid.Column="1" Background="Transparent">
+                                        <Path Width="10"
+                                              Height="6"
+                                              Stretch="Fill"
+                                              Fill="{StaticResource PrimaryBrush}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Data="M 0 0 L 10 0 L 5 6 Z"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PopupAnimation="Fade">
+                                <Border Margin="0,4,0,0"
+                                        Background="{StaticResource MenuPopupBrush}"
+                                        BorderBrush="{StaticResource MenuPopupBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <Grid MinWidth="220">
+                                        <ScrollViewer Margin="2" SnapsToDevicePixels="True"
+                                                      VerticalScrollBarVisibility="Auto">
+                                            <StackPanel IsItemsHost="True"/>
+                                        </ScrollViewer>
+                                        <TextBlock x:Name="PopupEmptyText"
+                                                   Text="No data available"
+                                                   Margin="12,10"
+                                                   Foreground="{StaticResource TextDisabledBrush}"
+                                                   Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{StaticResource PrimaryLightBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="SelectionHost" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="EmptyText" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="PopupEmptyText" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="True">
+                                <Setter TargetName="SelectionHost" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="EmptyText" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="PopupEmptyText" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- 2. Label Styles -->
         <Style TargetType="Label" x:Key="StatusLabel">
             <Setter Property="FontSize" Value="12"/>
@@ -146,18 +549,18 @@
         <!-- 3. TabItem Style -->
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border Name="Border" 
-                                Background="{StaticResource BorderBrush}" 
+                                Background="#DCE5F3" 
                                 BorderThickness="0" 
-                                Margin="0,0,2,0" 
-                                CornerRadius="4,4,0,0"
-                                Height="35"
-                                Width="200">
+                                Margin="0,0,8,0" 
+                                CornerRadius="2,2,0,0"
+                                Height="42"
+                                MinWidth="180">
                             <ContentPresenter x:Name="ContentSite" 
                                               VerticalAlignment="Center" 
                                               HorizontalAlignment="Center"
@@ -170,7 +573,7 @@
                                 <Setter Property="FontWeight" Value="Bold"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="False">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DividerBrush}"/>
+                                <Setter TargetName="Border" Property="Background" Value="#DCE5F3"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -183,7 +586,7 @@
         <!-- Top Level Menu Item Style (The Bar) -->
         <Style x:Key="MenuHeaderStyle" TargetType="MenuItem">
             <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -249,193 +652,166 @@
         <!-- ================= TEMPLATES ================= -->
 
         <ControlTemplate TargetType="Frame" x:Key="templateRealMode">
-            <DockPanel Background="#FAFBFF">
-                <Border DockPanel.Dock="Top" Background="#030032" BorderThickness="0" Padding="12,8">
-                    <Border.Effect>
-                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.15" Color="Black"/>
-                    </Border.Effect>
+            <DockPanel Background="{StaticResource PageBgBrush}">
+                <Border DockPanel.Dock="Top" Background="{StaticResource ShellBackgroundBrush}" BorderBrush="{StaticResource ShellBorderBrush}" BorderThickness="0,1,0,1" Padding="10,8">
                     <Grid>
-                        <!-- Left side buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Back Button -->
-                            <Button Content="⬅ Back" Click="OnBackward" 
-                        IsEnabled="{TemplateBinding CanGoBack}"
-                        Width="120" Height="36" FontSize="13" FontWeight="SemiBold"
-                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
+                        <Menu Grid.Column="0"
+                              Background="Transparent"
+                              Foreground="{StaticResource TextOnShellBrush}"
+                              FontFamily="Segoe UI"
+                              FontSize="13"
+                              VerticalAlignment="Center">
+                            <Menu.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </Menu.ItemsPanel>
+                            <Menu.Resources>
+                                <Style TargetType="Separator" BasedOn="{StaticResource ModernSeparator}"/>
+                            </Menu.Resources>
+                            <MenuItem Header="_File" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_Main Particulars" Name="Doc1" Click="Doc1_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <Separator Style="{StaticResource ModernSeparator}"/>
+                                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <Separator Style="{StaticResource ModernSeparator}"/>
+                                <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_View" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Click="SavedLoadingCondition_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Click="StandardLoadingCondition_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernMenuHeader}"/>
+                            <MenuItem Header="_Vessel Data" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_LightShip Data" Name="LightShip" Click="LightShip_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Stability Settings" Name="settings" Click="settings_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Wind Speed" Name="windspeed" Click="windspeed_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Damage Cases" Name="MDamage" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="Select Damage Case" IsEnabled="False" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 1" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 2" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 3" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 4" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 5" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Help" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_User Manual" Name="UserManual" Click="OpenUserManual_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_About" Name="About" Click="About_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                        </Menu>
 
-                            <!-- Stability Button -->
-                            <Button Content="Stability" Click="OnGoPageRealStabilitySummary" 
-                        Width="120" Height="36" Margin="10,0,5,0" FontSize="13" FontWeight="SemiBold"
-                        Foreground="#030032" Background="#FFFFFF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
-                            <!-- Stability Type Label -->
-                            <Border Name="borderRealStabilityType" Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
-                        BorderBrush="#1F48FF">
-                                <Label Name="lblRealStabilityType" Content="NA" 
-                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
-                           FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <StackPanel.Resources>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavActionButton}"/>
+                            </StackPanel.Resources>
+                            <Button Content="Back" Click="OnBackward" IsEnabled="{TemplateBinding CanGoBack}" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Button Content="Stability" Name="btnRealModeStability" Click="OnGoPageRealStabilitySummary" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavSelectedForegroundBrush}" Background="{StaticResource NavSelectedBackgroundBrush}" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Border Name="borderRealStabilityType" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                                <Label Name="lblRealStabilityType" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-
-                            <!-- Stability Status Label -->
-                            <Border Name="borderRealStabilityStatus" Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
-                        BorderBrush="#1F48FF">
-                                <Label Name="lblRealStabilityStatus" Content="NA" 
-                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
-                           FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                            <Border Name="borderRealStabilityStatus" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                                <Label Name="lblRealStabilityStatus" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-
-                            <!-- Corrective Action Button -->
-                            <Button Content="Remedial Measures" Name="btnRealModeCorrectiveAction" 
-                        Click="OnGoPageRealCorrectiveAction" Visibility="Hidden"
-                        Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
-                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
+                            <Button Content="Remedial Measures" Name="btnRealModeCorrectiveAction" Click="OnGoPageRealCorrectiveAction" Visibility="Hidden" Width="112" Height="32" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                         </StackPanel>
 
-                        <!-- Right side buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-
-                            <!-- Reports Button -->
-                            <Button Content="Reports" Click="OnGoPageRealReport" 
-                        Width="120" Height="36" Margin="5,0" FontSize="13" FontWeight="SemiBold"
-                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
-                            <!-- Status Label --><!--
-                            <Border Background="#FF4757" CornerRadius="8" Margin="10,0" Height="36" 
-                        Width="120" VerticalAlignment="Center">
-                                <Label Name="lblStatus" Content="COMMUNICATION" 
-                           Foreground="#FFFFFF" FontSize="10" FontWeight="Bold"
-                           HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                            </Border>-->
-
-                            <!-- Switch to IPMS Button --><!--
-                            <Button Name="btnExit" Content="Switch To IPMS" Click="btnExit_Click" 
-                        Width="120" Height="36" FontSize="12" FontWeight="SemiBold"
-                        Foreground="#FFFFFF" Background="#FF4757" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>-->
-
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <StackPanel.Resources>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavActionButton}"/>
+                            </StackPanel.Resources>
+                            <Button Content="Reports" Name="btnRealGenerateReport" Click="OnGoPageRealReport" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
                 </Border>
-                <Border Background="#030032" Padding="5">
-                    <ContentPresenter />
+                <Border Background="{StaticResource FrameContentBorderBrush}" Padding="4">
+                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                 </Border>
             </DockPanel>
         </ControlTemplate>
 
         <ControlTemplate TargetType="Frame" x:Key="templateSimulationMode">
-            <DockPanel Background="#FAFBFF">
-                <Border DockPanel.Dock="Top" Background="#030032" BorderThickness="0" Padding="12,8">
-                    <Border.Effect>
-                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.15" Color="Black"/>
-                    </Border.Effect>
+            <DockPanel Background="{StaticResource PageBgBrush}">
+                <Border DockPanel.Dock="Top" Background="{StaticResource ShellBackgroundBrush}" BorderBrush="{StaticResource ShellBorderBrush}" BorderThickness="0,1,0,1" Padding="10,8">
                     <Grid>
-                        <!-- Left side buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Back Button -->
-                            <Button Content="⬅ Back" Click="OnBackward" 
-                            IsEnabled="{TemplateBinding CanGoBack}"
-                            Width="120" Height="36" FontSize="13" FontWeight="SemiBold"
-                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
+                        <Menu Grid.Column="0"
+                              Background="Transparent"
+                              Foreground="{StaticResource TextOnShellBrush}"
+                              FontFamily="Segoe UI"
+                              FontSize="13"
+                              VerticalAlignment="Center">
+                            <Menu.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </Menu.ItemsPanel>
+                            <Menu.Resources>
+                                <Style TargetType="Separator" BasedOn="{StaticResource ModernSeparator}"/>
+                            </Menu.Resources>
+                            <MenuItem Header="_File" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_Main Particulars" Name="Doc1" Click="Doc1_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <Separator Style="{StaticResource ModernSeparator}"/>
+                                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <Separator Style="{StaticResource ModernSeparator}"/>
+                                <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_View" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Click="SavedLoadingCondition_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Click="StandardLoadingCondition_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernMenuHeader}"/>
+                            <MenuItem Header="_Vessel Data" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_LightShip Data" Name="LightShip" Click="LightShip_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Stability Settings" Name="settings" Click="settings_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_Wind Speed" Name="windspeed" Click="windspeed_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Damage Cases" Name="MDamage" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="Select Damage Case" IsEnabled="False" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 1" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 2" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 3" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 4" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="Damage case 5" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                            <MenuItem Header="_Help" Style="{StaticResource ModernMenuHeader}">
+                                <MenuItem Header="_User Manual" Name="UserManual" Click="OpenUserManual_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_About" Name="About" Click="About_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                            </MenuItem>
+                        </Menu>
 
-                            <!-- Stability Button -->
-                            <Button Content="Stability" Name="btnSimulationModeStability" 
-                            Click="OnGoPageSimulationStabilitySummary" IsEnabled="False"
-                            Width="120" Height="36" Margin="10,0,5,0" FontSize="13" FontWeight="SemiBold"
-                            Foreground="#030032" Background="#FFFFFF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
-                            <!-- Stability Type Label -->
-                            <Border Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
-                            BorderBrush="#1F48FF" >
-                                <Label Name="lblSimulationStabilityType" Content="NA" 
-                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
-                               FontSize="12" FontWeight="Bold" Foreground="#030032"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Button Content="Back" Click="OnBackward" IsEnabled="{TemplateBinding CanGoBack}" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Button Content="Stability" Name="btnSimulationModeStability" Click="OnGoPageSimulationStabilitySummary" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavSelectedForegroundBrush}" Background="{StaticResource NavSelectedBackgroundBrush}" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                                <Label Name="lblSimulationStabilityType" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-
-                            <!-- Stability Status Label -->
-                            <Border Background="#FFFFFF" CornerRadius="8" Margin="5,0" Width="120" Height="36"
-                            BorderBrush="#1F48FF" >
-                                <Label Name="lblSimulationStabilityStatus" Content="NA" 
-                               HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
-                               FontSize="12" FontWeight="Medium" Foreground="#030032"/>
+                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                                <Label Name="lblSimulationStabilityStatus" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-
-                            <!-- Corrective Action Button -->
-                            <Button Content="Remedial Measures" Name="btnSimulationModeCorrectiveAction" 
-                            Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False"
-                            Width="120" Height="36" Margin="10,0,5,0" FontSize="12" FontWeight="SemiBold"
-                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
+                            <Button Content="Remedial Measures" Name="btnSimulationModeCorrectiveAction" Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False" Width="112" Height="32" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                         </StackPanel>
 
-                        <!-- Right side buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-
-                            <!-- Reports Button -->
-                            <Button Content="Reports" Name="btnSimulationGenerateReport" 
-                            Click="btnSimulationGenerateReport_Click" IsEnabled="False"
-                            Width="120" Height="36" Margin="5,0" FontSize="13" FontWeight="SemiBold"
-                            Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
-                            </Button>
-
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Content="Reports" Name="btnSimulationGenerateReport" Click="btnSimulationGenerateReport_Click" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
                 </Border>
-                <Border Background="#030032" Padding="5">
+                <Border Background="{StaticResource FrameContentBorderBrush}" Padding="4">
                     <ContentPresenter />
                 </Border>
             </DockPanel>
@@ -450,122 +826,252 @@
         </Grid.RowDefinitions>
 
 
-        <!-- MODERN MENU BAR -->
-        <!-- Background White, Bottom Border for separation, ItemsPanel ensures proper layout -->
-        <Menu Name="MainMenu" Background="#030032" Foreground="#FFFFFF" FontFamily="Segoe UI" FontSize="13" VerticalAlignment="Top">
-            <Menu.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-            </Menu.ItemsPanel>
+        <Border Grid.Row="0" Visibility="Collapsed"
+                Background="{StaticResource ShellBackgroundBrush}"
+                BorderBrush="{StaticResource ShellBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <DockPanel LastChildFill="True">
+                <Menu Name="MainMenu"
+                      Background="Transparent"
+                      Foreground="{StaticResource TextOnShellBrush}"
+                      FontFamily="Segoe UI"
+                      FontSize="13"
+                      VerticalAlignment="Center">
+                    <Menu.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </Menu.ItemsPanel>
 
-            <Menu.Resources>
-                <!-- Top-level menu header style -->
-                <Style x:Key="ModernMenuHeader" TargetType="MenuItem">
-                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                    <Setter Property="Padding" Value="14,8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="FontSize" Value="13"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter Property="Background" Value="#1F48FF"/>
-                            <Setter Property="Foreground" Value="#FFFFFF"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
+                    <Menu.Resources>
+                        <Style x:Key="ModernMenuHeader" TargetType="MenuItem">
+                            <Setter Property="Foreground" Value="{StaticResource TextOnShellBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="Margin" Value="4,4,0,4"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="MenuItem">
+                                        <Grid>
+                                            <Border x:Name="HeaderBorder"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="0"
+                                                    CornerRadius="0"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    Margin="{TemplateBinding Margin}">
+                                                <Grid>
+                                                    <ContentPresenter x:Name="HeaderHost"
+                                                                      ContentSource="Header"
+                                                                      RecognizesAccessKey="True"
+                                                                      VerticalAlignment="Center"
+                                                                      HorizontalAlignment="Center"/>
+                                                    <Border x:Name="HeaderAccent"
+                                                            Width="22"
+                                                            Height="2"
+                                                            VerticalAlignment="Bottom"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,0,0,-5"
+                                                            CornerRadius="0"
+                                                            Background="Transparent"/>
+                                                </Grid>
+                                            </Border>
+                                            <Popup x:Name="PART_Popup"
+                                                   Placement="Bottom"
+                                                   HorizontalOffset="0"
+                                                   VerticalOffset="10"
+                                                   AllowsTransparency="True"
+                                                   Focusable="False"
+                                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                                   PopupAnimation="Fade">
+                                                <Border Background="{StaticResource MenuPopupBrush}"
+                                                        BorderBrush="{StaticResource MenuPopupBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="3"
+                                                        Padding="4"
+                                                        MinWidth="220">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect ShadowDepth="1" BlurRadius="8" Opacity="0.12" Color="Black"/>
+                                                    </Border.Effect>
+                                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                                </Border>
+                                            </Popup>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsHighlighted" Value="True">
+                                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+                                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource ShellBorderBrush}"/>
+                                                <Setter TargetName="HeaderAccent" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource ShellSurfaceBrush}"/>
+                                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource ShellBorderBrush}"/>
+                                                <Setter TargetName="HeaderAccent" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
 
-                <!-- Submenu item style -->
-                <Style x:Key="ModernSubMenuItem" TargetType="MenuItem">
-                    <Setter Property="Foreground" Value="#030032"/>
-                    <Setter Property="Padding" Value="20,8"/>
-                    <Setter Property="FontSize" Value="13"/>
-                    <Setter Property="FontWeight" Value="Regular"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsHighlighted" Value="True">
-                            <Setter Property="Background" Value="#EEF1FF"/>
-                            <Setter Property="Foreground" Value="#1F48FF"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-
-                <!-- Separator style -->
-                <Style x:Key="ModernSeparator" TargetType="Separator">
-                    <Setter Property="Background" Value="#E8E8E8"/>
-                    <Setter Property="Margin" Value="10,4"/>
-                    <Setter Property="Height" Value="1"/>
-                </Style>
-            </Menu.Resources>
-
-            <!-- File -->
-            <MenuItem Header="_File" Style="{StaticResource ModernMenuHeader}">
-                <MenuItem Header="_Main Particulars" Name="Doc1" Click="Doc1_click" Style="{StaticResource ModernSubMenuItem}"/>
-                <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
-                <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
-                <Separator Style="{StaticResource ModernSeparator}"/>
-                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
-                <Separator Style="{StaticResource ModernSeparator}"/>
-                <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
-            </MenuItem>
-
-            <!-- View -->
-            <MenuItem Header="_View" Style="{StaticResource ModernMenuHeader}">
-                <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="SavedLoadingCondition_Click"/>
-                <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="StandardLoadingCondition_Click"/>
-            </MenuItem>
-
-            <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernMenuHeader}"/>
-
-            <!-- Master Input -->
-            <MenuItem Header="_Vessel Data" Style="{StaticResource ModernMenuHeader}">
-                <MenuItem Header="_LightShip Data" Name="LightShip" Style="{StaticResource ModernSubMenuItem}" Click="LightShip_Click"/>
-                <MenuItem Header="_Stability Settings" Name="settings" Style="{StaticResource ModernSubMenuItem}" Click="settings_Click"/>
-                <MenuItem Header="_Wind Speed" Name="windspeed" Style="{StaticResource ModernSubMenuItem}" Click="windspeed_Click"/>
-            </MenuItem>
-
-            <!-- Damage Cases -->
-            <MenuItem Header="_Damage Cases" Name="MDamage" Style="{StaticResource ModernMenuHeader}">
-                <Border Background="#FFFFFF" Padding="14" CornerRadius="8" BorderBrush="#E0E4EF" BorderThickness="1">
-                    <Border.Effect>
-                        <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.08" Color="Black"/>
-                    </Border.Effect>
-                    <StackPanel>
-                        <TextBlock Text="Select Damage Case" FontWeight="SemiBold" Margin="0,0,0,8" 
-                           Foreground="#030032" FontSize="13" FontFamily="Segoe UI"/>
-
-                        <Border BorderBrush="#1F48FF" BorderThickness="1.5" CornerRadius="6" Padding="0">
-                            <ComboBox Name="cMBDamage" Width="240" SelectionChanged="cMBDamage_SelectionChanged" 
-                              Height="34" FontFamily="Segoe UI" FontSize="13" BorderThickness="0"
-                              Background="#FFFFFF" Foreground="#030032">
-                                <ComboBoxItem Content="Select Damage Case" IsSelected="True"/>
-                                <ComboBoxItem Content=" Damage case 1 "/>
-                                <ComboBoxItem Content=" Damage case 2 "/>
-                                <ComboBoxItem Content=" Damage case 3 "/>
-                                <ComboBoxItem Content=" Damage case 4 "/>
-                                <ComboBoxItem Content=" Damage case 5 "/>
-                               
-                            </ComboBox>
+                        <Style x:Key="ModernSubMenuItem" TargetType="MenuItem">
+                            <Setter Property="Foreground" Value="{StaticResource MenuPopupTextBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="0"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,0,0">
+                            <ContentPresenter ContentSource="Header"
+                                              RecognizesAccessKey="True"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsHighlighted" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuPopupHoverBrush}"/>
+                                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
 
-                        <Button Content="Intact Condition" Name="menuIntactDamage" Margin="0,12,0,0" 
-                        Height="34" Width="240" FontSize="13" FontWeight="SemiBold"
-                        Foreground="#FFFFFF" Background="#1F48FF" BorderThickness="0" Cursor="Hand"
-                        Click="menuIntactDamage_Click">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </StackPanel>
-                </Border>
-            </MenuItem>
+                        <Style x:Key="ModernSeparator" TargetType="Separator">
+                            <Setter Property="Margin" Value="10,8"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Separator">
+                                        <Border Height="1" Background="{StaticResource DividerBrush}"/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
 
-            <!-- Help -->
-            <MenuItem Header="_Help" Style="{StaticResource ModernMenuHeader}">
-                <MenuItem Header="_User Manual" Name="UserManual" Click="OpenUserManual_Click" Style="{StaticResource ModernSubMenuItem}"/>
-                <MenuItem Header="_About" Name="About" Click="About_Click" Style="{StaticResource ModernSubMenuItem}"/>
-            </MenuItem>
-        </Menu>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Foreground" Value="{StaticResource MenuPopupTextBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="10,7"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+                                        <Border x:Name="ItemBorder"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="0"
+                                                Padding="{TemplateBinding Padding}"
+                                                Margin="0,0,0,0">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsHighlighted" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource MenuPopupHoverBrush}"/>
+                                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource PrimaryBgBrush}"/>
+                                                <Setter Property="Foreground" Value="{StaticResource MenuPopupSelectedTextBrush}"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Menu.Resources>
+
+                    <MenuItem Header="_File" Style="{StaticResource ModernMenuHeader}">
+                        <MenuItem Header="_Main Particulars" Name="Doc1" Click="Doc1_click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <Separator Style="{StaticResource ModernSeparator}"/>
+                        <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <Separator Style="{StaticResource ModernSeparator}"/>
+                        <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_View" Style="{StaticResource ModernMenuHeader}">
+                        <MenuItem Header="_Saved Loading Condition" Name="SavedLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="SavedLoadingCondition_Click"/>
+                        <MenuItem Header="_Pre-defined Loading Condition" Name="StandardLoadingCondition" Style="{StaticResource ModernSubMenuItem}" Click="StandardLoadingCondition_Click"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_Configuration" Name="Configuration" Click="Configuration_Click" Style="{StaticResource ModernMenuHeader}"/>
+
+                    <MenuItem Header="_Vessel Data" Style="{StaticResource ModernMenuHeader}">
+                        <MenuItem Header="_LightShip Data" Name="LightShip" Style="{StaticResource ModernSubMenuItem}" Click="LightShip_Click"/>
+                        <MenuItem Header="_Stability Settings" Name="settings" Style="{StaticResource ModernSubMenuItem}" Click="settings_Click"/>
+                        <MenuItem Header="_Wind Speed" Name="windspeed" Style="{StaticResource ModernSubMenuItem}" Click="windspeed_Click"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_Damage Cases" Name="MDamage" Style="{StaticResource ModernMenuHeader}">
+                        <Border Background="{StaticResource CardBgBrush}" Padding="14" CornerRadius="3" BorderBrush="{StaticResource MenuPopupBorderBrush}" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="1" BlurRadius="8" Opacity="0.12" Color="Black"/>
+                            </Border.Effect>
+                            <StackPanel Width="220">
+                                <TextBlock Text="Select Damage Case"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,10"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           FontSize="14"/>
+
+                                <ComboBox Name="cMBDamage"
+                                          SelectionChanged="cMBDamage_SelectionChanged"
+                                          Width="220"
+                                          Style="{StaticResource MenuComboBoxStyle}">
+                                    <ComboBoxItem Content="Select Damage Case" IsSelected="True"/>
+                                    <ComboBoxItem Content=" Damage case 1 "/>
+                                    <ComboBoxItem Content=" Damage case 2 "/>
+                                    <ComboBoxItem Content=" Damage case 3 "/>
+                                    <ComboBoxItem Content=" Damage case 4 "/>
+                                    <ComboBoxItem Content=" Damage case 5 "/>
+                                </ComboBox>
+
+                                <Button Content="Intact Condition"
+                                        Name="menuIntactDamage"
+                                        Margin="0,10,0,0"
+                                        Height="34"
+                                        Width="220"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Foreground="{StaticResource TextOnShellBrush}"
+                                        Background="{StaticResource PrimaryBrush}"
+                                        BorderBrush="{StaticResource PrimaryBrush}"
+                                        BorderThickness="1"
+                                        Cursor="Hand"
+                                        Click="menuIntactDamage_Click">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="3"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </MenuItem>
+
+                    <MenuItem Header="_Help" Style="{StaticResource ModernMenuHeader}">
+                        <MenuItem Header="_User Manual" Name="UserManual" Click="OpenUserManual_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <MenuItem Header="_About" Name="About" Click="About_Click" Style="{StaticResource ModernSubMenuItem}"/>
+                    </MenuItem>
+                </Menu>
+            </DockPanel>
+        </Border>
 
         <!-- Main Content Area -->
         <DockPanel LastChildFill="True" Grid.Row="1" Background="{StaticResource PageBgBrush}">
@@ -584,7 +1090,9 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <ContentPresenter Grid.Row="0" 
-                                              ContentSource="SelectedContent"/>
+                                              ContentSource="SelectedContent"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
                                         <UniformGrid Grid.Row="1" Rows="1" 
                                          IsItemsHost="True"/>
                                     </Grid>
@@ -596,29 +1104,40 @@
 
                 <TabControl.Resources>
                     <Style TargetType="TabItem">
+                        <Setter Property="Background" Value="{StaticResource TabIdleBrush}"/>
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource TabBorderBrush}"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="Padding" Value="14,8"/>
+                        <Setter Property="Margin" Value="3,0"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
                                     <Border Name="tabBorder" 
-                                Background="#030032" 
-                                BorderBrush="#1F48FF" 
-                                BorderThickness="0" 
-                                Padding="10,8" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                Padding="{TemplateBinding Padding}" 
+                                CornerRadius="10,10,0,0"
                                 Cursor="Hand">
                                         <ContentPresenter ContentSource="Header" 
                                               HorizontalAlignment="Center" 
                                               VerticalAlignment="Center"
-                                              TextBlock.Foreground="#FFFFFF"
-                                              TextBlock.FontSize="14"/>
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.FontSize="14"
+                                              TextBlock.FontFamily="Segoe UI Semibold"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="tabBorder" Property="Background" Value="#1F48FF"/>
-                                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                                            <Setter TargetName="tabBorder" Property="Background" Value="{StaticResource TabSelectedBrush}"/>
+                                            <Setter TargetName="tabBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                            <Setter TargetName="tabBorder" Property="BorderThickness" Value="1.5"/>
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
                                         </Trigger>
-                                        <!--<Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="tabBorder" Property="Background" Value="#162FA0"/>
-                                        </Trigger>-->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="tabBorder" Property="Background" Value="{StaticResource TabHoverBrush}"/>
+                                        </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -628,17 +1147,17 @@
 
                 <!-- Real Mode Tab -->
                 <TabItem Header="Sensor Streaming" Name="tabItemReal" GotFocus="tabItemReal_GotFocus">
-                    <Grid Background="{StaticResource PrimaryBgBrush}" Margin="0,0,0,5">
+                    <Grid Background="{StaticResource PageBgBrush}" Margin="0,0,0,5">
                         <Frame Template="{StaticResource templateRealMode}" Name="frameRealMode" />
                         <Label Content="Loading..." Name="tbProgress" HorizontalContentAlignment="Center" 
-                   VerticalContentAlignment="Center" 
+                   VerticalContentAlignment="Center" IsHitTestVisible="False" Focusable="False"
                    Background="#80000000" Foreground="White" FontSize="16" Visibility="Collapsed"/>
                     </Grid>
                 </TabItem>
 
                 <!-- Simulation Mode Tab -->
                 <TabItem Header="Virtual Simulation" Name="tabItemSimulation" GotFocus="tabItemSimulation_GotFocus">
-                    <Grid Background="{StaticResource WarningBgBrush}" Margin="0,0,0,5">
+                    <Grid Background="{StaticResource PageBgBrush}" Margin="0,0,0,5">
                         <Frame Template="{StaticResource templateSimulationMode}" Name="frameSimulationMode" 
                    Navigated="frameSimulationMode_Navigated"/>
                     </Grid>
@@ -647,6 +1166,7 @@
             </TabControl>
 
         </DockPanel>
+
     </Grid>
 
 </Window>

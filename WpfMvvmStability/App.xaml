@@ -8,10 +8,11 @@
     <Application.Resources>
         
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
+             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/ImplicitStylesResourceDictionary.xaml" />
                 <ResourceDictionary Source="Resources/IconsResourceDictionary.xaml" />
                 <ResourceDictionary Source="Resources/StylesResourceDictionary.xaml" />
+                <!--<ResourceDictionary Source="Themes/ModernDialogStyles.xaml" />-->
                 <!-- Custom Theme -->
                 <!--<ResourceDictionary Source="Themes/Custom/Custom.MSControls.Core.Implicit.xaml" />
                 <ResourceDictionary Source="Themes/Custom/Custom.MSControls.Toolkit.Implicit.xaml" />-->

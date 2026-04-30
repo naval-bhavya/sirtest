@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -48,16 +48,14 @@ namespace WpfMvvmStability.Models.DAL
                     return null;
                 }
             }
-            catch { }
-            //catch (DbException exp)
-            //{
-            //    Models.BO.clsGlobVar.ConnectionError = true;
-            //    ErrorMessage = "An Exception has occured while executing the database transaction." + exp.Message;
-            //    if (tran != null)
-            //    {
-            //      //  tran.Rollback();
-            //    }
-            //}
+            catch (Exception exp)
+            {
+                System.Windows.MessageBox.Show("Database Connection Error: " + exp.Message + "\n\nPlease check your SQL Server settings in StabilityConfig.xml", "Database Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                if (tran != null)
+                {
+                    // tran.Rollback();
+                }
+            }
             finally
             {
                 if (command != null)

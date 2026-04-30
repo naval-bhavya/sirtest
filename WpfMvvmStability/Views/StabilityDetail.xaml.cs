@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,9 +16,6 @@ using System.Data;
 using System.Windows.Controls.DataVisualization.Charting;
 
 using WpfMvvmStability.Models.BO;
-
-
-
 
 namespace WpfMvvmStability.Views
 {
@@ -41,9 +38,12 @@ namespace WpfMvvmStability.Views
         {
             get { return points; }
         }
+        
         public StabilityDetail()
         {
             InitializeComponent();
+            EnsureRequiredDataLoaded();
+            
             if (Models.BO.clsGlobVar.Mode == "Real") 
             {
                 RealModeIntactStabilityData();
@@ -52,7 +52,37 @@ namespace WpfMvvmStability.Views
             {
                 SimulationModeIntactStabilityData();
             }
+        }
 
+        private static void EnsureRequiredDataLoaded()
+        {
+            if (Models.BO.clsGlobVar.Mode == "Real")
+            {
+                if (!HasRows(clsGlobVar.dtRealLoadingSummary) || !HasRows(clsGlobVar.dtRealStabilitySummary))
+                {
+                    Models.TableModel.RealModeData();
+                }
+            }
+
+            if (Models.BO.clsGlobVar.Mode == "Simulation")
+            {
+                if (!HasRows(clsGlobVar.dtSimulationLoadingSummary) || !HasRows(clsGlobVar.dtSimulationStabilitySummary))
+                {
+                    Models.TableModel.SimulationModeData();
+                }
+            }
+
+            Models.TableModel.LoadSimulationHydrostatics();
+        }
+
+        private static bool HasRows(DataTable table)
+        {
+            return table != null && table.Rows.Count > 0;
+        }
+
+        private static DataView ViewOrEmpty(DataTable table)
+        {
+            return (table ?? new DataTable()).DefaultView;
         }
 
         public void RealModeIntactStabilityData()
@@ -61,68 +91,37 @@ namespace WpfMvvmStability.Views
             {
                 DataTable dtFinalereal = new DataTable();
                 dgLoadingSummary.ItemsSource = clsGlobVar.dtRealLoadingSummary.DefaultView;
-               // dgDraft.ItemsSource = clsGlobVar.dtRealDrafts.DefaultView;
                 dgDraft.ItemsSource = clsGlobVar.dtRealImersion.DefaultView;
                 dgGZ.ItemsSource = clsGlobVar.dtRealGZ.DefaultView;
                 dgHydrostatics.ItemsSource = clsGlobVar.dtRealHydrostatics.DefaultView;
                 dgMouldedDraft.ItemsSource = clsGlobVar.dtRealdgMouldedDraft.DefaultView;
                 gbSoundingPer.Visibility = Visibility.Hidden;
                 stabilityType = Models.BO.clsGlobVar.StabilityType.ToUpper();
+
                 if (stabilityType == "INTACT")
                 {
-                    try
+                    dtFinalereal = clsGlobVar.dtRealStabilityCriteriaIntact.Clone();
+                    foreach (DataRow dr in clsGlobVar.dtRealStabilityCriteriaIntact.Rows)
                     {
-                        //foreach (DataRow dr in clsGlobVar.dtRealStabilityCriteriaIntact.Rows)
-                        //{
-                        //    clsGlobVar.dtRealStabilityCriteriaIntact.Rows.Add(dr.ItemArray);
-                        //}
-                        //clsGlobVar.dtRealStabilityCriteriaIntact.Columns.Remove("Status");
-                        //clsGlobVar.dtRealStabilityCriteriaIntact.Columns.Add("Status", typeof(string));
-                        //for (int i = 0; i < clsGlobVar.dtRealStabilityCriteriaIntact.Rows.Count; i++)
-                        //{
-                        //    if (clsGlobVar.dtRealStabilityCriteriaIntact.Rows[i]["Status"] == "True")
-                        //    {
-                        //        clsGlobVar.dtRealStabilityCriteriaIntact.Rows[i]["Status"] = "Pass";
-                        //    }
-                        //    else
-                        //    {
-                        //        clsGlobVar.dtRealStabilityCriteriaIntact.Rows[i]["Status"] = "Fail";
-                        //    }
-
-                        //}
-                        //clsGlobVar.dtRealStabilityCriteriaIntact.Columns["Status"].ReadOnly = true;
-                        dtFinalereal = clsGlobVar.dtRealStabilityCriteriaIntact.Clone();
-                        foreach (DataRow dr in clsGlobVar.dtRealStabilityCriteriaIntact.Rows)
-                        {
-                            dtFinalereal.Rows.Add(dr.ItemArray);
-
-                        }
-                        dtFinalereal.Columns.Remove("Status");
-                        dtFinalereal.Columns.Add("Status", typeof(string));
-
-                        for (int i = 0; i < clsGlobVar.dtRealStabilityCriteriaIntact.Rows.Count; i++)
-                        {
-                            if (clsGlobVar.dtRealStabilityCriteriaIntact.Rows[i]["Status"].ToString() == "True") { dtFinalereal.Rows[i]["Status"] = "Pass"; }
-                            else { dtFinalereal.Rows[i]["Status"] = "Fail"; }
-                        }
-                        dgStability.ItemsSource = dtFinalereal.DefaultView;
-
-                        //dgStability.ItemsSource = clsGlobVar.dtRealStabilityCriteriaIntact.DefaultView;
+                        dtFinalereal.Rows.Add(dr.ItemArray);
                     }
-                    catch (Exception ex)
+                    dtFinalereal.Columns.Remove("Status");
+                    dtFinalereal.Columns.Add("Status", typeof(string));
+
+                    for (int i = 0; i < clsGlobVar.dtRealStabilityCriteriaIntact.Rows.Count; i++)
                     {
-                        MessageBox.Show(ex.Message);
+                        if (clsGlobVar.dtRealStabilityCriteriaIntact.Rows[i]["Status"].ToString() == "True") { dtFinalereal.Rows[i]["Status"] = "Pass"; }
+                        else { dtFinalereal.Rows[i]["Status"] = "Fail"; }
                     }
+                    dgStability.ItemsSource = dtFinalereal.DefaultView;
                 }
-                if (stabilityType == "DAMAGE")
+                else if (stabilityType == "DAMAGE")
                 {
-                  //  dgStability.ItemsSource = clsGlobVar.dtRealStabilityCriteriaDamage.DefaultView;
                     gbSoundingPer.Visibility = Visibility.Hidden;
                     dtFinalereal = clsGlobVar.dtRealStabilityCriteriaDamage.Clone();
                     foreach (DataRow dr in clsGlobVar.dtRealStabilityCriteriaDamage.Rows)
                     {
                         dtFinalereal.Rows.Add(dr.ItemArray);
-
                     }
                     dtFinalereal.Columns.Remove("Status");
                     dtFinalereal.Columns.Add("Status", typeof(string));
@@ -135,23 +134,31 @@ namespace WpfMvvmStability.Views
                     dgStability.ItemsSource = dtFinalereal.DefaultView;
                     groupBox2.Visibility = System.Windows.Visibility.Hidden;
                 }
-                groupBoxStability.Header = "NES 109 StabilityP15B Criteria-" + Models.BO.clsGlobVar.StabilityType;
+
+                txtStabilityCriteriaTitle.Text = "NES 109 StabilityP15B Criteria-" + Models.BO.clsGlobVar.StabilityType;
                 rowCount = clsGlobVar.dtRealGZ.Rows.Count;
 
-                GZChart();
-            }
-            catch
+            if (clsGlobVar.Mode == "Real")
             {
+                dgStabilitySummary.ItemsSource = clsGlobVar.dtRealEquillibriumValues.DefaultView;
+                dgTrimList.ItemsSource = clsGlobVar.dtRealEquillibriumValues.DefaultView;
             }
-
+            else
+            {
+                dgStabilitySummary.ItemsSource = clsGlobVar.dtSimulationEquillibriumValues.DefaultView;
+                dgTrimList.ItemsSource = clsGlobVar.dtSimulationEquillibriumValues.DefaultView;
+            }
+                GZChart();
+                UpdateSummaryFields();
+            }
+            catch { }
         }
+
         public void SimulationModeIntactStabilityData()
         {
             try
             {
-
                 dgLoadingSummary.ItemsSource = clsGlobVar.dtSimulationLoadingSummary.DefaultView;
-                //dgDraft.ItemsSource = clsGlobVar.dtSimulationDrafts.DefaultView;
                 dgDraft.ItemsSource = clsGlobVar.dtSimulationImersion.DefaultView;
                 dgHydrostatics.ItemsSource = clsGlobVar.dtSimulationHydrostatics.DefaultView;
                 dgMouldedDraft.ItemsSource = clsGlobVar.dtSimulationMouldedDraft.DefaultView;
@@ -166,19 +173,16 @@ namespace WpfMvvmStability.Views
                     dgGZ.Columns[4].Visibility = Visibility.Visible;
                     dgGZ.Columns[5].Visibility = Visibility.Visible;
                  
-                    dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;
+                    dgSoundingPer.ItemsSource = ViewOrEmpty(Models.BO.clsGlobVar.dtSoundingPer);
                     dgGZ.ItemsSource = clsGlobVar.dtSimulationGZ.DefaultView;
-                    //dgStability.ItemsSource = clsGlobVar.dtSimulationStabilityCriteriaIntact.DefaultView;
-                    dtFinale=clsGlobVar.dtSimulationStabilityCriteriaIntact.Clone();
+                    
+                    dtFinale = clsGlobVar.dtSimulationStabilityCriteriaIntact.Clone();
                     foreach (DataRow dr in clsGlobVar.dtSimulationStabilityCriteriaIntact.Rows)
                     {
                         dtFinale.Rows.Add(dr.ItemArray);
-
                     }
                     dtFinale.Columns.Remove("Status");
                     dtFinale.Columns.Add("Status", typeof(string));
-
-                    
 
                     for (int i = 0; i < clsGlobVar.dtSimulationStabilityCriteriaIntact.Rows.Count; i++ )
                     {
@@ -187,24 +191,19 @@ namespace WpfMvvmStability.Views
                     }
                     dgStability.ItemsSource = dtFinale.DefaultView;
                 }
-                if (stabilityType == "DAMAGE")
+                else if (stabilityType == "DAMAGE")
                 {
-
                     dgGZ.Columns[3].Visibility = Visibility.Hidden;
                     dgGZ.Columns[4].Visibility = Visibility.Hidden;
                     dgGZ.Columns[5].Visibility = Visibility.Hidden;
-                    //DataTable newTable = clsGlobVar.dtSimulationGZ.DefaultView.ToTable(false, "heelAng", "heelGZ");
-                    //dgGZ.ItemsSource = newTable.DefaultView;
                     gbSoundingPer.Visibility = Visibility.Visible;
                     dgGZ.ItemsSource = Models.BO.clsGlobVar.dtSimulationGZDamaged.DefaultView;
-                    dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;
-                    //dgStability.ItemsSource = clsGlobVar.dtSimulationStabilityCriteriaDamage.DefaultView;
+                    dgSoundingPer.ItemsSource = ViewOrEmpty(Models.BO.clsGlobVar.dtSoundingPer);
 
                     dtFinale = clsGlobVar.dtSimulationStabilityCriteriaDamage.Clone();
                     foreach (DataRow dr in clsGlobVar.dtSimulationStabilityCriteriaDamage.Rows)
                     {
                         dtFinale.Rows.Add(dr.ItemArray);
-
                     }
                     dtFinale.Columns.Remove("Status");
                     dtFinale.Columns.Add("Status", typeof(string));
@@ -214,79 +213,111 @@ namespace WpfMvvmStability.Views
                         if (clsGlobVar.dtSimulationStabilityCriteriaDamage.Rows[i]["Status"].ToString() == "True") { dtFinale.Rows[i]["Status"] = "Pass"; }
                         else { dtFinale.Rows[i]["Status"] = "Fail"; }
                     }
-                    dgStability.ItemsSource =  dtFinale.DefaultView;
+                    dgStability.ItemsSource = dtFinale.DefaultView;
                 }
-                groupBoxStability.Header = "NES 109 StabilityP15B Criteria-" + Models.BO.clsGlobVar.SimulationStabilityType;
+
+                txtStabilityCriteriaTitle.Text = "NES 109 StabilityP15B Criteria-" + Models.BO.clsGlobVar.SimulationStabilityType;
                 rowCount = clsGlobVar.dtSimulationGZ.Rows.Count;
 
+                dgStabilitySummary.ItemsSource = clsGlobVar.dtSimulationEquillibriumValues.DefaultView;
+                dgTrimList.ItemsSource = clsGlobVar.dtSimulationEquillibriumValues.DefaultView;
                 GZChart();
-
+                UpdateSummaryFields();
             }
-            catch
-            {
-            }
-
-
+            catch { }
         }
+
+        private void UpdateSummaryFields()
+        {
+            try
+            {
+                DataTable eqTable = (clsGlobVar.Mode == "Real") ? clsGlobVar.dtRealEquillibriumValues : clsGlobVar.dtSimulationEquillibriumValues;
+                if (eqTable != null && eqTable.Rows.Count > 0)
+                {
+                    DataRow row = eqTable.Rows[0];
+                    txtGMT.Text = Convert.ToDecimal(row["GMT"]).ToString("N3");
+                    txtDisplacement.Text = Convert.ToDecimal(row["Displacement"]).ToString("N0");
+                    txtTrim.Text = Convert.ToDecimal(row["TRIM"]).ToString("N3");
+                    txtList.Text = Convert.ToDecimal(row["Heel"]).ToString("N2");
+
+                    // Update Draft Marks
+                    txtDraftAP.Text = Convert.ToDecimal(row["Draft_AP"]).ToString("N3");
+                    txtDraftAft.Text = Convert.ToDecimal(row["Draft_Aft_Mark"]).ToString("N3");
+                    txtDraftMid.Text = Convert.ToDecimal(row["Draft_Mean"]).ToString("N3");
+                    txtDraftFwd.Text = Convert.ToDecimal(row["Draft_Fore_Mark"]).ToString("N3");
+                    txtDraftFP.Text = Convert.ToDecimal(row["Draft_FP"]).ToString("N3");
+                }
+            }
+            catch { }
+        }
+
         public void GZChart()
         {
             try
             {
+                GZList.Clear(); WHList.Clear(); HLList.Clear(); HSList.Clear(); PCList.Clear();
                 for (int index = 0; index < dgGZ.Items.Count; index++)
                 {
-                    GZList.Add(new KeyValuePair<double, double>(Convert.ToDouble((dgGZ.Items[index] as DataRowView)[0]), Convert.ToDouble((dgGZ.Items[index] as DataRowView)[1])));
+                    var rowView = dgGZ.Items[index] as DataRowView;
+                    if (rowView == null) continue;
+
+                    GZList.Add(new KeyValuePair<double, double>(Convert.ToDouble(rowView[0]), Convert.ToDouble(rowView[1])));
                     if (stabilityType == "INTACT")
                     {
-                        WHList.Add(new KeyValuePair<double, double>(Convert.ToDouble((dgGZ.Items[index] as DataRowView)[0]), Convert.ToDouble((dgGZ.Items[index] as DataRowView)[2])));
-                        HLList.Add(new KeyValuePair<double, double>(Convert.ToDouble((dgGZ.Items[index] as DataRowView)[0]), Convert.ToDouble((dgGZ.Items[index] as DataRowView)[3])));
-                        HSList.Add(new KeyValuePair<double, double>(Convert.ToDouble((dgGZ.Items[index] as DataRowView)[0]), Convert.ToDouble((dgGZ.Items[index] as DataRowView)[4])));
-                        PCList.Add(new KeyValuePair<double, double>(Convert.ToDouble((dgGZ.Items[index] as DataRowView)[0]), Convert.ToDouble((dgGZ.Items[index] as DataRowView)[5])));
-                
+                        if (rowView.Row.Table.Columns.Count > 2) WHList.Add(new KeyValuePair<double, double>(Convert.ToDouble(rowView[0]), Convert.ToDouble(rowView[2])));
+                        if (rowView.Row.Table.Columns.Count > 3) HLList.Add(new KeyValuePair<double, double>(Convert.ToDouble(rowView[0]), Convert.ToDouble(rowView[3])));
+                        if (rowView.Row.Table.Columns.Count > 4) HSList.Add(new KeyValuePair<double, double>(Convert.ToDouble(rowView[0]), Convert.ToDouble(rowView[4])));
+                        if (rowView.Row.Table.Columns.Count > 5) PCList.Add(new KeyValuePair<double, double>(Convert.ToDouble(rowView[0]), Convert.ToDouble(rowView[5])));
                     }
                 }
+
+                GZSeries.ItemsSource = null; GZSeries.ItemsSource = GZList;
                 if (stabilityType == "INTACT")
                 {
-                    GZSeries.ItemsSource = GZList;
-                    WHSeries.ItemsSource = WHList;
-                    HLSeries.ItemsSource = HLList;
-                    HSSeries.ItemsSource = HSList;
-                    PCSeries.ItemsSource = PCList;
-
+                    WHSeries.ItemsSource = null; WHSeries.ItemsSource = WHList;
+                    HLSeries.ItemsSource = null; HLSeries.ItemsSource = HLList;
+                    HSSeries.ItemsSource = null; HSSeries.ItemsSource = HSList;
+                    PCSeries.ItemsSource = null; PCSeries.ItemsSource = PCList;
                 }
                 else if (stabilityType == "DAMAGE")
                 {
-                    GZSeries.ItemsSource = GZList;
-                    
-                    Style style = new Style
-                    {
-                        TargetType = typeof(LegendItem)
-                    };
+                    Style style = new Style { TargetType = typeof(LegendItem) };
                     style.Setters.Add(new Setter(LegendItem.VisibilityProperty, Visibility.Hidden));
-
                     WHSeries.LegendItemStyle = style;
                     HLSeries.LegendItemStyle = style;
                     HSSeries.LegendItemStyle = style;
                     PCSeries.LegendItemStyle = style;
-                    //DFSeries.LegendItemStyle = style;
-
                 }
             }
-            catch
+            catch { }
+        }
+
+        private void btnClear_Click(object sender, RoutedEventArgs e)
+        {
+            try
             {
+                dgLoadingSummary.ItemsSource = null;
+                dgGZ.ItemsSource = null;
+                dgStability.ItemsSource = null;
+                dgHydrostatics.ItemsSource = null;
+                dgStabilitySummary.ItemsSource = null;
+                dgTrimList.ItemsSource = null;
+                
+                txtGMT.Text = "N/A";
+                txtDisplacement.Text = "N/A";
+                txtTrim.Text = "N/A";
+                txtList.Text = "N/A";
+                
+                GZSeries.ItemsSource = null;
+                WHSeries.ItemsSource = null;
+                HLSeries.ItemsSource = null;
+                HSSeries.ItemsSource = null;
+                PCSeries.ItemsSource = null;
             }
-
+            catch { }
         }
 
-        private void dgLoadingSummary_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
-        private void scrollViewer2_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-
-        }
+        private void dgLoadingSummary_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+        private void scrollViewer2_ScrollChanged(object sender, ScrollChangedEventArgs e) { }
     }
-
 }
-

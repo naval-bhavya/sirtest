@@ -24,14 +24,14 @@
                                     <ColumnDefinition Width="200"/>
                                     <ColumnDefinition Width="530"/>
                                 </Grid.ColumnDefinitions>
-                                <DV:Title Content="{TemplateBinding Title}" Style="{TemplateBinding TitleStyle}"/>
+                                <ContentControl Content="{TemplateBinding Title}"/>
                                 <Grid Margin="0,15" Grid.Row="0"  Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
                                     <chartPrimitive:EdgePanel x:Name="ChartArea" Style="{TemplateBinding ChartAreaStyle}">
                                         <Grid Style="{TemplateBinding PlotAreaStyle}" Panel.ZIndex="-1"/>
                                         <Border BorderBrush="#FF919191" BorderThickness="1" Panel.ZIndex="10"/>
                                     </chartPrimitive:EdgePanel>
                                 </Grid>
-                                <DV:Legend x:Name="Legend" Grid.Row="2" Grid.Column="1" Style="{TemplateBinding LegendStyle}" Title="{TemplateBinding LegendTitle}"/>
+                                <ContentControl x:Name="Legend" Grid.Row="2" Grid.Column="1" Style="{TemplateBinding LegendStyle}" Content="{TemplateBinding LegendTitle}"/>
                             </Grid>
                         </Border>
                     </ControlTemplate>
@@ -230,7 +230,7 @@
                     <Grid>
                         <!--<DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="#FFBEBEBE" Padding="5" FontFamily="Calibri" FontSize="11">
                             <DVC:Chart.Series>
-                                <DVC:LineSeries Title="GZ" Name="GZSeries"
+                        <DVC:LineSeries Tag="GZ" Name="GZSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -253,7 +253,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="HS" Name="HSSeries"
+                        <DVC:LineSeries Tag="HS" Name="HSSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -275,7 +275,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="PC" Name="PCSeries"
+                        <DVC:LineSeries Tag="PC" Name="PCSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -297,7 +297,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="LW1" Name="LW1Series"
+                        <DVC:LineSeries Tag="LW1" Name="LW1Series"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -320,7 +320,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="LW2" Name="LW2Series"
+                        <DVC:LineSeries Tag="LW2" Name="LW2Series"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -342,7 +342,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="DF Point" Name="DFSeries"
+                        <DVC:LineSeries Tag="DF Point" Name="DFSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -389,7 +389,7 @@
 
                         <DVC:Chart Canvas.Top="80" Canvas.Left="10" Name="GzChart" Background="#FFBEBEBE" Padding="5" FontFamily="Calibri" FontSize="11">
                             <DVC:Chart.Series>
-                                <DVC:LineSeries Title="GZ" Name="GZSeries"
+                        <DVC:LineSeries Tag="GZ" Name="GZSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -412,7 +412,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="WH" Name="WHSeries"
+                        <DVC:LineSeries Tag="WH" Name="WHSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -435,7 +435,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="HL" Name="HLSeries"
+                        <DVC:LineSeries Tag="HL" Name="HLSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -458,7 +458,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="HS" Name="HSSeries"
+                        <DVC:LineSeries Tag="HS" Name="HSSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>
@@ -481,7 +481,7 @@
                                         </Style>
                                     </DVC:LineSeries.LegendItemStyle>
                                 </DVC:LineSeries>
-                                <DVC:LineSeries Title="PC" Name="PCSeries"
+                        <DVC:LineSeries Tag="PC" Name="PCSeries"
                                 IndependentValueBinding="{Binding Path=Key}"
                                 DependentValueBinding="{Binding Path=Value}" ItemsSource="{Binding}" IsSelectionEnabled="True">
                                     <DVC:LineSeries.DataPointStyle>

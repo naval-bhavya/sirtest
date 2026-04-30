@@ -104,6 +104,7 @@ namespace WpfMvvmStability.Views
         private void bw_DoWork(object sender, DoWorkEventArgs e)
         {
             Models.TableModel.RealModeData();
+            Models.TableModel.LoadSimulationHydrostatics();
             Models.TableModel.RealModePercentFill(); //Commneted for fast debug@12122016@12:30PM
         }
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -113,6 +114,13 @@ namespace WpfMvvmStability.Views
 
                 if (Models.BO.clsGlobVar.ConnectionError == false)
                 {
+                    if (!HasRows(clsGlobVar.dtRealStabilitySummary))
+                    {
+                        this.tbProgress.Visibility = Visibility.Collapsed;
+                        MessageBox.Show("Stability summary data is not available. Please check the database connection and calculation data.");
+                        return;
+                    }
+
                     if (flagStart == true)
                     {
                         RealModeMain page2 = new RealModeMain();
@@ -714,6 +722,11 @@ namespace WpfMvvmStability.Views
         private void frameSimulationMode_Navigated(object sender, NavigationEventArgs e)
         {
 
+        }
+
+        private static bool HasRows(DataTable table)
+        {
+            return table != null && table.Rows.Count > 0;
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -50,6 +50,7 @@ namespace WpfMvvmStability.Views
         public RealModeReport()
         {
             InitializeComponent();
+            EnsureRequiredDataLoaded();
             try
             {
 
@@ -61,6 +62,11 @@ namespace WpfMvvmStability.Views
                     //listBoxDateList.Visibility = Visibility.Visible;
                    // lblFrom.Visibility = Visibility.Visible;
                     //lblTo.Visibility = Visibility.Visible;
+                    if (!HasRows(clsGlobVar.dtRealStabilitySummary))
+                    {
+                        ModernMessageBox.Show("Real mode stability summary data is not available. Please check the database connection and calculation data.", "Data Error", MessageBoxType.Error);
+                        return;
+                    }
                     stabilityType = Convert.ToString(clsGlobVar.dtRealStabilitySummary.Rows[0]["Stability_Type"]);
                     //stabilityType = Models.BO.clsGlobVar.StabilityType;
                     ShowRealData();
@@ -79,8 +85,8 @@ namespace WpfMvvmStability.Views
                     lblTo.Visibility = Visibility.Hidden;
                     stabilityType = Models.BO.clsGlobVar.SimulationStabilityType;
                     ShowSimulationData();
-                    rowCount = Models.BO.clsGlobVar.dtSimulationLongitudinal.Rows.Count;
-                    rowCount = clsGlobVar.dtSimulationGZ.Rows.Count;
+                    rowCount = HasRows(clsGlobVar.dtSimulationLongitudinal) ? Models.BO.clsGlobVar.dtSimulationLongitudinal.Rows.Count : 0;
+                    rowCount = HasRows(clsGlobVar.dtSimulationGZ) ? clsGlobVar.dtSimulationGZ.Rows.Count : 0;
                     GZChart();
 
                 }
@@ -91,44 +97,102 @@ namespace WpfMvvmStability.Views
 
         }
 
+        private void UpdateSummaryFields()
+        {
+            try
+            {
+                // Ensure required data is loaded if somehow missing
+                EnsureRequiredDataLoaded();
 
+                DataTable eqTable = (clsGlobVar.Mode == "Real") ? clsGlobVar.dtRealEquillibriumValues : clsGlobVar.dtSimulationEquillibriumValues;
+                
+                if (eqTable != null && eqTable.Rows.Count > 0)
+                {
+                    DataRow row = eqTable.Rows[0];
+                    txtSummaryGMT.Text = row["GMT"] != DBNull.Value ? Convert.ToDecimal(row["GMT"]).ToString("N3") : "0.000";
+                    txtSummaryDisplacement.Text = row["Displacement"] != DBNull.Value ? Convert.ToDecimal(row["Displacement"]).ToString("N0") : "0";
+                    txtSummaryTrim.Text = row["TRIM"] != DBNull.Value ? Convert.ToDecimal(row["TRIM"]).ToString("N3") : "0.000";
+                    txtSummaryList.Text = row["Heel"] != DBNull.Value ? Convert.ToDecimal(row["Heel"]).ToString("N2") : "0.00";
+                }
+                else
+                {
+                    // Fallback to zero if data missing
+                    txtSummaryGMT.Text = "0.000";
+                    txtSummaryDisplacement.Text = "0";
+                    txtSummaryTrim.Text = "0.000";
+                    txtSummaryList.Text = "0.00";
+                }
+
+                // Update status indicator
+                txtSummaryStatus.Text = (clsGlobVar.Mode == "Real") ? "REAL TIME" : clsGlobVar.SimulationStabilityType.ToUpper();
+                statusBorder.Background = (txtSummaryStatus.Text == "INTACT" || txtSummaryStatus.Text == "REAL TIME") 
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 252, 231)) 
+                    : new SolidColorBrush(System.Windows.Media.Color.FromRgb(254, 226, 226));
+                txtSummaryStatus.Foreground = (txtSummaryStatus.Text == "INTACT" || txtSummaryStatus.Text == "REAL TIME")
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(22, 101, 52))
+                    : new SolidColorBrush(System.Windows.Media.Color.FromRgb(153, 27, 27));
+            }
+            catch (Exception ex)
+            {
+                // Log silently or show warning if debug
+                Console.WriteLine("UpdateSummaryFields Error: " + ex.Message);
+            }
+        }
+
+        private static void EnsureRequiredDataLoaded()
+        {
+            if (Models.BO.clsGlobVar.Mode == "Real")
+            {
+                if (!HasRows(clsGlobVar.dtRealLoadingSummary) || !HasRows(clsGlobVar.dtRealStabilitySummary))
+                {
+                    Models.TableModel.RealModeData();
+                }
+            }
+
+            if (Models.BO.clsGlobVar.Mode == "Simulation")
+            {
+                if (!HasRows(clsGlobVar.dtSimulationLoadingSummary) || !HasRows(clsGlobVar.dtSimulationStabilitySummary))
+                {
+                    Models.TableModel.SimulationModeData();
+                }
+            }
+
+            Models.TableModel.LoadSimulationHydrostatics();
+        }
+
+        private static bool HasRows(DataTable table)
+        {
+            return table != null && table.Rows.Count > 0;
+        }
 
         public void ShowRealData()
         {
             try
             {
-
                 dgLoadingSummary.ItemsSource = Models.BO.clsGlobVar.dtRealLoadingSummary.DefaultView;
-
                 dgMouldedDraft.ItemsSource = clsGlobVar.dtRealdgMouldedDraft.DefaultView;
                 dgDraft.ItemsSource = Models.BO.clsGlobVar.dtRealImersion.DefaultView;
                 dgHydrostatics.ItemsSource = Models.BO.clsGlobVar.dtRealHydrostatics.DefaultView;
                 dgHydrostatics2.ItemsSource = Models.BO.clsGlobVar.dtRealHydrostatics2.DefaultView;
-
-                // dgDraft1.ItemsSource = Models.BO.clsGlobVar.dtsimulationDraftsReport.DefaultView;
                 dgDraft1.ItemsSource = Models.BO.clsGlobVar.dtRealdgDraft.DefaultView;
 
                 if (stabilityType == "Intact")
                 {
-                    // test1.ItemsSource = Models.BO.clsGlobVar.dtRealfloodsummary.DefaultView;
                     dgGZ.Columns[3].Visibility = Visibility.Visible;
                     dgGZ.Columns[4].Visibility = Visibility.Visible;
                     dgGZ.Columns[5].Visibility = Visibility.Visible;
-                    dgStability.ItemsSource = Models.BO.clsGlobVar.dtRealStabilityCriteriaIntact.DefaultView; // NES 109 StabilityP15B Criteria
+                    dgStability.ItemsSource = Models.BO.clsGlobVar.dtRealStabilityCriteriaIntact.DefaultView;
                     groupDAMDISP.Visibility = Visibility.Hidden;
                     gbSoundingPer.Visibility = Visibility.Hidden;
-                    // dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;  //DAMAGED TANKS AND COMPARTMENTS
                     Damaged_Displacement.Visibility = Visibility.Hidden;
                     if (listBoxDateList.Items.Count == 0)
                     {
                         dgGZ.ItemsSource = Models.BO.clsGlobVar.dtRealGZ.DefaultView;
                         GZChart();
                     }
-                    //groupDAMDISP.Visibility = Visibility.Hidden;
                 }
-                if (stabilityType == "Damage")
+                else if (stabilityType == "Damage")
                 {
-
                     dgGZ.Columns[3].Visibility = Visibility.Hidden;
                     dgGZ.Columns[4].Visibility = Visibility.Hidden;
                     dgGZ.Columns[5].Visibility = Visibility.Hidden;
@@ -139,36 +203,15 @@ namespace WpfMvvmStability.Views
                     }
                     gbSoundingPer.Visibility = Visibility.Visible;
                     Damaged_Displacement.Visibility = Visibility.Visible;
-                    dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;  //DAMAGED TANKS AND COMPARTMENTS
+                    dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;
                     groupDAMDISP.Visibility = Visibility.Visible;
                     Damaged_Displacement.ItemsSource = Models.BO.clsGlobVar.dtDamagedDisplacement.DefaultView;
                     dgGZ.ItemsSource = Models.BO.clsGlobVar.dtRealGZDamaged.DefaultView;
-                    dgStability.ItemsSource = Models.BO.clsGlobVar.dtRealStabilityCriteriaDamage.DefaultView; // NES 109 StabilityP15B Criteria
-                    //GZChart();
+                    dgStability.ItemsSource = Models.BO.clsGlobVar.dtRealStabilityCriteriaDamage.DefaultView;
                 }
-
-
-
-                //}
-                //else if (stabilityType == "Damage")
-                //{
-                //    dgGZ.Columns[3].Visibility = Visibility.Hidden;
-                //    dgGZ.Columns[4].Visibility = Visibility.Hidden;
-                //    dgGZ.Columns[5].Visibility = Visibility.Hidden;
-                //    dgStability.ItemsSource = Models.BO.clsGlobVar.dtSimulationStabilityCriteriaDamage.DefaultView;
-                //    gbSoundingPer.Visibility = Visibility.Visible;
-                //    groupDAMDISP.Visibility = Visibility.Visible;
-                //    dgSoundingPer.ItemsSource = Models.BO.clsGlobVar.dtSoundingPer.DefaultView;
-                //    dgGZ.ItemsSource = Models.BO.clsGlobVar.dtSimulationGZDamaged.DefaultView;
-                //    Damaged_Displacement.ItemsSource = Models.BO.clsGlobVar.dtDamagedDisplacement.DefaultView;
-
-                //}
-                //GZChart();
+                UpdateSummaryFields();
             }
-            catch
-            {
-            }
-
+            catch { }
         }
 
 
@@ -214,6 +257,7 @@ namespace WpfMvvmStability.Views
                     Damaged_Displacement.ItemsSource = Models.BO.clsGlobVar.dtDamagedDisplacement.DefaultView;
 
                 }
+                UpdateSummaryFields();
             }
             catch
             {
@@ -280,7 +324,7 @@ namespace WpfMvvmStability.Views
                 //string date = "22-04-2022 12:00:00 AM";
                 if (datePickerTo.SelectedDate >= DateTime.Now)
                 {
-                    MessageBox.Show("To date must be greater than or equal to Todays Date");
+                    ModernMessageBox.Show("To date must be greater than or equal to Today's Date", "Input Error", MessageBoxType.Warning);
                     return;
                 }
                 listBoxDateList.Items.Clear();
@@ -323,7 +367,7 @@ namespace WpfMvvmStability.Views
                 }
                 if (listBoxDateList.Items.Count == 0)
                 {
-                    MessageBox.Show("Data is not available for Current Selected Dates");
+                    ModernMessageBox.Show("Data is not available for Current Selected Dates", "No Data", MessageBoxType.Info);
                     return;
                 }
 
@@ -332,7 +376,7 @@ namespace WpfMvvmStability.Views
             catch (Exception ex)
             {
                 //MessageBox.Show("Please Change System Date Format as mm/dd/yyyy", "Information Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                MessageBox.Show("Change System Format : " + ex.Message);
+                ModernMessageBox.Show("Change System Format : " + ex.Message, "Format Error", MessageBoxType.Error);
 
             }
         }
@@ -677,7 +721,7 @@ namespace WpfMvvmStability.Views
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show(ex.ToString());
+                ModernMessageBox.Show(ex.ToString(), "Error", MessageBoxType.Error);
             }
         }
 
@@ -777,6 +821,28 @@ namespace WpfMvvmStability.Views
                 iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph(" Stability Report : " + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // Loading Summary Table Name
                 p2.Alignment = Element.ALIGN_CENTER;
                 doc.Add(p2);
+                doc.Add(new iTextSharp.text.Paragraph("  "));
+
+                // Summary Table at the top of PDF
+                PdfPTable tblSummary = new PdfPTable(4);
+                tblSummary.WidthPercentage = 90;
+                tblSummary.HorizontalAlignment = Element.ALIGN_CENTER;
+                iTextSharp.text.Font fntSumHeader = FontFactory.GetFont("Times New Roman", 10, iTextSharp.text.Font.BOLD, iTextSharp.text.Color.BLUE);
+                iTextSharp.text.Font fntSumValue = FontFactory.GetFont("Times New Roman", 12, iTextSharp.text.Font.BOLD, iTextSharp.text.Color.BLACK);
+
+                tblSummary.AddCell(new PdfPCell(new Phrase("GMt (m)", fntSumHeader)) { HorizontalAlignment = Element.ALIGN_CENTER, BackgroundColor = new iTextSharp.text.Color(240, 248, 255) });
+                tblSummary.AddCell(new PdfPCell(new Phrase("Displacement (T)", fntSumHeader)) { HorizontalAlignment = Element.ALIGN_CENTER, BackgroundColor = new iTextSharp.text.Color(240, 248, 255) });
+                tblSummary.AddCell(new PdfPCell(new Phrase("Trim (m)", fntSumHeader)) { HorizontalAlignment = Element.ALIGN_CENTER, BackgroundColor = new iTextSharp.text.Color(240, 248, 255) });
+                tblSummary.AddCell(new PdfPCell(new Phrase("List (deg)", fntSumHeader)) { HorizontalAlignment = Element.ALIGN_CENTER, BackgroundColor = new iTextSharp.text.Color(240, 248, 255) });
+
+                tblSummary.AddCell(new PdfPCell(new Phrase(txtSummaryGMT.Text, fntSumValue)) { HorizontalAlignment = Element.ALIGN_CENTER });
+                tblSummary.AddCell(new PdfPCell(new Phrase(txtSummaryDisplacement.Text, fntSumValue)) { HorizontalAlignment = Element.ALIGN_CENTER });
+                tblSummary.AddCell(new PdfPCell(new Phrase(txtSummaryTrim.Text, fntSumValue)) { HorizontalAlignment = Element.ALIGN_CENTER });
+                tblSummary.AddCell(new PdfPCell(new Phrase(txtSummaryList.Text, fntSumValue)) { HorizontalAlignment = Element.ALIGN_CENTER });
+
+                doc.Add(tblSummary);
+                doc.Add(new iTextSharp.text.Paragraph("  "));
+
 
                 //...........StartOFLogo.........................................
                 //iTextSharp.text.Image LogoWatermark = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\Watermark.png");
@@ -2619,7 +2685,7 @@ namespace WpfMvvmStability.Views
                 //..............................EndOfDamage..................................
                 doc.Close();
                 Mouse.OverrideCursor = null;
-                System.Windows.MessageBox.Show("PDF Created!");
+                ModernMessageBox.Show("Stability Report PDF has been successfully generated.", "Success", MessageBoxType.Success);
             }
             catch (Exception ex)
             {

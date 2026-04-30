@@ -42,6 +42,7 @@ namespace WpfMvvmStability.Models.BO
         public static DataTable dtRealImersion{get; set;}
         public static DataTable dtSimulationImersion{get; set;}
         public static DataTable dtRealBallastTanks { get; set; }
+        public static DataTable dtRealCargoTanks { get; set; }
         public static DataTable dtRealFuelOilTanks { get; set; }
         public static DataTable dtRealFreshWaterTanks { get; set; }
         public static DataTable dtRealMiscTanks { get; set; }
