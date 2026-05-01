@@ -55,21 +55,17 @@ namespace WpfMvvmStability
             //code for watermark.................
             try
             {
-                string imagePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Assets", "Images", "watermark_light.png");
-                if (!File.Exists(imagePath))
-                {
-                    imagePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Images", "Watermark.png");
-                }
+                string imagePath = ResolveWatermarkPath();
 
                 if (File.Exists(imagePath))
                 {
                     iTextSharp.text.Image watermark = iTextSharp.text.Image.GetInstance(imagePath);
                     PdfContentByte canvas = writer.DirectContentUnder;
-                    watermark.SetAbsolutePosition(doc.PageSize.Width / 2 - 200, doc.PageSize.Height / 2 - 150);
-                    watermark.ScaleToFit(400, 400);
+                    watermark.SetAbsolutePosition(doc.PageSize.Width / 2 - 190, doc.PageSize.Height / 2 - 140);
+                    watermark.ScaleToFit(380, 380);
                     canvas.SaveState();
                     PdfGState state = new PdfGState();
-                    state.FillOpacity = 0.1f;
+                    state.FillOpacity = 0.13f;
                     canvas.SetGState(state);
                     canvas.AddImage(watermark);
                     canvas.RestoreState();
@@ -80,8 +76,7 @@ namespace WpfMvvmStability
 
             Rectangle pageSize = doc.PageSize;
 
-            string time = DateTime.Now.ToString("HH:mm:ss");
-            string timeNew = "Time " + time;
+            string timeNew = "Time " + DateTime.Now.ToString("HH:mm:ss");
            
 
            // string date = "StabilityP15B Report P15B";
@@ -99,7 +94,7 @@ namespace WpfMvvmStability
             headerTbl.AddCell(cell1);
           
          
-            string date1 = DateTime.Now.ToString("yyyy-MM-dd");
+            string date1 = DateTime.Now.ToString("dd-MM-yyyy");
             string Datenew = "Date " + date1;
 
             Paragraph header1 = new Paragraph(Datenew, FontFactory.GetFont(FontFactory.TIMES, 8, iTextSharp.text.Font.BOLD, Color.GRAY));
@@ -115,6 +110,32 @@ namespace WpfMvvmStability
             if (doc.PageNumber == 2) { doc.Add(new iTextSharp.text.Paragraph("  ")); doc.Add(new iTextSharp.text.Paragraph("  ")); }
            
          
+        }
+
+        private static string ResolveWatermarkPath()
+        {
+            string baseDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] candidates = new[]
+            {
+                System.IO.Path.Combine(baseDir, "Assets", "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "..", "Assets", "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "..", "..", "Assets", "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "Assets", "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "Assets", "Images", "watermark_light.png"),
+                System.IO.Path.Combine(baseDir, "Images", "Watermark.png")
+            };
+
+            foreach (string candidate in candidates)
+            {
+                string fullPath = System.IO.Path.GetFullPath(candidate);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+            }
+
+            return string.Empty;
         }
 
        

@@ -185,6 +185,7 @@ namespace WpfMvvmStability.Views
         private void Configuration_Click(object sender, RoutedEventArgs e)
         {
             ConfigurationWindow objConfiguration = new ConfigurationWindow();
+            objConfiguration.Owner = this;
             objConfiguration.ShowDialog();
         }
 
@@ -209,23 +210,26 @@ namespace WpfMvvmStability.Views
             try
             {
                 string executionPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Reports\\";
-                System.Diagnostics.Process.Start("explorer.exe", executionPath);
-                string[] programFile = executionPath.Split('\\');
-                string bitSelector = programFile[1];
-
-                if (bitSelector.ToString() == "Program Files")
+                if (!Directory.Exists(executionPath))
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", @"C:\Program Files\Aegis\Stability\Reports");
-                }
-                else if (bitSelector.ToString() == "Program Files (x86)")
-                {
-                    System.Diagnostics.Process.Start("explorer.exe", @"C:\Program Files (x86)\Aegis\Stability\Reports");
+                    Directory.CreateDirectory(executionPath);
                 }
 
+                string[] reportFiles = Directory.GetFiles(executionPath, "*.pdf", SearchOption.TopDirectoryOnly);
+                if (reportFiles.Length > 0)
+                {
+                    Array.Sort(reportFiles, (a, b) => File.GetLastWriteTime(b).CompareTo(File.GetLastWriteTime(a)));
+                    Process.Start(reportFiles[0]);
+                }
+                else
+                {
+                    Process.Start("explorer.exe", executionPath);
+                    ModernMessageBox.Show("No report PDF found. Reports folder opened.", "View Report", MessageBoxType.Warning);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Could Not Find The Path Please Contact to Administrator");
+                ModernMessageBox.Show("Unable to open report: " + ex.Message, "View Report", MessageBoxType.Error);
             }
         }
 
@@ -281,6 +285,12 @@ namespace WpfMvvmStability.Views
             StabilityDetail page = new StabilityDetail();
             frameRealMode.NavigationService.Navigate(page);
         }
+        private void OnGoPageRealHome(object sender, RoutedEventArgs e)
+        {
+            Models.BO.clsGlobVar.Mode = "Real";
+            RealModeMain page = new RealModeMain();
+            frameRealMode.NavigationService.Navigate(page);
+        }
         private void OnGoPageRealReport(object sender, RoutedEventArgs e)
         {
             Models.BO.clsGlobVar.Mode = "Real";
@@ -305,6 +315,12 @@ namespace WpfMvvmStability.Views
             Models.BO.clsGlobVar.Mode = "Simulation";
             StabilityDetail page = new StabilityDetail();
             frameSimulationMode.NavigationService.Navigate(page);
+        }
+        private void OnGoPageSimulationHome(object sender, RoutedEventArgs e)
+        {
+            Models.BO.clsGlobVar.Mode = "Simulation";
+            pageSimulation = new SimulationModeMain();
+            frameSimulationMode.NavigationService.Navigate(pageSimulation);
         }
         private void OnGoPageSimulationReport(object sender, RoutedEventArgs e)
         {
@@ -505,11 +521,11 @@ namespace WpfMvvmStability.Views
             {
                 string st = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 path = st + "\\Main Particulars and Reference System.Pdf";
-                System.Diagnostics.Process.Start(path);
+                OpenPdfWithFeedback(path, "Main Particulars");
             }
-            catch
+            catch (Exception ex)
             {
-
+                ModernMessageBox.Show("Unable to open Main Particulars: " + ex.Message, "Document", MessageBoxType.Error);
             }
         }
 
@@ -520,11 +536,11 @@ namespace WpfMvvmStability.Views
             {
                 string st = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 path = st + "\\GA Fi.Pdf";
-                System.Diagnostics.Process.Start(path);
+                OpenPdfWithFeedback(path, "General Arrangement");
             }
-            catch
+            catch (Exception ex)
             {
-
+                ModernMessageBox.Show("Unable to open General Arrangement: " + ex.Message, "Document", MessageBoxType.Error);
             }
         }
 
@@ -534,12 +550,23 @@ namespace WpfMvvmStability.Views
             {
                 string st = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 path = st + "\\P15B_Tank_Plan.Pdf";
-                System.Diagnostics.Process.Start(path);
+                OpenPdfWithFeedback(path, "Tank Capacity Plan");
             }
-            catch
+            catch (Exception ex)
             {
-
+                ModernMessageBox.Show("Unable to open Tank Capacity Plan: " + ex.Message, "Document", MessageBoxType.Error);
             }
+        }
+
+        private void OpenPdfWithFeedback(string pdfPath, string documentName)
+        {
+            if (!File.Exists(pdfPath))
+            {
+                ModernMessageBox.Show(documentName + " file not found:\n" + pdfPath, "Document", MessageBoxType.Warning);
+                return;
+            }
+
+            Process.Start(pdfPath);
         }
 
         private void settings_Click(object sender, RoutedEventArgs e)

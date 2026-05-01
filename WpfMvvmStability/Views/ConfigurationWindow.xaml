@@ -22,23 +22,23 @@
         <DropShadowEffect x:Key="CardShadow" ShadowDepth="1" BlurRadius="18" Opacity="0.14" Color="#030032"/>
 
         <!-- Theme brushes are updated from code-behind so dark mode stays in sync -->
-        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F4F7FF"/>
-        <SolidColorBrush x:Key="PageBgBrush" Color="#F4F7FF"/>
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#EEF4FF"/>
+        <SolidColorBrush x:Key="PageBgBrush" Color="#F7FAFF"/>
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#D8E2FF"/>
-        <SolidColorBrush x:Key="DividerBrush" Color="#C4D0F8"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1E293B"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#526184"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#CCDAFF"/>
+        <SolidColorBrush x:Key="DividerBrush" Color="#B7C9FF"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#14213D"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#3F5485"/>
         <SolidColorBrush x:Key="TextDisabledBrush" Color="#96A4C5"/>
-        <SolidColorBrush x:Key="PrimaryBrush" Color="#1F48FF"/>
-        <SolidColorBrush x:Key="PrimaryLightBrush" Color="#4D6BFF"/>
-        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#030032"/>
-        <SolidColorBrush x:Key="PrimaryBgBrush" Color="#ECF1FF"/>
-        <SolidColorBrush x:Key="PrimaryBorderBrush" Color="#9AB0FF"/>
-        <SolidColorBrush x:Key="ShellBackgroundBrush" Color="#030032"/>
-        <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#0D125A"/>
-        <SolidColorBrush x:Key="ShellBorderBrush" Color="#233A96"/>
-        <SolidColorBrush x:Key="ShellMutedBrush" Color="#A8B8EA"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2E5BFF"/>
+        <SolidColorBrush x:Key="PrimaryLightBrush" Color="#5E80FF"/>
+        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#1B3FCC"/>
+        <SolidColorBrush x:Key="PrimaryBgBrush" Color="#EEF3FF"/>
+        <SolidColorBrush x:Key="PrimaryBorderBrush" Color="#8AA5FF"/>
+        <SolidColorBrush x:Key="ShellBackgroundBrush" Color="#2E5BFF"/>
+        <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#4A72FF"/>
+        <SolidColorBrush x:Key="ShellBorderBrush" Color="#7E9DFF"/>
+        <SolidColorBrush x:Key="ShellMutedBrush" Color="#DCE6FF"/>
         <SolidColorBrush x:Key="TextOnShellBrush" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="MenuPopupBrush" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="MenuPopupBorderBrush" Color="#D8E2FF"/>
@@ -65,7 +65,7 @@
 
         <Style x:Key="DialogButtonBase" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="12,0"/>
             <Setter Property="Height" Value="32"/>
@@ -158,14 +158,14 @@
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="Height" Value="32"/>
             <Setter Property="Padding" Value="10,0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -193,7 +193,7 @@
 
         <Style TargetType="Label">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
@@ -202,7 +202,7 @@
             <Setter Property="Background" Value="{DynamicResource CardBgBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -353,7 +353,7 @@
 
     <Grid Background="{DynamicResource WindowBackgroundBrush}">
         <Border x:Name="Backdrop"
-                Background="#66030614"
+                Background="#33DCE8FF"
                 MouseLeftButtonDown="Backdrop_MouseLeftButtonDown">
             <Grid>
                 <Border x:Name="DialogRoot"
@@ -399,7 +399,7 @@
                                 </StackPanel>
                                 <Button Grid.Column="1"
                                         x:Name="btnCloseHeader"
-                                        Content="✕"
+                                        Content="X"
                                         Style="{StaticResource CloseDialogButton}"
                                         Click="btnClose_Click"
                                         VerticalAlignment="Top"/>
@@ -459,7 +459,7 @@
                                                             <ColumnDefinition Width="96"/>
                                                         </Grid.ColumnDefinitions>
                                                         <Label Grid.Column="0" Content="Server Name" Height="30"/>
-                                                        <TextBox Grid.Column="1" Name="textBoxServerName"/>
+                                                        <TextBox Grid.Column="1" Name="textBoxServerName" TextChanged="textBoxServerName_TextChanged"/>
                                                         <Button Grid.Column="3"
                                                                 Content="Connect"
                                                                 Name="btnConnect"
@@ -540,13 +540,13 @@
                                                         <Button Grid.Column="3"
                                                                 Content="Browse"
                                                                 Name="btnBrowse2"
-                                                                Click="btnBrowse_Click"
+                                                                Click="btnBrowseBackup_Click"
                                                                 Style="{StaticResource SecondaryButton}"/>
                                                     </Grid>
                                                     <Button Grid.Row="2"
                                                             Content="Backup"
                                                             Name="btnBackUp"
-                                                            Click="btnRestore_Click"
+                                                            Click="btnBackup_Click"
                                                             HorizontalAlignment="Right"
                                                             Style="{StaticResource PrimaryButton}"/>
                                                 </Grid>
@@ -556,18 +556,12 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <Button Grid.Column="0"
                                                         Content="Create Master Login"
                                                         Name="btnMasterLogin"
                                                         Click="btnMasterLogin_Click"
                                                         Style="{StaticResource SecondaryButton}"/>
-                                                <Button Grid.Column="2"
-                                                        Content="Close"
-                                                        Name="btnClose"
-                                                        Click="btnClose_Click"
-                                                        Style="{StaticResource NavyButton}"/>
                                             </Grid>
                                         </StackPanel>
                                     </ScrollViewer>
@@ -613,7 +607,7 @@
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <Label Grid.Column="0" Content="Server Name" Height="30" Name="label7"/>
-                                                    <TextBox Grid.Column="1" Name="txtServerName"/>
+                                                    <TextBox Grid.Column="1" Name="txtServerName" TextChanged="txtServerName_TextChanged"/>
                                                 </Grid>
                                             </GroupBox>
 
@@ -688,18 +682,11 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Use the active tab to manage backup or connection settings."
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            VerticalAlignment="Center"
-                                           FontSize="11"/>
-                                <Button Grid.Column="1"
-                                        Content="Close"
-                                        Width="78"
-                                        Height="28"
-                                        Style="{StaticResource NavyButton}"
-                                        Click="btnClose_Click"/>
+                                           FontSize="12"/>
                             </Grid>
                         </Border>
                     </Grid>

@@ -17,6 +17,7 @@ using System.IO;
 using Microsoft.Win32;
 using System.Reflection;
 using System.Xml.Linq;
+using System.Net;
 
 
 namespace WpfMvvmStability.Views
@@ -137,9 +138,70 @@ namespace WpfMvvmStability.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message.ToString());
+                ModernMessageBox.Show(ex.Message, "Configuration", MessageBoxType.Error);
             }
         }
+
+        private void ShowWarning(string message)
+        {
+            ModernMessageBox.Show(message, "Configuration", MessageBoxType.Warning);
+        }
+
+        private void ShowSuccess(string message)
+        {
+            ModernMessageBox.Show(message, "Configuration", MessageBoxType.Success);
+        }
+
+        private void ShowError(Exception ex)
+        {
+            ModernMessageBox.Show(ex.Message, "Configuration", MessageBoxType.Error);
+        }
+
+        private bool ValidateServerName()
+        {
+            if (string.IsNullOrWhiteSpace(textBoxServerName.Text))
+            {
+                ShowWarning("Please enter server name.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void RefreshApplicationConnectionString()
+        {
+            connectionstring = "Data Source=" + textBoxServerName.Text.Trim() + ";Initial Catalog=StabilityP15B;User ID=StabilityP15B;Password=stabilityp15b";
+        }
+
+        private bool ValidateTcpSerialInput()
+        {
+            if (radioButtonTCP.IsChecked == true)
+            {
+                if (string.IsNullOrWhiteSpace(txtIP.Text))
+                {
+                    ShowWarning("Please enter IP address for TCP mode.");
+                    return false;
+                }
+
+                IPAddress ipAddress;
+                if (!IPAddress.TryParse(txtIP.Text.Trim(), out ipAddress))
+                {
+                    ShowWarning("Please enter a valid IP address.");
+                    return false;
+                }
+            }
+            else if (radioButtonSerial.IsChecked == true)
+            {
+                if (string.IsNullOrWhiteSpace(txtComPort.Text))
+                {
+                    ShowWarning("Please enter COM port for Serial mode.");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private void btnBrowse_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -151,21 +213,35 @@ namespace WpfMvvmStability.Views
             }
         }
 
+        private void btnBrowseBackup_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "Backup Files(*.bak)|*.bak|All Files(*.*)|*.*";
+            dlg.FilterIndex = 0;
+            dlg.FileName = "StabilityP15B.bak";
+            if (dlg.ShowDialog() == true)
+            {
+                txtBoxBackupPath.Text = dlg.FileName;
+            }
+        }
+
         private void btnRestore_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-                if (textBoxServerName.Text == "")
+                if (!ValidateServerName())
                 {
-                    MessageBox.Show("Please Enter Server Name");
+                    Mouse.OverrideCursor = null;
                 }
-                else if (textBoxRestorePath.Text == "")
+                else if (string.IsNullOrWhiteSpace(textBoxRestorePath.Text))
                 {
-                    MessageBox.Show("Please Select Database Path");
+                    ShowWarning("Please select restore file path.");
+                    Mouse.OverrideCursor = null;
                 }
                 else
                 {
+                    RefreshApplicationConnectionString();
                     conn = new SqlConnection(connectionstring);
                     conn.Open();
                     //sql= "IF EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = N'" + cmbDatabase.Text + "') DROP DATABASE " + cmbDatabase.Text + " RESTORE DATABASE " + cmbDatabase.Text + " FROM DISK = '" + txtRestoreFileLocation.Text + "'";
@@ -177,14 +253,14 @@ namespace WpfMvvmStability.Views
                     command.ExecuteNonQuery();
                     conn.Close();
                     conn.Dispose();
-                    MessageBox.Show("Database Successfully Restored");
+                    ShowSuccess("Database restored successfully.");
                     Mouse.OverrideCursor = null;
                 }
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                ShowError(ex);
                 Mouse.OverrideCursor = null;
             }
 
@@ -196,15 +272,15 @@ namespace WpfMvvmStability.Views
             {
                 if (textBoxServerName.Text == "")
                 {
-                    MessageBox.Show("Please Enter Server Name");
+                    ShowWarning("Please enter server name.");
                 }
                 else if (textBoxUser.Text == "")
                 {
-                    MessageBox.Show("Please Enter User");
+                    ShowWarning("Please enter user.");
                 }
                 else if (textBoxPassword.Text == "")
                 {
-                    MessageBox.Show("Please Enter Password");
+                    ShowWarning("Please enter password.");
                 }
                 else
                 {
@@ -234,7 +310,7 @@ namespace WpfMvvmStability.Views
 
                     doc.Save(PATH);
 
-                    MessageBox.Show("Configuration String Created");
+                    ShowSuccess("Configuration string created.");
                 }
             }
             catch
@@ -252,6 +328,13 @@ namespace WpfMvvmStability.Views
             try
             {
                 Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+                if (listBoxSQLInstances.SelectedItem == null)
+                {
+                    ShowWarning("Please select SQL instance.");
+                    Mouse.OverrideCursor = null;
+                    return;
+                }
+
                 password = textBoxPassword.Text;
                 user = textBoxUser.Text;
                 connectionstring1 = "Data Source=" + listBoxSQLInstances.SelectedItem.ToString() + ";Initial Catalog=master;User ID=" + user + ";Password=" + password;
@@ -281,7 +364,7 @@ namespace WpfMvvmStability.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message.ToString());
+                ShowError(ex);
                 Mouse.OverrideCursor = null;
             }
 
@@ -308,7 +391,7 @@ namespace WpfMvvmStability.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                ShowError(ex);
                 Mouse.OverrideCursor = null;
             }
         }
@@ -321,7 +404,7 @@ namespace WpfMvvmStability.Views
             }
             catch
             {
-                MessageBox.Show("Please select Instance");
+                ShowWarning("Please select instance.");
             }
 
         }
@@ -348,11 +431,11 @@ namespace WpfMvvmStability.Views
                 command.ExecuteNonQuery();
                 conn.Close();
                 conn.Dispose();
-                MessageBox.Show("Master Login Created Successfully");
+                ShowSuccess("Master login created successfully.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                ShowError(ex);
             }
         }
 
@@ -360,6 +443,17 @@ namespace WpfMvvmStability.Views
         {
             try
             {
+                if (!ValidateTcpSerialInput())
+                {
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtServerName.Text))
+                {
+                    ShowWarning("Please enter server name in connection settings.");
+                    return;
+                }
+
                 XmlDocument doc = new XmlDocument();
                 //if (!System.IO.File.Exists(PATH))
                 //{
@@ -611,10 +705,47 @@ namespace WpfMvvmStability.Views
 
                 doc.Save(PATH);
 
-                MessageBox.Show("All Computers Added to Configuration String");
+                ShowSuccess("All computers added to configuration string.");
             }
             catch
             {
+            }
+        }
+
+        private void btnBackup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                if (!ValidateServerName())
+                {
+                    Mouse.OverrideCursor = null;
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtBoxBackupPath.Text))
+                {
+                    ShowWarning("Please select backup file path.");
+                    Mouse.OverrideCursor = null;
+                    return;
+                }
+
+                RefreshApplicationConnectionString();
+                conn = new SqlConnection(connectionstring);
+                conn.Open();
+                sql = "BACKUP DATABASE StabilityP15B TO DISK = '" + txtBoxBackupPath.Text + "' WITH INIT;";
+                command = new SqlCommand(sql, conn);
+                command.CommandTimeout = 500;
+                command.ExecuteNonQuery();
+                conn.Close();
+                conn.Dispose();
+                ShowSuccess("Database backup created successfully.");
+                Mouse.OverrideCursor = null;
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+                Mouse.OverrideCursor = null;
             }
         }
 
@@ -662,6 +793,7 @@ namespace WpfMvvmStability.Views
 
                 XmlNode node1 = xml.SelectSingleNode("Settings/ServerName");
                 txtServerName.Text = node1.InnerText;
+                textBoxServerName.Text = txtServerName.Text;
                 XmlNodeList detailNodes = xml.SelectNodes("Settings/Computers");
                 foreach (XmlNode detail in detailNodes)
                 {
@@ -843,6 +975,22 @@ namespace WpfMvvmStability.Views
 
             catch
             {
+            }
+        }
+
+        private void txtServerName_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (textBoxServerName != null && textBoxServerName.Text != txtServerName.Text)
+            {
+                textBoxServerName.Text = txtServerName.Text;
+            }
+        }
+
+        private void textBoxServerName_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (txtServerName != null && txtServerName.Text != textBoxServerName.Text)
+            {
+                txtServerName.Text = textBoxServerName.Text;
             }
         }
     }

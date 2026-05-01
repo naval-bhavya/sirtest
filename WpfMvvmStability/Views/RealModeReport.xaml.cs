@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +19,8 @@ using System.Reflection;
 using System.Data.Common;
 using System.Windows.Controls.DataVisualization.Charting;
 using WpfMvvmStability.Models.BO;
+using Microsoft.Win32;
+using System.Globalization;
 
 namespace WpfMvvmStability.Views
 {
@@ -109,10 +111,10 @@ namespace WpfMvvmStability.Views
                 if (eqTable != null && eqTable.Rows.Count > 0)
                 {
                     DataRow row = eqTable.Rows[0];
-                    txtSummaryGMT.Text = row["GMT"] != DBNull.Value ? Convert.ToDecimal(row["GMT"]).ToString("N3") : "0.000";
-                    txtSummaryDisplacement.Text = row["Displacement"] != DBNull.Value ? Convert.ToDecimal(row["Displacement"]).ToString("N0") : "0";
-                    txtSummaryTrim.Text = row["TRIM"] != DBNull.Value ? Convert.ToDecimal(row["TRIM"]).ToString("N3") : "0.000";
-                    txtSummaryList.Text = row["Heel"] != DBNull.Value ? Convert.ToDecimal(row["Heel"]).ToString("N2") : "0.00";
+                    txtSummaryGMT.Text = row["GMT"] != DBNull.Value ? ParseDecimalSafe(row["GMT"]).ToString("N3") : "0.000";
+                    txtSummaryDisplacement.Text = row["Displacement"] != DBNull.Value ? ParseDecimalSafe(row["Displacement"]).ToString("N0") : "0";
+                    txtSummaryTrim.Text = row["TRIM"] != DBNull.Value ? ParseDecimalSafe(row["TRIM"]).ToString("N3") : "0.000";
+                    txtSummaryList.Text = row["Heel"] != DBNull.Value ? ParseDecimalSafe(row["Heel"]).ToString("N2") : "0.00";
                 }
                 else
                 {
@@ -164,7 +166,17 @@ namespace WpfMvvmStability.Views
         {
             return table != null && table.Rows.Count > 0;
         }
+        private static decimal ParseDecimalSafe(object value)
+        {
+            if (value == null || value == DBNull.Value) return 0m;
+            string s = Convert.ToString(value)?.Trim();
+            if (string.IsNullOrWhiteSpace(s)) return 0m;
 
+            decimal parsed;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out parsed)) return parsed;
+            if (decimal.TryParse(s, NumberStyles.Any, CultureInfo.CurrentCulture, out parsed)) return parsed;
+            return 0m;
+        }
         public void ShowRealData()
         {
             try
@@ -739,6 +751,11 @@ namespace WpfMvvmStability.Views
         {
             try
             {
+                string selectedPath = PromptReportPath();
+                if (string.IsNullOrWhiteSpace(selectedPath))
+                {
+                    return;
+                }
 
                 int chartWidth = Convert.ToInt32(GzChart.ActualWidth);
                 int chartHeight = Convert.ToInt32(GzChart.ActualHeight);
@@ -752,11 +769,14 @@ namespace WpfMvvmStability.Views
                 bmp.Render(GzChart);
                 BmpBitmapEncoder encoder = new BmpBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bmp));
-                FileStream fileStream = new FileStream(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\GZ.png", FileMode.Create);
+                string appBaseDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string imageDir = System.IO.Path.Combine(appBaseDir, "Images");
+                Directory.CreateDirectory(imageDir);
+                FileStream fileStream = new FileStream(System.IO.Path.Combine(imageDir, "GZ.png"), FileMode.Create);
                 encoder.Save(fileStream);
                 fileStream.Close();
                 bmp.Clear();
-                printToPdf();
+                printToPdf(selectedPath);
 
                 try
                 {
@@ -794,8 +814,9 @@ namespace WpfMvvmStability.Views
 
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                ModernMessageBox.Show("Failed to generate report.\n" + ex.Message, "Error", MessageBoxType.Error);
             }
         }
         #region PDFWriter
@@ -803,17 +824,51 @@ namespace WpfMvvmStability.Views
         {
             return DateTime.Now.ToString("yyyy_MM_dd HH_mm_ss");
         }
-        public void printToPdf()
+        private string PromptReportPath()
+        {
+            string appBaseDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string reportDir = System.IO.Path.Combine(appBaseDir, "Reports");
+            Directory.CreateDirectory(reportDir);
+
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Title = "Save Stability Report",
+                InitialDirectory = reportDir,
+                FileName = ISO_Date() + "_Report.pdf",
+                Filter = "PDF files (*.pdf)|*.pdf",
+                DefaultExt = ".pdf",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            bool? result = dialog.ShowDialog();
+            return result == true ? dialog.FileName : null;
+        }
+
+        public void printToPdf(string selectedReportPath)
         {
             try
             {
+                if (!(dgLoadingSummary.ItemsSource is DataView loadingSummaryView) || loadingSummaryView.Count == 0)
+                {
+                    throw new InvalidOperationException("Loading Summary data is empty. Please load/calculate data before generating report.");
+                }
+                if (!(dgGZ.ItemsSource is DataView gzView) || gzView.Count == 0)
+                {
+                    throw new InvalidOperationException("GZ data is empty. Please load/calculate data before generating report.");
+                }
+                if (!(dgDraft.ItemsSource is DataView draftView) || draftView.Count == 0)
+                {
+                    throw new InvalidOperationException("Draft data is empty. Please load/calculate data before generating report.");
+                }
+
                 //SimulationModeMain s = new SimulationModeMain();
                // objCustIp.ShowDialog();
 
                
                 Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                 Document doc = new Document(iTextSharp.text.PageSize.A4, 30, 30, 30, 20);
-                reportPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Reports\\" + ISO_Date() + "_Report.pdf";
+                reportPath = selectedReportPath;
                 PdfWriter wri = PdfWriter.GetInstance(doc, new FileStream(reportPath, FileMode.Create));
                 doc.Open();//Open Document to write
                 wri.PageEvent = new pdfFormating();
@@ -821,7 +876,7 @@ namespace WpfMvvmStability.Views
                 iTextSharp.text.Paragraph p2 = new iTextSharp.text.Paragraph(" Stability Report : " + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // Loading Summary Table Name
                 p2.Alignment = Element.ALIGN_CENTER;
                 doc.Add(p2);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
 
                 // Summary Table at the top of PDF
                 PdfPTable tblSummary = new PdfPTable(4);
@@ -841,7 +896,7 @@ namespace WpfMvvmStability.Views
                 tblSummary.AddCell(new PdfPCell(new Phrase(txtSummaryList.Text, fntSumValue)) { HorizontalAlignment = Element.ALIGN_CENTER });
 
                 doc.Add(tblSummary);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
 
 
                 //...........StartOFLogo.........................................
@@ -902,7 +957,7 @@ namespace WpfMvvmStability.Views
                 //    p3.Alignment = Element.ALIGN_CENTER;
                 //    doc.Add(p3);
                 //}
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 iTextSharp.text.Font fntHeader = FontFactory.GetFont("Times New Roman", 8, iTextSharp.text.Color.BLUE);   //Header
                 iTextSharp.text.Font fntBody = FontFactory.GetFont("Times New Roman", 6.5f);   // Body
                 PdfPTable tblLoadingSummary = new PdfPTable(10);
@@ -1019,7 +1074,7 @@ namespace WpfMvvmStability.Views
 
                                 else if (columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10)
                                 {
-                                    decimal d = Convert.ToDecimal(strValue);
+                                    decimal d = ParseDecimalSafe(strValue);
                                     temp = Convert.ToString(Math.Round(d, 3));
                                     PdfPCell pdf = new PdfPCell(new iTextSharp.text.Paragraph(temp, fntBody));
                                     pdf.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -1035,7 +1090,7 @@ namespace WpfMvvmStability.Views
                             else if (columnCounter == 3 || columnCounter == 4 || columnCounter == 5 || columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10 && rowCounter != rowCount - 1 && rowCounter != rowCount - 2 && rowCounter != rowCount - 3)
                             {
                                 PdfPCell pdf;
-                                decimal d = Convert.ToDecimal(strValue);
+                                decimal d = ParseDecimalSafe(strValue);
                                 temp = Convert.ToString(Math.Round(d, 3));
                                 if (temp == Convert.ToString(0))
                                 {
@@ -1096,17 +1151,17 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(tblLoadingSummary);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 if (rowCount > 86)
                 {
                    
                     try
                     {
                         
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         PdfPTable tblLoadingSummary2 = new PdfPTable(10);
                         tblLoadingSummary2.DefaultCell.HorizontalAlignment = Element.ALIGN_RIGHT;
                         tblLoadingSummary2.WidthPercentage = 90;
@@ -1193,7 +1248,7 @@ namespace WpfMvvmStability.Views
                         {
                             if (rowCounter == 47)
                             {
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
                             }
 
                             for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
@@ -1222,7 +1277,7 @@ namespace WpfMvvmStability.Views
 
                                         else if (columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10)
                                         {
-                                            decimal d = Convert.ToDecimal(strValue);
+                                            decimal d = ParseDecimalSafe(strValue);
                                             temp = Convert.ToString(Math.Round(d, 3));
                                             PdfPCell pdf = new PdfPCell(new iTextSharp.text.Paragraph(temp, fntBody));
                                             pdf.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -1238,7 +1293,7 @@ namespace WpfMvvmStability.Views
                                     else if (columnCounter == 3 || columnCounter == 4 || columnCounter == 5 || columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10 && rowCounter != rowCount - 1 && rowCounter != rowCount - 2 && rowCounter != rowCount - 3)
                                     {
                                         PdfPCell pdf;
-                                        decimal d = Convert.ToDecimal(strValue);
+                                        decimal d = ParseDecimalSafe(strValue);
                                         temp = Convert.ToString(Math.Round(d, 3));
                                         if (temp == Convert.ToString(0))
                                         {
@@ -1300,7 +1355,7 @@ namespace WpfMvvmStability.Views
                             }
                         }
                         doc.Add(tblLoadingSummary2);
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         doc.NewPage();
                     }
                     catch (Exception ex)
@@ -1316,7 +1371,7 @@ namespace WpfMvvmStability.Views
                     try
                     {
 
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         PdfPTable tblLoadingSummary1 = new PdfPTable(10);
                         tblLoadingSummary1.DefaultCell.HorizontalAlignment = Element.ALIGN_RIGHT;
                         tblLoadingSummary1.WidthPercentage = 90;
@@ -1403,7 +1458,7 @@ namespace WpfMvvmStability.Views
                             {
                             if (rowCounter == 86)
                             {
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
                             }
                             for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
                             {
@@ -1432,7 +1487,7 @@ namespace WpfMvvmStability.Views
 
                                         else if (columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10)
                                         {
-                                            decimal d = Convert.ToDecimal(strValue);
+                                            decimal d = ParseDecimalSafe(strValue);
                                             temp = Convert.ToString(Math.Round(d, 3));
                                             PdfPCell pdf = new PdfPCell(new iTextSharp.text.Paragraph(temp, fntBody));
                                             pdf.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -1449,7 +1504,7 @@ namespace WpfMvvmStability.Views
                                     else if (columnCounter == 3 || columnCounter == 4 || columnCounter == 5 || columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10 && rowCounter != rowCount - 1 && rowCounter != rowCount - 2)
                                     {
                                         PdfPCell pdf;
-                                        decimal d = Convert.ToDecimal(strValue);
+                                        decimal d = ParseDecimalSafe(strValue);
                                         temp = Convert.ToString(Math.Round(d, 3));
                                         if (temp == Convert.ToString(0))
                                         {
@@ -1511,7 +1566,7 @@ namespace WpfMvvmStability.Views
                             }
                         }
                         doc.Add(tblLoadingSummary1);
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         // doc.NewPage();
                     }
                     catch (Exception ex)
@@ -1525,7 +1580,7 @@ namespace WpfMvvmStability.Views
                     try
                     {
 
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         PdfPTable tblLoadingSummary1 = new PdfPTable(10);
                         tblLoadingSummary1.DefaultCell.HorizontalAlignment = Element.ALIGN_RIGHT;
                         tblLoadingSummary1.WidthPercentage = 90;
@@ -1612,7 +1667,7 @@ namespace WpfMvvmStability.Views
                         {
                             if (rowCounter == 47)
                             {
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
                             }
                             for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
                             {
@@ -1640,7 +1695,7 @@ namespace WpfMvvmStability.Views
 
                                         else if (columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10)
                                         {
-                                            decimal d = Convert.ToDecimal(strValue);
+                                            decimal d = ParseDecimalSafe(strValue);
                                             temp = Convert.ToString(Math.Round(d, 3));
                                             PdfPCell pdf = new PdfPCell(new iTextSharp.text.Paragraph(temp, fntBody));
                                             pdf.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -1656,7 +1711,7 @@ namespace WpfMvvmStability.Views
                                     else if (columnCounter == 3 || columnCounter == 4 || columnCounter == 5 || columnCounter == 6 || columnCounter == 7 || columnCounter == 8 || columnCounter == 9 || columnCounter == 10 && rowCounter != rowCount - 1 && rowCounter != rowCount - 2 && rowCounter != rowCount - 3)
                                     {
                                         PdfPCell pdf;
-                                        decimal d = Convert.ToDecimal(strValue);
+                                        decimal d = ParseDecimalSafe(strValue);
                                         temp = Convert.ToString(Math.Round(d, 3));
                                         if (temp == Convert.ToString(0))
                                         {
@@ -1718,7 +1773,7 @@ namespace WpfMvvmStability.Views
                             }
                         }
                         doc.Add(tblLoadingSummary1);
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         // doc.NewPage();
                     }
                     catch (Exception ex)
@@ -1735,7 +1790,7 @@ namespace WpfMvvmStability.Views
                     iTextSharp.text.Paragraph pHeaderdamagedDisp = new iTextSharp.text.Paragraph("Damaged Displacement", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                     pHeaderdamagedDisp.Alignment = Element.ALIGN_CENTER;
                     doc.Add(pHeaderdamagedDisp);
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                     iTextSharp.text.Font fntHeader_Dd = FontFactory.GetFont("Times New Roman", 7, iTextSharp.text.Color.BLUE);
                     PdfPTable tbldamageddisp = new PdfPTable(5);
                     tbldamageddisp.WidthPercentage = 90;
@@ -1821,7 +1876,7 @@ namespace WpfMvvmStability.Views
                     iTextSharp.text.Paragraph pHeaderdamagedtanksComp = new iTextSharp.text.Paragraph("Damaged Tanks And Compartment", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                     pHeaderdamagedtanksComp.Alignment = Element.ALIGN_CENTER;
                     doc.Add(pHeaderdamagedtanksComp);
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                     iTextSharp.text.Font fntHeader_DTC = FontFactory.GetFont("Times New Roman", 7, iTextSharp.text.Color.BLUE);
                     PdfPTable tbldamagedtankscomp = new PdfPTable(7);
                     tbldamagedtankscomp.WidthPercentage = 90;
@@ -1912,8 +1967,8 @@ namespace WpfMvvmStability.Views
                    
                     else
                     {
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
-                        doc.Add(new iTextSharp.text.Paragraph("  "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
+                        doc.Add(new iTextSharp.text.Paragraph(" "));
                         PdfPTable tbldamagedtankscomp2 = new PdfPTable(7);
                         tbldamagedtankscomp2.WidthPercentage = 90;
                         float[] widthdamagedtcomp2 = new float[] { 1.2f, 1.6f, 1.2f, 1.2f, 1.5f, 1.2f, 1.2f };
@@ -1987,7 +2042,7 @@ namespace WpfMvvmStability.Views
                         {
                             //if (rowCounter == 40)
                             //{
-                            //    doc.Add(new iTextSharp.text.Paragraph("  "));
+                            //    doc.Add(new iTextSharp.text.Paragraph(" "));
 
                             //}
                             for (int columnCounter = 0; columnCounter < columnCountDAMAGEDTCOMP2; columnCounter++)
@@ -2010,7 +2065,7 @@ namespace WpfMvvmStability.Views
                         //   // iTextSharp.text.Paragraph pHeaderdamagedtanksComp = new iTextSharp.text.Paragraph("Damaged Tanks And Compartment", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                         //    //pHeaderdamagedtanksComp.Alignment = Element.ALIGN_CENTER;
                         //    //doc.Add(pHeaderdamagedtanksComp);
-                        //    //doc.Add(new iTextSharp.text.Paragraph("  "));
+                        //    //doc.Add(new iTextSharp.text.Paragraph(" "));
                         //    iTextSharp.text.Font fntHeader_DTC = FontFactory.GetFont("Times New Roman", 7, iTextSharp.text.Color.BLUE);
                         PdfPTable tbldamagedtankscomp1 = new PdfPTable(7);
                         tbldamagedtankscomp1.WidthPercentage = 90;
@@ -2085,9 +2140,9 @@ namespace WpfMvvmStability.Views
                         {
                             if (rowCounter == 40)
                             {
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
-                                doc.Add(new iTextSharp.text.Paragraph("  "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
+                                doc.Add(new iTextSharp.text.Paragraph(" "));
                             }
                             for (int columnCounter = 0; columnCounter < columnCountDAMAGEDTCOMP1; columnCounter++)
                             {
@@ -2105,14 +2160,14 @@ namespace WpfMvvmStability.Views
               
 
                 //..................StartOfHydrostatics1.........................................
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));
-                doc.Add(new iTextSharp.text.Paragraph("  "));   
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));   
                 iTextSharp.text.Paragraph pHeaderHydro = new iTextSharp.text.Paragraph("Hydrostatics", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                 pHeaderHydro.Alignment = Element.ALIGN_CENTER;
                 doc.Add(pHeaderHydro);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 PdfPTable tblHydrostatic = new PdfPTable(11);
                 tblHydrostatic.WidthPercentage = 95;
                 float[] widthsHydro = new float[] { 1.2f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f };
@@ -2172,7 +2227,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(tblHydrostatic);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 //..................EndOfHydrostatics1.........................................
 
                 //..................StartOfHydrostatics2.........................................
@@ -2218,7 +2273,7 @@ namespace WpfMvvmStability.Views
                 PdfPCell FSC = new PdfPCell(new Phrase("FSC (M)", fntHeader));
                 PdfPCell TPC = new PdfPCell(new Phrase("TPC (T/CM)", fntHeader));
                 PdfPCell MTC = new PdfPCell(new Phrase("MTC (T-M/CM)", fntHeader));
-                PdfPCell WPA = new PdfPCell(new Phrase("WPA (M²)", fntHeader));
+                PdfPCell WPA = new PdfPCell(new Phrase("WPA (MÂ²)", fntHeader));
                 TRIM.HorizontalAlignment = Element.ALIGN_CENTER;
                 LST.HorizontalAlignment = Element.ALIGN_CENTER;
                 GMT.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -2247,13 +2302,13 @@ namespace WpfMvvmStability.Views
                     {
                         PdfPCell pdf;
                         string strValue = dtHydrostaticsData1.Rows[rowCounter][columnCounter].ToString();
-                        decimal value = Convert.ToDecimal(strValue);
+                        decimal value = ParseDecimalSafe(strValue);
                         string strvalueNew = "";
                         if (((columnCounter == 0) || (columnCounter == 1)) && (value < 0))
                         {
                             string dd = value.ToString("N");
-                            decimal mm = Convert.ToDecimal(dd);
-                            strvalueNew = Convert.ToString(Convert.ToDecimal(mm) * (-1));
+                            decimal mm = ParseDecimalSafe(dd);
+                            strvalueNew = (-mm).ToString();
                             pdf = new PdfPCell(new iTextSharp.text.Paragraph(strvalueNew, fntBody));
                         }
                         else
@@ -2265,7 +2320,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(tblHydrostatic1);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
 
                 //..................EndOfHydrostatics2.........................................
 
@@ -2275,7 +2330,7 @@ namespace WpfMvvmStability.Views
                 iTextSharp.text.Paragraph pHeaderMouldedDraft = new iTextSharp.text.Paragraph("Moulded Draft", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                 pHeaderMouldedDraft.Alignment = Element.ALIGN_CENTER;
                 doc.Add(pHeaderMouldedDraft);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 iTextSharp.text.Font fntHeader_md = FontFactory.GetFont("Times New Roman", 7, iTextSharp.text.Color.BLUE);
                 PdfPTable tblMouldedDraft = new PdfPTable(5);
                 tblMouldedDraft.WidthPercentage = 90;
@@ -2352,13 +2407,13 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(tblMouldedDraft);
-                //doc.Add(new iTextSharp.text.Paragraph("  "));
+                //doc.Add(new iTextSharp.text.Paragraph(" "));
                 //............End of Moulded Draft....................................
                 // .................start Of Extreme Drafts.....................................................
                 iTextSharp.text.Paragraph pHeaderExDraft = new iTextSharp.text.Paragraph("Extreme Draft", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                 pHeaderExDraft.Alignment = Element.ALIGN_CENTER;
                 doc.Add(pHeaderExDraft);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 iTextSharp.text.Font fntHeader1 = FontFactory.GetFont("Times New Roman", 7, iTextSharp.text.Color.BLUE);
                 PdfPTable tblDrafts = new PdfPTable(5);
                 tblDrafts.WidthPercentage = 90;
@@ -2413,7 +2468,7 @@ namespace WpfMvvmStability.Views
                     }
                 }
                 doc.Add(tblDrafts);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 // .................End Of Extreme Drafts.....................................................
                 // .................EndOfDrafts.....................................................
 
@@ -2423,7 +2478,7 @@ namespace WpfMvvmStability.Views
                 // iTextSharp.text.Paragraph pHeaderDraft = new iTextSharp.text.Paragraph("Immersion Particulars", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                 // pHeaderDraft.Alignment = Element.ALIGN_CENTER;
                 // doc.Add(pHeaderDraft);
-                // doc.Add(new iTextSharp.text.Paragraph("  "));
+                // doc.Add(new iTextSharp.text.Paragraph(" "));
                 // PdfPTable tblDraft = new PdfPTable(6);
                 // tblDraft.WidthPercentage = 90;
                 // float[] widthsDraft = new float[] { 1f, 2.5f, 0.6f, 0.6f, 0.6f, 1.6f};
@@ -2463,7 +2518,7 @@ namespace WpfMvvmStability.Views
                 //     }
                 // }
                 // doc.Add(tblDraft);
-                //doc.Add(new iTextSharp.text.Paragraph("  "));
+                //doc.Add(new iTextSharp.text.Paragraph(" "));
                 //............EndofImersion Particulars....................................
 
 
@@ -2541,11 +2596,11 @@ namespace WpfMvvmStability.Views
                         tblIntact.AddCell(pdf);
                     }
                 }
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 iTextSharp.text.Paragraph pHeaderIntact = new iTextSharp.text.Paragraph("NES 109 Stability Criteria-" + stabilityType, FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD));
                 pHeaderIntact.Alignment = Element.ALIGN_CENTER;
                 doc.Add(pHeaderIntact);
-                doc.Add(new iTextSharp.text.Paragraph("  "));
+                doc.Add(new iTextSharp.text.Paragraph(" "));
                 doc.Add(tblIntact);
 
 
@@ -2556,18 +2611,18 @@ namespace WpfMvvmStability.Views
                 ////.........................StartofGzGraph......................................
                 if (stabilityType == "Intact" || (Models.BO.clsGlobVar.Mode == "Real"))
                 {
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                     iTextSharp.text.Paragraph pHeaderGZ = new iTextSharp.text.Paragraph("GZ Graph", FontFactory.GetFont(FontFactory.TIMES, 12, iTextSharp.text.Font.BOLD)); // validation if data not available
                     pHeaderGZ.Alignment = Element.ALIGN_CENTER;
                     doc.Add(pHeaderGZ);
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
 
                     iTextSharp.text.Image imgGZ = iTextSharp.text.Image.GetInstance(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Images\\GZ.png");
                     imgGZ.Alignment = Element.ALIGN_CENTER;
                     imgGZ.SpacingAfter = 20f;
                     imgGZ.ScaleToFit(400, 300);
                     doc.Add(imgGZ);
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                 }
                 else if (stabilityType == "Damage")
                 {
@@ -2581,8 +2636,8 @@ namespace WpfMvvmStability.Views
                 if (stabilityType == "Intact")
                 {
                     doc.NewPage();
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                     PdfPTable pp1 = new PdfPTable(6);
                     pp1.WidthPercentage = 60;
                     float[] widthsGZ5 = new float[] { 2f, 2f, 2f, 2f, 2f, 2f };
@@ -2619,7 +2674,7 @@ namespace WpfMvvmStability.Views
                             string temp;
                             object obj = dtGZgraph.Rows[rowCounter][columnCounter];
                             string strValue1 = (obj.ToString());
-                            decimal d = Convert.ToDecimal(strValue1);
+                            decimal d = ParseDecimalSafe(strValue1);
                             temp = Convert.ToString(Math.Round(d, 3));
                             PdfPCell cell1 = new PdfPCell(new Phrase(temp, FontFactory.GetFont("Times New Roman", 7)));
                             cell1.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -2634,8 +2689,8 @@ namespace WpfMvvmStability.Views
             //..............................StartOfDamage..................................
                 else if (stabilityType == "Damage")
                 {
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
-                    doc.Add(new iTextSharp.text.Paragraph("  "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
+                    doc.Add(new iTextSharp.text.Paragraph(" "));
                     PdfPTable pp1 = new PdfPTable(3);
                     pp1.WidthPercentage = 60;
                     float[] widthsGZ5 = new float[] { 2f, 2f, 2f };
@@ -2672,7 +2727,7 @@ namespace WpfMvvmStability.Views
                             string temp;
                             object obj = dtGZgraph.Rows[rowCounter][columnCounter];
                             string strValue1 = (obj.ToString());
-                            decimal d = Convert.ToDecimal(strValue1);
+                            decimal d = ParseDecimalSafe(strValue1);
                             temp = Convert.ToString(Math.Round(d, 3));
                             PdfPCell cell1 = new PdfPCell(new Phrase(temp, FontFactory.GetFont("Times New Roman", 7)));
                             cell1.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -2684,12 +2739,15 @@ namespace WpfMvvmStability.Views
                 }
                 //..............................EndOfDamage..................................
                 doc.Close();
-                Mouse.OverrideCursor = null;
                 ModernMessageBox.Show("Stability Report PDF has been successfully generated.", "Success", MessageBoxType.Success);
             }
             catch (Exception ex)
             {
-               // System.Windows.MessageBox.Show(ex.Message.ToString());
+                ModernMessageBox.Show("Unable to generate report.\n" + ex.Message, "Report Error", MessageBoxType.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
         }
 
@@ -2811,3 +2869,6 @@ namespace WpfMvvmStability.Views
 
     }
 }
+
+
+

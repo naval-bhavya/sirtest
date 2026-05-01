@@ -129,14 +129,63 @@ namespace WpfMvvmStability.Views
             }
         }
 
-        private void Schedule3DRefresh()
+        private bool _is3DRefreshInProgress = false;
+        private bool _pending3DRefresh = false;
+        private bool _hasRendered3DOnce = false;
+        private bool _logged3DBasePath = false;
+        private int _mouseMoveLogCounter = 0;
+        private bool _host2DHooksAttached = false;
+
+        private void Log2D(string msg)
+        {
+            System.Diagnostics.Debug.WriteLine("[2D-REAL] " + msg);
+        }
+
+        private void EnsureHost2DInteractionHooks()
+        {
+            if (_host2DHooksAttached) return;
+            _host2DHooksAttached = true;
+
+            Action<Canvas> hook = c =>
+            {
+                if (c == null) return;
+                if (c.Background == null) c.Background = Brushes.Transparent;
+                c.AddHandler(UIElement.PreviewMouseWheelEvent, new MouseWheelEventHandler(Canvas2D_MouseWheel), true);
+                c.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler(Canvas2D_MouseLeftButtonDown), true);
+                c.AddHandler(UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(Canvas2D_MouseLeftButtonUp), true);
+                c.AddHandler(UIElement.PreviewMouseMoveEvent, new MouseEventHandler(Canvas2D_MouseMove), true);
+            };
+
+            hook(canvas2DProfile);
+            hook(canvas2DPlanA);
+            hook(canvas2DPlanB);
+            hook(canvas2DPlanC);
+            hook(canvas2DPlanALL);
+            Log2D("Host canvas hooks attached");
+        }
+
+        private void Schedule3DRefresh(bool forceShowLoading = false)
         {
             if (viewPort3d1 == null || viewPort3d1.EffectsManager == null)
             {
                 return;
             }
 
-            Show3DLoading("Updating 3D tank filling...");
+            // If 3D tab is not active, queue refresh and do it when user opens Graphics 3D.
+            if (tabControl2 == null || tabControl2.SelectedItem != tabItem6)
+            {
+                _pending3DRefresh = true;
+                return;
+            }
+
+            if (_is3DRefreshInProgress) return;
+            _is3DRefreshInProgress = true;
+
+            bool showLoading = forceShowLoading || !_hasRendered3DOnce;
+            if (showLoading)
+            {
+                Show3DLoading("Updating 3D tank filling...");
+            }
             var refreshTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             refreshTimer.Tick += (s, e) =>
             {
@@ -154,6 +203,7 @@ namespace WpfMvvmStability.Views
             try
             {
                 InitializeComponent();
+                EnsureHost2DInteractionHooks();
                 MainWindow._statusTabRealSimulation = 0;
                 Models.TableModel.Write_Log("Enter in Real MOde main");
                 maxVolume = new Dictionary<int, decimal>();
@@ -259,7 +309,7 @@ namespace WpfMvvmStability.Views
                     }
                     if (txtProgressPercent != null)
                     {
-                        txtProgressPercent.Text = status;
+                        txtProgressPercent.Text = $"{Math.Max(0, Math.Min(100, (int)Math.Round(value)))}%";
                     }
                 }));
             }
@@ -276,7 +326,7 @@ namespace WpfMvvmStability.Views
                 {
                     if (txtProgressStatus != null)
                     {
-                        txtProgressStatus.Text = "Ready";
+                        txtProgressStatus.Text = "Completed";
                         txtProgressStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
                     }
                     if (progressStatusDot != null)
@@ -289,7 +339,7 @@ namespace WpfMvvmStability.Views
                     }
                     if (txtProgressPercent != null)
                     {
-                        txtProgressPercent.Text = "Ready";
+                        txtProgressPercent.Text = "100%";
                     }
                 }));
             }
@@ -720,8 +770,9 @@ namespace WpfMvvmStability.Views
                 wpfGraphics = new WpfWireframeGraphics3DUsingDrawingVisual();
                 wpfGraphics.Config = graphicsConfig;
 
+                wpfGraphics.Canvas.IsHitTestVisible = false;
                 canvas2D.Children.Add(wpfGraphics.Canvas);
-                Hook2DInteraction(wpfGraphics.Canvas);
+                Hook2DInteraction(canvas2D);
 
                 UpdateWpfGraphics();
                 canvas2D.SizeChanged += canvas_SizeChanged;
@@ -827,10 +878,22 @@ namespace WpfMvvmStability.Views
                 X = canvasWidth / 2d,
                 Y = canvasHeight / 2d
             });
+
+            // Auto-center content vertically so first-load and reset land in the visual middle.
+            double autoOffsetY = 0d;
+            try
+            {
+                var t1 = transformGroup.Transform(new System.Windows.Point(activeBounds.Corner1.X, activeBounds.Corner1.Y));
+                var t2 = transformGroup.Transform(new System.Windows.Point(activeBounds.Corner2.X, activeBounds.Corner2.Y));
+                double modelCenterY = (Math.Min(t1.Y, t2.Y) + Math.Max(t1.Y, t2.Y)) * 0.5d;
+                autoOffsetY = (canvasHeight * 0.5d) - modelCenterY;
+            }
+            catch { }
+
             transformGroup.Children.Add(new TranslateTransform()
             {
                 X = translation.X * canvasWidth / 2d,
-                Y = (-translation.Y * canvasHeight / 2d) + canvasHeight * 0.20d
+                Y = (-translation.Y * canvasHeight / 2d) + autoOffsetY + (canvasHeight * 0.24d)
             });
 
             //@MT Code removed for Ship Profile Image Rotate (kept level as requested)
@@ -852,9 +915,7 @@ namespace WpfMvvmStability.Views
 
         private void Canvas2D_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            double zoomFactor = e.Delta > 0 ? 1.12d : 1d / 1.12d;
-            scaling = Math.Max(0.35d, Math.Min(8d, scaling * zoomFactor));
-            UpdateAll2DTransforms();
+            // 2D zoom disabled as requested.
             e.Handled = true;
         }
 
@@ -863,47 +924,24 @@ namespace WpfMvvmStability.Views
             scaling = 1.0d;
             translation = new WW.Math.Vector3D(0, 0, 0);
             UpdateAll2DTransforms();
+            Log2D("Reset clicked -> scaling=1.0 translation=0,0");
         }
 
         private void Canvas2D_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            active2DCanvas = GetInteractionCanvas(sender);
-            if (active2DCanvas == null)
-            {
-                return;
-            }
-
-            is2DPanning = true;
-            last2DPanPoint = e.GetPosition(active2DCanvas);
-            active2DCanvas.CaptureMouse();
+            // 2D pan disabled as requested.
             e.Handled = true;
         }
 
         private void Canvas2D_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            is2DPanning = false;
-            if (active2DCanvas != null)
-            {
-                active2DCanvas.ReleaseMouseCapture();
-            }
-            active2DCanvas = null;
+            // 2D pan disabled as requested.
             e.Handled = true;
         }
 
         private void Canvas2D_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!is2DPanning || active2DCanvas == null)
-            {
-                return;
-            }
-
-            System.Windows.Point current = e.GetPosition(active2DCanvas);
-            double width = Math.Max(1d, active2DCanvas.ActualWidth);
-            double height = Math.Max(1d, active2DCanvas.ActualHeight);
-            translation.X += (current.X - last2DPanPoint.X) / (width / 2d);
-            translation.Y -= (current.Y - last2DPanPoint.Y) / (height / 2d);
-            last2DPanPoint = current;
-            UpdateAll2DTransforms();
+            // 2D pan disabled as requested.
             e.Handled = true;
         }
 
@@ -931,11 +969,28 @@ namespace WpfMvvmStability.Views
             return null;
         }
 
+        private Canvas GetActive2DCanvas()
+        {
+            try
+            {
+                if (tabControl5?.SelectedIndex == 0) return canvas2DProfile;
+                if (tabControl5?.SelectedIndex == 1) return canvas2DPlanA;
+                if (tabControl5?.SelectedIndex == 2) return canvas2DPlanB;
+            }
+            catch { }
+            return canvas2DProfile ?? canvas2DPlanA ?? canvas2DPlanB;
+        }
+
         private void Hook2DInteraction(UIElement element)
         {
             if (element == null)
             {
                 return;
+            }
+
+            if (element is Panel panel && panel.Background == null)
+            {
+                panel.Background = Brushes.Transparent;
             }
 
             element.PreviewMouseWheel -= Canvas2D_MouseWheel;
@@ -998,6 +1053,7 @@ namespace WpfMvvmStability.Views
                 wpfGraphicsNew = new WpfWireframeGraphics3DUsingDrawingVisual();
                 wpfGraphicsNew.Config = graphicsConfigNew;
 
+                wpfGraphicsNew.Canvas.IsHitTestVisible = false;
                 canvas2D.Children.Add(wpfGraphicsNew.Canvas);
 
                 UpdateWpfGraphicsNew();
@@ -1057,10 +1113,21 @@ namespace WpfMvvmStability.Views
                 X = canvasWidth / 2d,
                 Y = canvasHeight / 2d
             });
+
+            double autoOffsetY = 0d;
+            try
+            {
+                var t1 = transformGroup.Transform(new System.Windows.Point(boundsNew.Corner1.X, boundsNew.Corner1.Y));
+                var t2 = transformGroup.Transform(new System.Windows.Point(boundsNew.Corner2.X, boundsNew.Corner2.Y));
+                double modelCenterY = (Math.Min(t1.Y, t2.Y) + Math.Max(t1.Y, t2.Y)) * 0.5d;
+                autoOffsetY = (canvasHeight * 0.5d) - modelCenterY;
+            }
+            catch { }
+
             transformGroup.Children.Add(new TranslateTransform()
             {
                 X = translation.X * canvasWidth / 2d,
-                Y = -translation.Y * canvasHeight / 2d
+                Y = (-translation.Y * canvasHeight / 2d) + autoOffsetY + (canvasHeight * 0.24d)
             });
 
             canvas2D.RenderTransform = transformGroup;
@@ -2598,8 +2665,224 @@ namespace WpfMvvmStability.Views
 
         private void btnclear_Click(object sender, RoutedEventArgs e)
         {
+            var selectedIndex = tabControlTankTypesReal != null ? tabControlTankTypesReal.SelectedIndex : -1;
+            string tableName = GetRealTankTableName(selectedIndex);
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                ModernMessageBox.Show("Please select a tank table first.", "Clear", MessageBoxType.Warning);
+                return;
+            }
+
+            var confirm = ModernMessageBox.Show(
+                "Do you want to clear the " + tableName + " table values?",
+                "Confirm Clear",
+                MessageBoxType.Warning,
+                MessageBoxButton.YesNo);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            bool isCleared = ClearSelectedRealTankTable(selectedIndex);
+            if (!isCleared)
+            {
+                ModernMessageBox.Show("Unable to clear selected table.", "Clear", MessageBoxType.Error);
+                return;
+            }
+
+            ModernMessageBox.Show(tableName + " data cleared successfully.", "Clear Tanks", MessageBoxType.Success);
+        }
+
+        private void btnclearOutputPanel_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = ModernMessageBox.Show(
+                "Do you want to clear output panel values?",
+                "Confirm Clear",
+                MessageBoxType.Warning,
+                MessageBoxButton.YesNo);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
             ResetOutputPanelValues();
             ModernMessageBox.Show("Output panel values cleared.", "Clear", MessageBoxType.Success);
+        }
+
+        private void btnImportRealModeData_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                Models.TableModel.RealModeData();
+                Models.TableModel.RealModePercentFill();
+
+                if (Models.BO.clsGlobVar.dtRealCargoTanks != null) dgCargoTanks.ItemsSource = Models.BO.clsGlobVar.dtRealCargoTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealBallastTanks != null) dgBallastTanks.ItemsSource = Models.BO.clsGlobVar.dtRealBallastTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealFuelOilTanks != null) dgFuelOilTanks.ItemsSource = Models.BO.clsGlobVar.dtRealFuelOilTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealFreshWaterTanks != null) dgFreshWaterTanks.ItemsSource = Models.BO.clsGlobVar.dtRealFreshWaterTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealMiscTanks != null) dgMiscTanks.ItemsSource = Models.BO.clsGlobVar.dtRealMiscTanks.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealCompartments != null) dgCompartments.ItemsSource = Models.BO.clsGlobVar.dtRealCompartments.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealWaterTightRegion != null) dgWaterTightRegion.ItemsSource = Models.BO.clsGlobVar.dtRealWaterTightRegion.DefaultView;
+                if (Models.BO.clsGlobVar.dtRealVariableItems != null) dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
+
+                ModernMessageBox.Show("Real mode data imported/refreshed successfully.", "Import", MessageBoxType.Success);
+            }
+            catch (Exception ex)
+            {
+                ModernMessageBox.Show("Import failed: " + ex.Message, "Import", MessageBoxType.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private void btnSaveLoadingCondition_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                // Real mode values are persisted during grid edits; this action confirms and refreshes.
+                Models.TableModel.RealModeData();
+                Models.TableModel.RealModePercentFill();
+                ModernMessageBox.Show("Real mode values saved/refreshed successfully.", "Save", MessageBoxType.Success);
+            }
+            catch (Exception ex)
+            {
+                ModernMessageBox.Show("Save failed: " + ex.Message, "Save", MessageBoxType.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private static string GetRealTankTableName(int selectedIndex)
+        {
+            switch (selectedIndex)
+            {
+                case 0: return "Cargo Tanks";
+                case 1: return "Ballast Tanks";
+                case 2: return "Fuel Oil Tanks";
+                case 3: return "Fresh Water Tanks";
+                case 4: return "Miscellaneous Tanks";
+                case 5: return "Non Tight";
+                case 6: return "Water Tight";
+                case 7: return "DWT Constant";
+                default: return string.Empty;
+            }
+        }
+
+        private bool ClearSelectedRealTankTable(int selectedIndex)
+        {
+            try
+            {
+                switch (selectedIndex)
+                {
+                    case 0:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealCargoTanks, dgCargoTanks);
+                    case 1:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealBallastTanks, dgBallastTanks);
+                    case 2:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealFuelOilTanks, dgFuelOilTanks);
+                    case 3:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealFreshWaterTanks, dgFreshWaterTanks);
+                    case 4:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealMiscTanks, dgMiscTanks);
+                    case 5:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealCompartments, dgCompartments);
+                    case 6:
+                        return ClearRealTankRows(Models.BO.clsGlobVar.dtRealWaterTightRegion, dgWaterTightRegion);
+                    case 7:
+                        return ClearRealDwtConstantRows();
+                    default:
+                        return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool ClearRealTankRows(DataTable tankTable, DataGrid targetGrid)
+        {
+            if (tankTable == null)
+            {
+                return false;
+            }
+
+            foreach (DataRow row in tankTable.Rows)
+            {
+                if (tankTable.Columns.Contains("Volume")) row["Volume"] = 0m;
+                if (tankTable.Columns.Contains("Percent_Full")) row["Percent_Full"] = 0m;
+                if (tankTable.Columns.Contains("Sounding_Level")) row["Sounding_Level"] = 0m;
+                if (tankTable.Columns.Contains("Weight")) row["Weight"] = 0m;
+                if (tankTable.Columns.Contains("Status")) row["Status"] = 0;
+                if (tankTable.Columns.Contains("IsDamaged")) row["IsDamaged"] = false;
+            }
+
+            if (targetGrid != null)
+            {
+                targetGrid.ItemsSource = null;
+                targetGrid.ItemsSource = tankTable.DefaultView;
+            }
+
+            string err = string.Empty;
+            DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+            foreach (DataRow row in tankTable.Rows)
+            {
+                if (!tankTable.Columns.Contains("Tank_ID"))
+                {
+                    continue;
+                }
+
+                int tankId;
+                if (!int.TryParse(Convert.ToString(row["Tank_ID"]), out tankId))
+                {
+                    continue;
+                }
+
+                command.CommandText =
+                    "update tblTank_Status set Volume=0, IsDamaged=0 where Tank_ID=" + tankId + ";" +
+                    "update tblLoading_Condition set Volume=0, Percent_Full=0, Weight=0, Status=0, IsDamaged=0 where Tank_ID=" + tankId + ";";
+                command.CommandType = CommandType.Text;
+                Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, err);
+            }
+
+            return true;
+        }
+
+        private bool ClearRealDwtConstantRows()
+        {
+            if (Models.BO.clsGlobVar.dtRealVariableItems == null)
+            {
+                return false;
+            }
+
+            foreach (DataRow row in Models.BO.clsGlobVar.dtRealVariableItems.Rows)
+            {
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("Weight")) row["Weight"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("LCG")) row["LCG"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("VCG")) row["VCG"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("TCG")) row["TCG"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("Length")) row["Length"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("Breadth")) row["Breadth"] = 0m;
+                if (Models.BO.clsGlobVar.dtRealVariableItems.Columns.Contains("Depth")) row["Depth"] = 0m;
+            }
+
+            dgVariableItems.ItemsSource = null;
+            dgVariableItems.ItemsSource = Models.BO.clsGlobVar.dtRealVariableItems.DefaultView;
+
+            string err = string.Empty;
+            DbCommand command = Models.DAL.clsDBUtilityMethods.GetCommand();
+            command.CommandText = "update tblFixedLoad set Weight=0, LCG=0, TCG=0, VCG=0, Length=0, Breadth=0, Depth=0;";
+            command.CommandType = CommandType.Text;
+            Models.DAL.clsDBUtilityMethods.ExecuteNonQuery(command, err);
+            return true;
         }
 
         private void btnAdd_Click(object sender, RoutedEventArgs e)
@@ -2859,6 +3142,43 @@ namespace WpfMvvmStability.Views
             Refresh3dNew();
         }
 
+        private void tabControl2_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (tabControl2.SelectedItem == tabItem6)
+                {
+                    if (_pending3DRefresh || scene3D == null || scene3D.Children.Count == 0)
+                    {
+                        _pending3DRefresh = false;
+                        Schedule3DRefresh(forceShowLoading: true);
+                    }
+                    else
+                    {
+                        var fitTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
+                        fitTimer.Tick += (s, ev) =>
+                        {
+                            fitTimer.Stop();
+                            Reset3DViewHard();
+                        };
+                        fitTimer.Start();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void tabControl5_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                UpdateRenderTransform(canvas2DProfile);
+                UpdateRenderTransform(canvas2DPlanA);
+                UpdateRenderTransform(canvas2DPlanB);
+            }
+            catch { }
+        }
+
         /// <summary>
         /// Fits the camera to show all loaded 3-D geometry, then locks the rotation/zoom
         /// pivot to the computed scene centre so the model never drifts off screen.
@@ -2879,7 +3199,7 @@ namespace WpfMvvmStability.Views
             // -- Step 1: compute scene bounding box centre --
             var bounds = ViewportExtensions.FindBounds3D(viewPort3d1);
 
-            if (!bounds.IsEmpty && bounds.SizeX > 0.1) // Add a size check to avoid fitting to noise
+            if (!bounds.IsEmpty && bounds.SizeX > 500) // avoid fitting to tiny partial geometry
             {
                 var centre = new System.Windows.Media.Media3D.Point3D(
                     bounds.X + bounds.SizeX * 0.5,
@@ -2892,6 +3212,14 @@ namespace WpfMvvmStability.Views
 
                 // Zoom to fit
                 viewPort3d1.ZoomExtents(animationTime: 400);
+
+                var cam = viewPort3d1.Camera as HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
+                if (cam != null)
+                {
+                    double maxSize = Math.Max(bounds.SizeX, Math.Max(bounds.SizeY, bounds.SizeZ));
+                    cam.NearPlaneDistance = Math.Max(0.1, maxSize / 1000.0);
+                    cam.FarPlaneDistance = Math.Max(10000.0, maxSize * 40.0);
+                }
             }
             else
             {
@@ -3292,14 +3620,23 @@ namespace WpfMvvmStability.Views
         {
             try
             {
-                Show3DLoading();
                 if (scene3D == null || viewPort3d1.EffectsManager == null) { Hide3DLoading(); return; }
 
                 scene3D.Children.Clear();
 
-                // Build folder paths (handle both 3D and 3D18 variants if present)
-                string base3D = folderPath;
-                string base3D18 = folderPath.Contains("3D18") ? folderPath : folderPath.Replace("3D", "3D18");
+                // Hard-force same resolved path behavior as Virtual: <running-exe-folder>\3D
+                string asmDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+                string base3D = System.IO.Path.Combine(asmDir, "3D");
+                if (!Directory.Exists(base3D))
+                {
+                    // Last fallback keeps old behavior if deployment layout differs.
+                    base3D = folderPath;
+                }
+                if (!_logged3DBasePath)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Sensor3D] Forced base3D='{base3D}'");
+                    _logged3DBasePath = true;
+                }
 
                 // Optimized dictionary-based lookup for all categories
                 var freshWaterFiles   = BuildTankFileDictionary(base3D + @"\FreshWaterTank\");
@@ -3332,47 +3669,102 @@ namespace WpfMvvmStability.Views
                 var misc50Files = BuildTankFileDictionary(base3D + @"\MiscTank50\");
                 var misc75Files = BuildTankFileDictionary(base3D + @"\MiscTank75\");
 
-                var compartmentFiles = BuildTankFileDictionary(base3D18 + @"\Compartment\");
-                var wtRegionFiles    = BuildTankFileDictionary(base3D18 + @"\WT_REGION\");
 
-                // Helper to load tanks from DataTable
-                System.Action<DataTable, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, byte, byte, byte, byte> loadTanks = 
-                    (dt, baseDict, p25Dict, p50Dict, p75Dict, a, r, g, b) => {
-                    if (dt == null) return;
-                    foreach (DataRow row in dt.Rows) {
-                        try {
-                            string Name = Convert.ToString(row["Tank_Name"]).Split('.')[0].Trim().Replace("/", "");
+                Dictionary<string, (decimal fill, bool damaged, int status)> BuildStateMap(DataTable dt)
+                {
+                    var map = new Dictionary<string, (decimal fill, bool damaged, int status)>(StringComparer.OrdinalIgnoreCase);
+                    if (dt == null) return map;
+                    DataTable snap = null;
+                    try
+                    {
+                        snap = dt.Copy();
+                    }
+                    catch
+                    {
+                        // Table may be mutating on another thread; skip this cycle safely.
+                        return map;
+                    }
+                    foreach (DataRow row in snap.Rows)
+                    {
+                        try
+                        {
+                            string name = Convert.ToString(row["Tank_Name"]).Split('.')[0].Trim().Replace("/", "");
                             bool isDamaged = Convert.ToString(row["IsDamaged"]) == "True";
                             int tankId = row.Table.Columns.Contains("Tank_ID") ? Convert.ToInt32(row["Tank_ID"]) : -1;
-                            
-                            decimal percentFill = 0;
+                            decimal percentFill = 0m;
                             if (tankId >= 0 && tankId < Models.BO.clsGlobVar.Tank_PercentFill.Length)
                                 percentFill = Models.BO.clsGlobVar.Tank_PercentFill[tankId];
                             else if (row.Table.Columns.Contains("Percent_Full"))
                                 percentFill = Convert.ToDecimal(row["Percent_Full"]);
+                            int statusCode = 0;
+                            if (row.Table.Columns.Contains("Status"))
+                            {
+                                try { statusCode = Convert.ToInt32(row["Status"]); } catch { statusCode = 0; }
+                            }
+                            map[name] = (percentFill, isDamaged, statusCode);
+                        }
+                        catch { }
+                    }
+                    return map;
+                }
 
-                            if (baseDict.TryGetValue(Name, out string baseFile)) {
-                                Element3D device3D = ResolveTankModel(Name, baseFile, isDamaged, percentFill, p25Dict, p50Dict, p75Dict, a, r, g, b);
-                                if (device3D != null) { 
-                                    device3D.Tag = Name; 
-                                    scene3D.Dispatcher.Invoke(() => { if (!scene3D.Children.Contains(device3D)) scene3D.Children.Add(device3D); }); 
+                // Always render all tank geometries from folder; data only controls fill/state colors.
+                System.Action<DataTable, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, Dictionary<string, string>, byte, byte, byte, byte> loadTanks =
+                    (dt, baseDict, p25Dict, p50Dict, p75Dict, a, r, g, b) =>
+                    {
+                        if (baseDict == null || baseDict.Count == 0) return;
+                        var states = BuildStateMap(dt);
+                        foreach (var kv in baseDict)
+                        {
+                            try
+                            {
+                                string name = kv.Key;
+                                string baseFile = kv.Value;
+                                decimal percentFill = 0m;
+                                bool isDamaged = false;
+                                int statusCode = 0;
+                                if (states.TryGetValue(name, out var st))
+                                {
+                                    percentFill = st.fill;
+                                    isDamaged = st.damaged;
+                                    statusCode = st.status;
+                                }
+
+                                Element3D device3D = ResolveTankModel(name, baseFile, isDamaged, percentFill, statusCode, p25Dict, p50Dict, p75Dict, a, r, g, b);
+                                if (device3D != null)
+                                {
+                                    device3D.Tag = name;
+                                    scene3D.Dispatcher.Invoke(() => { if (!scene3D.Children.Contains(device3D)) scene3D.Children.Add(device3D); });
                                 }
                             }
-                        } catch { }
-                    }
-                };
+                            catch { }
+                        }
+                    };
 
-                // Load all categories using DataTables
-                loadTanks(Models.BO.clsGlobVar.dtRealFreshWaterTanks, freshWaterFiles, freshWater25Files, freshWater50Files, freshWater75Files, 180, 0, 0, 100);
-                loadTanks(Models.BO.clsGlobVar.dtRealBallastTanks, ballastFiles, ballast25Files, ballast50Files, ballast75Files, 180, 0, 200, 0);
-                loadTanks(Models.BO.clsGlobVar.dtRealFuelOilTanks, fuelOilFiles, fuelOil25Files, fuelOil50Files, fuelOil75Files, 200, 185, 92, 0);
-                loadTanks(Models.BO.clsGlobVar.dtRealFuelOilTanks, dieselFiles, diesel25Files, diesel50Files, diesel75Files, 200, 185, 92, 0);
-                loadTanks(Models.BO.clsGlobVar.dtRealCargoTanks, cargoFiles, cargo25Files, cargo50Files, cargo75Files, 200, 185, 92, 0);
-                loadTanks(Models.BO.clsGlobVar.dtRealMiscTanks, miscFiles, misc25Files, misc50Files, misc75Files, 180, 255, 128, 192);
-                loadTanks(Models.BO.clsGlobVar.dtRealCompartments, compartmentFiles, compartmentFiles, compartmentFiles, compartmentFiles, 70, 150, 150, 150);
-                loadTanks(Models.BO.clsGlobVar.dtRealWaterTightRegion, wtRegionFiles, wtRegionFiles, wtRegionFiles, wtRegionFiles, 70, 100, 100, 100);
+                DataTable ResolveTable(DataTable preferred, DataGrid grid)
+                {
+                    if (preferred != null && preferred.Rows.Count > 0) return preferred;
+                    var dv = grid?.ItemsSource as DataView;
+                    if (dv != null && dv.Table != null && dv.Table.Rows.Count > 0) return dv.Table;
+                    return preferred;
+                }
+
+                var realFresh = ResolveTable(Models.BO.clsGlobVar.dtRealFreshWaterTanks, dgFreshWaterTanks);
+                var realBallast = ResolveTable(Models.BO.clsGlobVar.dtRealBallastTanks, dgBallastTanks);
+                var realFuel = ResolveTable(Models.BO.clsGlobVar.dtRealFuelOilTanks, dgFuelOilTanks);
+                var realCargo = ResolveTable(Models.BO.clsGlobVar.dtRealCargoTanks, dgCargoTanks);
+                var realMisc = ResolveTable(Models.BO.clsGlobVar.dtRealMiscTanks, dgMiscTanks);
+
+                // Load all categories using resolved tables (global table first, grid fallback second)
+                loadTanks(realFresh, freshWaterFiles, freshWater25Files, freshWater50Files, freshWater75Files, 180, 0, 0, 100);
+                loadTanks(realBallast, ballastFiles, ballast25Files, ballast50Files, ballast75Files, 180, 0, 200, 0);
+                loadTanks(realFuel, fuelOilFiles, fuelOil25Files, fuelOil50Files, fuelOil75Files, 200, 185, 92, 0);
+                loadTanks(realFuel, dieselFiles, diesel25Files, diesel50Files, diesel75Files, 200, 185, 92, 0);
+                loadTanks(realCargo, cargoFiles, cargo25Files, cargo50Files, cargo75Files, 200, 185, 92, 0);
+                loadTanks(realMisc, miscFiles, misc25Files, misc50Files, misc75Files, 180, 255, 128, 192);
 
                 // Ship hull and structural models from root folder
+                int rootHullCount = 0;
                 if (Directory.Exists(base3D))
                 {
                     foreach (string file in Directory.EnumerateFiles(base3D, "*.stl"))
@@ -3382,12 +3774,13 @@ namespace WpfMvvmStability.Views
                         if (device3D != null) { 
                             device3D.Tag = TankName; 
                             scene3D.Dispatcher.Invoke(() => scene3D.Children.Add(device3D)); 
+                            rootHullCount++;
                         }
                     }
                 }
-                
-                // Fallback: If no hull files in root, check if FPT.stl exists in ballast folder as it might be the hull
-                if (scene3D.Children.Count < 5 && ballastFiles.TryGetValue("FPT", out string fptFile))
+
+                // Virtual-style simple fallback: only when scene is effectively empty.
+                if (rootHullCount == 0 && scene3D.Children.Count <= 1 && ballastFiles.TryGetValue("FPT", out string fptFile))
                 {
                      Element3D device3D = Display3d1(fptFile, 70, 150, 150, 150);
                      if (device3D != null) { device3D.Tag = "Hull_FPT"; scene3D.Dispatcher.Invoke(() => scene3D.Children.Add(device3D)); }
@@ -3396,10 +3789,23 @@ namespace WpfMvvmStability.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Refresh3dNew Error: {ex.Message}");
+                _is3DRefreshInProgress = false;
+                Hide3DLoading();
+                return;
             }
 
-            var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-            zoomTimer.Tick += (s, e) => { zoomTimer.Stop(); FitCameraToScene(); Hide3DLoading(); };
+            var zoomTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(520) };
+            zoomTimer.Tick += (s, e) =>
+            {
+                zoomTimer.Stop();
+                if (!_hasRendered3DOnce)
+                {
+                    Reset3DViewHard();
+                }
+                _hasRendered3DOnce = true;
+                _is3DRefreshInProgress = false;
+                Hide3DLoading();
+            };
             zoomTimer.Start();
         }
 
@@ -3488,9 +3894,9 @@ namespace WpfMvvmStability.Views
             return dict;
         }
 
-        private Element3D ResolveTankModel(string name, string baseFile, bool isDamaged, decimal fill,
+        private Element3D ResolveTankModel(string name, string baseFile, bool isDamaged, decimal fill, int statusCode,
             Dictionary<string, string> dict25, Dictionary<string, string> dict50, Dictionary<string, string> dict75,
-            byte r, byte g, byte b, byte a)
+            byte a, byte r, byte g, byte b)
         {
             string modelPath = baseFile;
             if (fill > 0 && fill <= 25) { if (dict25.TryGetValue(name, out string f)) modelPath = f; }
@@ -3509,6 +3915,8 @@ namespace WpfMvvmStability.Views
                 }
             }
 
+            if (statusCode == 1) return Display3d1(baseFile, 255, 255, 0, 0);      // Damage
+            if (statusCode == 2) return Display3d1(baseFile, 255, 0, 120, 255);    // Flood
             if (isDamaged) return Display3d1(baseFile, 255, 255, 0, 0);
             return Display3d1(modelPath, a, r, g, b);
         }
@@ -3740,7 +4148,89 @@ namespace WpfMvvmStability.Views
 
         private void btn3DZoomExtents_Click(object sender, RoutedEventArgs e)
         {
-            viewPort3d1.ZoomExtents();
+            Reset3DViewHard();
+        }
+
+        private bool ApplyPreferred3DView()
+        {
+            try
+            {
+                var cam = viewPort3d1?.Camera as HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
+                if (cam == null) return false;
+
+                var bounds = ViewportExtensions.FindBounds3D(viewPort3d1);
+                if (bounds.IsEmpty) return false;
+
+                var centre = new System.Windows.Media.Media3D.Point3D(
+                    bounds.X + bounds.SizeX * 0.5,
+                    bounds.Y + bounds.SizeY * 0.5,
+                    bounds.Z + bounds.SizeZ * 0.5);
+
+                var radius = Math.Max(1.0, Math.Sqrt(
+                    bounds.SizeX * bounds.SizeX +
+                    bounds.SizeY * bounds.SizeY +
+                    bounds.SizeZ * bounds.SizeZ) * 0.5);
+
+                cam.FieldOfView = 34;
+                var halfFov = cam.FieldOfView * Math.PI / 360.0;
+                var distance = (radius / Math.Tan(halfFov)) * 1.15;
+
+                // Stable side profile with slight top angle (matches expected default view).
+                var viewDir = new System.Windows.Media.Media3D.Vector3D(-1.0, -0.16, -0.12);
+                viewDir.Normalize();
+
+                cam.Position = new System.Windows.Media.Media3D.Point3D(
+                    centre.X - (viewDir.X * distance),
+                    centre.Y - (viewDir.Y * distance),
+                    centre.Z - (viewDir.Z * distance));
+                cam.LookDirection = new System.Windows.Media.Media3D.Vector3D(
+                    centre.X - cam.Position.X,
+                    centre.Y - cam.Position.Y,
+                    centre.Z - cam.Position.Z);
+                cam.UpDirection = new System.Windows.Media.Media3D.Vector3D(0, 0, 1);
+                cam.NearPlaneDistance = Math.Max(0.2, radius * 0.01);
+                cam.FarPlaneDistance = Math.Max(1000, radius * 40);
+
+                viewPort3d1.FixedRotationPoint = centre;
+                viewPort3d1.FixedRotationPointEnabled = true;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void Reset3DViewHard()
+        {
+            try
+            {
+                if (!ApplyPreferred3DView())
+                {
+                    viewPort3d1.FixedRotationPointEnabled = false;
+                    FitCameraToScene();
+                }
+
+                var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
+                int retryCount = 0;
+                t.Tick += (s, ev) =>
+                {
+                    retryCount++;
+                    if (ApplyPreferred3DView())
+                    {
+                        t.Stop();
+                    }
+                    else if (retryCount >= 6)
+                    {
+                        t.Stop();
+                        FitCameraToScene();
+                    }
+                };
+                t.Start();
+            }
+            catch
+            {
+            }
         }
         //public DataGridCell GetCell(int row, int column)
         //{

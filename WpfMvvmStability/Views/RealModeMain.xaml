@@ -289,7 +289,7 @@
 					<RowDefinition Height="*"/>
 				</Grid.RowDefinitions>
 
-				<TabControl Grid.Row="0" Name="tabControl2" IsEnabled="True" Background="Transparent" BorderThickness="0">
+					<TabControl Grid.Row="0" Name="tabControl2" IsEnabled="True" Background="Transparent" BorderThickness="0" SelectionChanged="tabControl2_SelectionChanged">
 					<TabControl.Resources>
 						<SolidColorBrush x:Key="AppBackground" Color="#FFFFFF"/>
 						<SolidColorBrush x:Key="ContentBackground" Color="#FFFFFF"/>
@@ -396,7 +396,7 @@
 							        Margin="4,4,6,6"
 							        Background="{DynamicResource ShellSurfaceBrush}"
 							        Padding="2">
-								<TabControl Name="tabControl5" TabStripPlacement="Left" Background="Transparent" BorderThickness="0">
+					<TabControl Name="tabControl5" TabStripPlacement="Left" Background="Transparent" BorderThickness="0" SelectionChanged="tabControl5_SelectionChanged">
 								<TabControl.Resources>
 									<Style TargetType="TabItem" BasedOn="{StaticResource {x:Type TabItem}}">
 										<Setter Property="Padding" Value="12,10"/>
@@ -450,7 +450,6 @@
 															MouseLeftButtonDown="Canvas2D_MouseLeftButtonDown"
 															MouseLeftButtonUp="Canvas2D_MouseLeftButtonUp"
 															MouseMove="Canvas2D_MouseMove"/>
-															<Button Content="RESET VIEW" Click="btnReset2D_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Style="{StaticResource ModernButtonStyle}"/>
 												</Grid>
 											</Border>
 										</DockPanel>
@@ -475,7 +474,6 @@
 															MouseLeftButtonDown="Canvas2D_MouseLeftButtonDown"
 															MouseLeftButtonUp="Canvas2D_MouseLeftButtonUp"
 															MouseMove="Canvas2D_MouseMove"/>
-															<Button Content="RESET VIEW" Click="btnReset2D_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Style="{StaticResource ModernButtonStyle}"/>
 												</Grid>
 											</Border>
 										</DockPanel>
@@ -501,7 +499,6 @@
 															MouseLeftButtonDown="Canvas2D_MouseLeftButtonDown"
 															MouseLeftButtonUp="Canvas2D_MouseLeftButtonUp"
 															MouseMove="Canvas2D_MouseMove"/>
-															<Button Content="RESET VIEW" Click="btnReset2D_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Style="{StaticResource ModernButtonStyle}"/>
 												</Grid>
 											</Border>
 										</DockPanel>
@@ -589,23 +586,19 @@
 		IsCoordinateSystemMoverEnabled="False"
 		ShowCameraTarget="False"
 		CameraMode="Inspect"
-		ZoomAroundMouseDownPoint="True"
-		RotateAroundMouseDownPoint="True"
+		ZoomAroundMouseDownPoint="False"
+		RotateAroundMouseDownPoint="False"
 		IsPanEnabled="True"
 		CameraRotationMode="Trackball"
 		Loaded="viewPort3d_Loaded"
+		SizeChanged="ViewPort3d1_SizeChanged"
 		BackgroundColor="Transparent">
-									<hx:Viewport3DX.InputBindings>
-										<MouseBinding Command="hx:ViewportCommands.Rotate" Gesture="LeftClick" />
-										<MouseBinding Command="hx:ViewportCommands.Pan" Gesture="RightClick" />
-										<MouseBinding Command="hx:ViewportCommands.Zoom" Gesture="MiddleClick" />
-									</hx:Viewport3DX.InputBindings>
 									<hx:Viewport3DX.Camera>
 										<hx:PerspectiveCamera Position="80000,60000,40000"
 				LookDirection="-80000,-60000,-40000"
 				UpDirection="0,0,1"
 				FieldOfView="45"
-				NearPlaneDistance="50"
+				NearPlaneDistance="0.5"
 				FarPlaneDistance="500000"/>
 									</hx:Viewport3DX.Camera>
 									<hx:DirectionalLight3D Direction="-1,-1,-1" Color="White"/>
@@ -627,8 +620,20 @@
 											Content="RESET VIEW" 
 											Style="{StaticResource ModernButtonStyle}"
 											Click="btn3DZoomExtents_Click"
-											Padding="12,6"
+											Width="118"
+											Height="34"
+											Padding="10,4"
 											Margin="0,0,0,8">
+										<Button.Template>
+											<ControlTemplate TargetType="Button">
+												<Border Background="{TemplateBinding Background}"
+														BorderBrush="{TemplateBinding BorderBrush}"
+														BorderThickness="{TemplateBinding BorderThickness}"
+														CornerRadius="4">
+													<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+												</Border>
+											</ControlTemplate>
+										</Button.Template>
 										<Button.Effect>
 											<DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.2"/>
 										</Button.Effect>
@@ -686,7 +691,7 @@
                         <TextBlock Text="Calculation Progress" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
 							<Ellipse Name="progressStatusDot" Width="8" Height="8" Fill="#10B981" VerticalAlignment="Center" Margin="0,0,6,0"/>
-							<TextBlock Name="txtProgressStatus" Text="Ready" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" VerticalAlignment="Center"/>
+							<TextBlock Name="txtProgressStatus" Text="" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" VerticalAlignment="Center"/>
 						</StackPanel>
 					</StackPanel>
 					<Border Grid.Row="0" Grid.Column="1"
@@ -706,7 +711,7 @@
 					<Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="#EDF4FF" BorderBrush="#C7DAFF" BorderThickness="1" CornerRadius="10" Padding="10,8" Margin="0,10,0,0">
 						<Grid>
 							<ProgressBar Name="pRGSCalculation" Height="14" Minimum="0" Maximum="100" Value="0" Background="#D8E4FF" Foreground="#1F48FF"/>
-							<TextBlock Name="txtProgressPercent" Text="Ready" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="11" Foreground="#1636CC"/>
+							<TextBlock Name="txtProgressPercent" Text="0%" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="11" Foreground="#1636CC"/>
 						</Grid>
 					</Border>
 				</Grid>
@@ -745,9 +750,9 @@
 											<ColumnDefinition Width="10"/>
 											<ColumnDefinition Width="*"/>
 										</Grid.ColumnDefinitions>
-										<Button Grid.Column="0" Content="Import" Name="btnImportRealModeData" Height="34" HorizontalAlignment="Stretch" Background="#1F48FF" Foreground="White" BorderBrush="#7EA2FF" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
-										<Button Grid.Column="2" Content="Save" Name="btnSaveLoadingCondition" Height="34" HorizontalAlignment="Stretch" Background="#10B981" Foreground="White" BorderBrush="#7AE0BB" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
-										<Button Grid.Column="4" Content="Clear" Name="btnclear" Click="btnclear_Click" Height="34" HorizontalAlignment="Stretch" Background="#EF4444" Foreground="White" BorderBrush="#FFB0B0" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
+										<Button Grid.Column="0" Content="Import" Name="btnImportRealModeData" Click="btnImportRealModeData_Click" Height="34" HorizontalAlignment="Stretch" Background="#1F48FF" Foreground="White" BorderBrush="#7EA2FF" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
+										<Button Grid.Column="2" Content="Save" Name="btnSaveLoadingCondition" Click="btnSaveLoadingCondition_Click" Height="34" HorizontalAlignment="Stretch" Background="#2E5BFF" Foreground="White" BorderBrush="#9DB3FF" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
+										<Button Grid.Column="4" Content="Clear" Name="btnclear" Click="btnclearOutputPanel_Click" Height="34" HorizontalAlignment="Stretch" Background="#1636CC" Foreground="White" BorderBrush="#7EA2FF" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
 									</Grid>
 								</Border>
 
@@ -777,7 +782,7 @@
 													<Grid.ColumnDefinitions>
 														<ColumnDefinition Width="*"/>
 														<ColumnDefinition Width="118"/>
-														<ColumnDefinition Width="54"/>
+														<ColumnDefinition Width="72"/>
 													</Grid.ColumnDefinitions>
 													<Grid.RowDefinitions>
 														<RowDefinition Height="Auto"/>
@@ -827,10 +832,10 @@
 													</Grid.RowDefinitions>
 													<Label Grid.Row="0" Grid.Column="0" Content="Trim (m)" Style="{StaticResource HeaderLabel}"/>
 													<Label Grid.Row="0" Grid.Column="1" Name="lblTrim" Content="0" Style="{StaticResource ValueLabel}" Margin="0,2"/>
-													<Label Grid.Row="0" Grid.Column="2" Name="label5" Content="FWD" Foreground="#10B981" FontWeight="Bold" VerticalAlignment="Center" Margin="3,0,0,0"/>
+													<Label Grid.Row="0" Grid.Column="2" Name="label5" Content="FWD" Foreground="#10B981" FontWeight="ExtraBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
 													<Label Grid.Row="1" Grid.Column="0" Content="List (deg.)" Style="{StaticResource HeaderLabel}"/>
 													<Label Grid.Row="1" Grid.Column="1" Name="lblHeel" Content="0" Style="{StaticResource ValueLabel}" Margin="0,2"/>
-													<Label Grid.Row="1" Grid.Column="2" Name="label8" Content="STBD" Foreground="#10B981" FontWeight="Bold" VerticalAlignment="Center" Margin="3,0,0,0"/>
+													<Label Grid.Row="1" Grid.Column="2" Name="label8" Content="STBD" Foreground="#10B981" FontWeight="ExtraBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
 													<Border Grid.Row="2" Grid.ColumnSpan="3" Background="{DynamicResource BorderBrush}" Height="1" Margin="0,4,0,4"/>
 													<Label Grid.Row="3" Grid.Column="0" Content="AP (m)" Style="{StaticResource HeaderLabel}"/>
 													<Label Grid.Row="3" Grid.Column="1" Name="lblDraftAP" Content="0" Style="{StaticResource ValueLabel}" Margin="0,2"/>
@@ -909,10 +914,47 @@
             <Border.Effect>
 				<DropShadowEffect ShadowDepth="1" BlurRadius="3" Opacity="0.03" Color="#030032"/>
             </Border.Effect>
-            <TabControl Background="Transparent" BorderThickness="0" TabStripPlacement="Top">
+            <TabControl x:Name="tabControlTankTypesReal" Background="Transparent" BorderThickness="0" TabStripPlacement="Top">
                 <TabControl.Resources>
                     <Style TargetType="TabItem" BasedOn="{StaticResource TankPanelTabItemStyle}"/>
                 </TabControl.Resources>
+                <TabControl.Template>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="Transparent">
+                                <DockPanel LastChildFill="True">
+                                    <Button DockPanel.Dock="Right"
+                                            Content="Clear"
+                                            Name="btnclearTankTabsReal"
+                                            Click="btnclear_Click"
+                                            Height="34"
+                                            MinWidth="120"
+                                            Margin="10,6,8,0"
+                                            Padding="18,0"
+                                            Background="#1636CC"
+                                            Foreground="White"
+                                            BorderBrush="#7EA2FF"
+                                            BorderThickness="1"
+                                            FontWeight="Bold"
+                                            Cursor="Hand"/>
+                                    <TabPanel x:Name="HeaderPanel"
+                                              IsItemsHost="True"
+                                              Margin="8,0,0,0"
+                                              Background="Transparent"
+                                              KeyboardNavigation.TabIndex="1"/>
+                                </DockPanel>
+                            </Border>
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              Grid.Row="1"
+                                              Margin="{TemplateBinding Padding}"
+                                              ContentSource="SelectedContent"/>
+                        </Grid>
+                    </ControlTemplate>
+                </TabControl.Template>
 
                 <TabItem Header="Cargo Tanks" Style="{StaticResource CargoUnderlineTabItemStyle}">
                     <Border Style="{StaticResource SectionFrameBlue}" Background="{DynamicResource CardBgBrush}" CornerRadius="10" Padding="7" Margin="8,6,8,8">

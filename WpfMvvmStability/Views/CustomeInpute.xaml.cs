@@ -21,7 +21,7 @@ namespace WpfMvvmStability.Views
         public string loading_Name = string.Empty;
         public CustomeInpute()
         {
-            InitializeComponent();
+                InitializeComponent();
             txtLoadingSave.Focus();
         }
 
@@ -36,7 +36,8 @@ namespace WpfMvvmStability.Views
         private void btnCancell_Click(object sender, RoutedEventArgs e)
         {
             txtLoadingSave.Clear();
-            txtLoadingSave.Focus();
+            this.DialogResult = false;
+            this.Close();
         }
     }
 }

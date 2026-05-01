@@ -680,7 +680,7 @@
                                 <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <Separator Style="{StaticResource ModernSeparator}"/>
-                                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_View Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <Separator Style="{StaticResource ModernSeparator}"/>
                                 <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
                             </MenuItem>
@@ -713,11 +713,12 @@
                                 <Style TargetType="Button" BasedOn="{StaticResource NavActionButton}"/>
                             </StackPanel.Resources>
                             <Button Content="Back" Click="OnBackward" IsEnabled="{TemplateBinding CanGoBack}" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Button Content="Home" Click="OnGoPageRealHome" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                             <Button Content="Stability" Name="btnRealModeStability" Click="OnGoPageRealStabilitySummary" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavSelectedForegroundBrush}" Background="{StaticResource NavSelectedBackgroundBrush}" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1" Cursor="Hand"/>
-                            <Border Name="borderRealStabilityType" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                            <Border Name="borderRealStabilityType" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="3" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
                                 <Label Name="lblRealStabilityType" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-                            <Border Name="borderRealStabilityStatus" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                            <Border Name="borderRealStabilityStatus" Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="3" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
                                 <Label Name="lblRealStabilityStatus" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
                             <Button Content="Remedial Measures" Name="btnRealModeCorrectiveAction" Click="OnGoPageRealCorrectiveAction" Visibility="Hidden" Width="112" Height="32" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
@@ -766,7 +767,7 @@
                                 <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <Separator Style="{StaticResource ModernSeparator}"/>
-                                <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                                <MenuItem Header="_View Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
                                 <Separator Style="{StaticResource ModernSeparator}"/>
                                 <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
                             </MenuItem>
@@ -796,11 +797,12 @@
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Button Content="Back" Click="OnBackward" IsEnabled="{TemplateBinding CanGoBack}" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
+                            <Button Content="Home" Click="OnGoPageSimulationHome" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
                             <Button Content="Stability" Name="btnSimulationModeStability" Click="OnGoPageSimulationStabilitySummary" Width="102" Height="32" Margin="0,0,8,0" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource NavSelectedForegroundBrush}" Background="{StaticResource NavSelectedBackgroundBrush}" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1" Cursor="Hand"/>
-                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="3" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
                                 <Label Name="lblSimulationStabilityType" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
-                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="10" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
+                            <Border Background="{StaticResource NavSelectedBackgroundBrush}" CornerRadius="3" Margin="0,0,8,0" Width="102" Height="32" BorderBrush="{StaticResource NavSelectedBorderBrush}" BorderThickness="1">
                                 <Label Name="lblSimulationStabilityStatus" Content="NA" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource NavSelectedForegroundBrush}"/>
                             </Border>
                             <Button Content="Remedial Measures" Name="btnSimulationModeCorrectiveAction" Click="OnGoPageSimulationCorrectiveAction" IsEnabled="False" Width="112" Height="32" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource NavIdleForegroundBrush}" Background="{StaticResource NavIdleBackgroundBrush}" BorderBrush="{StaticResource NavIdleBorderBrush}" BorderThickness="1" Cursor="Hand"/>
@@ -1000,7 +1002,7 @@
                         <MenuItem Header="_General Arrangement" Name="Doc2" Click="Doc2_click" Style="{StaticResource ModernSubMenuItem}"/>
                         <MenuItem Header="_Tank Capacity Plan" Name="Doc3" Click="Doc3_click" Style="{StaticResource ModernSubMenuItem}"/>
                         <Separator Style="{StaticResource ModernSeparator}"/>
-                        <MenuItem Header="_Print Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
+                        <MenuItem Header="_View Report" Name="Printreport" Click="Printreport_click" Style="{StaticResource ModernSubMenuItem}"/>
                         <Separator Style="{StaticResource ModernSeparator}"/>
                         <MenuItem Header="_Exit" Name="Exit4" Click="Exit_Click" Style="{StaticResource ModernSubMenuItem}"/>
                     </MenuItem>
